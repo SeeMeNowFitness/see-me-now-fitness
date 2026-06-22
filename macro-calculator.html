@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Macro Calculator – See Me Now Fitness</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold:     #F5A800;
+      --orange:   #E84B1A;
+      --black:    #0A0A0A;
+      --dark:     #111111;
+      --card:     #171717;
+      --border:   #2A2A2A;
+      --text:     #E8E8E8;
+      --muted:    #888888;
+      --gradient: linear-gradient(135deg, #F5A800 0%, #E84B1A 100%);
+    }
+
+    body {
+      background: var(--black);
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      min-height: 100vh;
+      padding: 0;
+    }
+
+    /* ── HEADER ── */
+    .calc-header {
+      background: var(--dark);
+      border-bottom: 1px solid var(--border);
+      padding: 1.5rem 5%;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .calc-header img {
+      height: 52px;
+    }
+
+    .calc-header-text h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.05em;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+
+    .calc-header-text p {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    /* ── MAIN LAYOUT ── */
+    .calc-wrapper {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 3rem 5% 5rem;
+    }
+
+    .calc-intro {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .calc-intro .eyebrow {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.75rem;
+    }
+
+    .calc-intro h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      line-height: 1;
+      letter-spacing: 0.03em;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+
+    .calc-intro h2 span {
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .calc-intro p {
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1.7;
+      max-width: 540px;
+      margin: 0 auto;
+    }
+
+    /* ── FORM ── */
+    .calc-form {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 2.5rem;
+      margin-bottom: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .calc-form::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(245,168,0,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(245,168,0,0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+    }
+
+    .form-section-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 1;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    input[type="number"],
+    select {
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text);
+      font-family: 'Barlow', sans-serif;
+      font-size: 1rem;
+      padding: 0.75rem 1rem;
+      width: 100%;
+      transition: border-color 0.2s;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input[type="number"]:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 1rem center;
+      padding-right: 2.5rem;
+      cursor: pointer;
+    }
+
+    select option {
+      background: var(--dark);
+      color: var(--text);
+    }
+
+    /* Gender toggle */
+    .gender-toggle {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .gender-btn {
+      flex: 1;
+      padding: 0.75rem;
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--muted);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .gender-btn.active {
+      background: var(--gradient);
+      border-color: transparent;
+      color: #000;
+    }
+
+    /* Goal cards */
+    .goal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.75rem;
+      position: relative;
+      z-index: 1;
+      margin-bottom: 2rem;
+    }
+
+    .goal-card {
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1rem 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .goal-card:hover { border-color: var(--gold); }
+
+    .goal-card.active {
+      border-color: var(--gold);
+      background: rgba(245,168,0,0.06);
+    }
+
+    .goal-icon { font-size: 1.4rem; }
+
+    .goal-text h4 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .goal-text p {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.1rem;
+    }
+
+    /* Unit toggle */
+    .unit-toggle {
+      display: flex;
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      width: fit-content;
+      margin-bottom: 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .unit-btn {
+      padding: 0.5rem 1.25rem;
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .unit-btn.active {
+      background: var(--gradient);
+      color: #000;
+    }
+
+    /* Calculate button */
+    .calc-btn {
+      width: 100%;
+      background: var(--gradient);
+      color: #000;
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.1em;
+      padding: 1rem;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+      position: relative;
+      z-index: 1;
+      margin-top: 0.5rem;
+    }
+
+    .calc-btn:hover { opacity: 0.88; transform: translateY(-2px); }
+    .calc-btn:active { transform: translateY(0); }
+
+    /* ── RESULTS ── */
+    .results-panel {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .results-panel.visible { display: block; }
+
+    .results-header {
+      background: var(--gradient);
+      padding: 1.5rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .results-header h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.08em;
+      color: #000;
+    }
+
+    .results-header .results-goal-tag {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: rgba(0,0,0,0.2);
+      color: #000;
+      padding: 0.3rem 0.75rem;
+      border-radius: 2px;
+    }
+
+    .results-body {
+      padding: 2rem;
+    }
+
+    .results-calories {
+      text-align: center;
+      padding: 1.5rem;
+      background: var(--dark);
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+    }
+
+    .results-calories .cal-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 4rem;
+      line-height: 1;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .results-calories .cal-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.25rem;
+    }
+
+    .macros-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .macro-card {
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.25rem 1rem;
+      text-align: center;
+    }
+
+    .macro-card .macro-value {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem;
+      line-height: 1;
+      color: var(--text);
+    }
+
+    .macro-card .macro-unit {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .macro-card .macro-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-top: 0.4rem;
+    }
+
+    .macro-card.protein .macro-name { color: #E84B1A; }
+    .macro-card.carbs .macro-name { color: #F5A800; }
+    .macro-card.fats .macro-name { color: #8AB4F8; }
+
+    /* Macro bar */
+    .macro-bar-wrap {
+      margin-bottom: 1.5rem;
+    }
+
+    .macro-bar {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .bar-protein { background: #E84B1A; }
+    .bar-carbs   { background: #F5A800; }
+    .bar-fats    { background: #8AB4F8; }
+
+    .macro-bar-legend {
+      display: flex;
+      gap: 1.5rem;
+      margin-top: 0.6rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .legend-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+
+    /* Blueprint Mode toggle (Steady vs Cycling) */
+    .mode-toggle-wrap {
+      margin-bottom: 1.5rem;
+    }
+
+    .mode-toggle-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.6rem;
+    }
+
+    .mode-toggle {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .mode-btn {
+      flex: 1;
+      text-align: left;
+      padding: 0.9rem 1rem;
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .mode-btn:hover { border-color: var(--gold); }
+
+    .mode-btn.active {
+      background: linear-gradient(135deg, rgba(245,168,0,0.12), rgba(232,75,26,0.12));
+      border-color: var(--gold);
+    }
+
+    .mode-btn .mode-name {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 0.2rem;
+    }
+
+    .mode-btn .mode-desc {
+      font-size: 0.74rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    /* Cycling toggle */
+    .cycling-toggle-wrap {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+
+    .cycling-toggle-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.25rem;
+      background: var(--dark);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .cycling-toggle-header:hover { background: #1a1a1a; }
+
+    .cycling-label {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .cycling-label .badge {
+      background: var(--gradient);
+      color: #000;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.5rem;
+      border-radius: 2px;
+    }
+
+    .cycling-label span {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+
+    .cycling-chevron {
+      color: var(--gold);
+      font-size: 0.9rem;
+      transition: transform 0.25s;
+    }
+
+    .cycling-chevron.open { transform: rotate(180deg); }
+
+    .cycling-content {
+      display: none;
+      padding: 1.5rem;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+    }
+
+    .cycling-content.open { display: block; }
+
+    .cycling-intro {
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.65;
+      margin-bottom: 1.5rem;
+    }
+
+    .cycling-days {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .cycling-day {
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.25rem;
+    }
+
+    .cycling-day.high { border-top: 3px solid var(--gold); }
+    .cycling-day.low  { border-top: 3px solid var(--orange); }
+
+    .cycling-day h4 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+
+    .cycling-day.high h4 { color: var(--gold); }
+    .cycling-day.low h4  { color: var(--orange); }
+
+    .cycling-day .day-cal {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      line-height: 1;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+
+    .cycling-day .day-macros {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.78rem;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .cycling-day .day-macros span { color: var(--text); }
+
+    /* CTA after results */
+    .results-cta {
+      background: var(--dark);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1.75rem;
+      text-align: center;
+    }
+
+    .results-cta p {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.72rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.5rem;
+    }
+
+    .results-cta h4 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.5rem;
+      letter-spacing: 0.05em;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .results-cta .sub {
+      font-family: 'Barlow', sans-serif;
+      font-size: 0.88rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 1.25rem;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      background: var(--gradient);
+      color: #000;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.8rem 1.75rem;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-2px); }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--gold);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.8rem 1.75rem;
+      border: 1.5px solid var(--gold);
+      border-radius: 3px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-outline:hover { background: var(--gold); color: #000; transform: translateY(-2px); }
+
+    /* disclaimer */
+    .disclaimer {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-top: 2rem;
+      opacity: 0.7;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .goal-grid { grid-template-columns: 1fr; }
+      .macros-grid { grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+      .cycling-days { grid-template-columns: 1fr; }
+      .macro-card .macro-value { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="calc-header">
+    <img src="/mnt/user-data/uploads/See_Me_Now_Fitness_Logo_PNG.png" alt="See Me Now Fitness" />
+    <div class="calc-header-text">
+      <h1>Macro Calculator</h1>
+      <p>See Me Now Fitness · The Blueprint</p>
+    </div>
+  </div>
+
+  <div class="calc-wrapper">
+
+    <div class="calc-intro">
+      <p class="eyebrow">The Blueprint Nutrition Tool</p>
+      <h2>Know Your <span>Numbers.</span><br>Own Your Results.</h2>
+      <p>Your macros are the foundation of your nutrition. Get your personalized daily targets — built around your body, your goal, and your lifestyle.</p>
+    </div>
+
+    <!-- FORM -->
+    <div class="calc-form">
+
+      <p class="form-section-title">Step 1 — Your Stats</p>
+
+      <!-- Unit toggle -->
+      <div class="unit-toggle">
+        <button class="unit-btn active" onclick="setUnit('imperial')">Imperial (lbs / in)</button>
+        <button class="unit-btn" onclick="setUnit('metric')">Metric (kg / cm)</button>
+      </div>
+
+      <div class="form-grid">
+        <!-- Gender -->
+        <div class="form-group full">
+          <label>Biological Sex</label>
+          <div class="gender-toggle">
+            <button class="gender-btn active" id="btn-male" onclick="setGender('male')">Male</button>
+            <button class="gender-btn" id="btn-female" onclick="setGender('female')">Female</button>
+          </div>
+        </div>
+
+        <!-- Age -->
+        <div class="form-group">
+          <label>Age</label>
+          <input type="number" id="age" placeholder="e.g. 28" min="16" max="80" />
+        </div>
+
+        <!-- Weight -->
+        <div class="form-group">
+          <label id="weight-label">Weight (lbs)</label>
+          <input type="number" id="weight" placeholder="e.g. 185" min="80" />
+        </div>
+
+        <!-- Height -->
+        <div class="form-group" id="height-imperial-wrap">
+          <label>Height</label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="number" id="height-ft" placeholder="Ft" min="4" max="8" style="flex:1" />
+            <input type="number" id="height-in" placeholder="In" min="0" max="11" style="flex:1" />
+          </div>
+        </div>
+
+        <div class="form-group" id="height-metric-wrap" style="display:none;">
+          <label>Height (cm)</label>
+          <input type="number" id="height-cm" placeholder="e.g. 178" min="120" max="250" />
+        </div>
+
+        <!-- Body Fat (optional) -->
+        <div class="form-group">
+          <label>Body Fat % <span style="color:var(--muted); font-weight:400;">(optional)</span></label>
+          <input type="number" id="bodyfat" placeholder="e.g. 15" min="4" max="60" />
+        </div>
+      </div>
+
+      <p class="form-section-title">Step 2 — Activity Level</p>
+      <div class="form-grid" style="margin-bottom:2rem;">
+        <div class="form-group full">
+          <label>How active are you?</label>
+          <select id="activity">
+            <option value="1.2">Sedentary — little or no exercise</option>
+            <option value="1.375">Lightly Active — 1–3 days/week</option>
+            <option value="1.55" selected>Moderately Active — 3–5 days/week</option>
+            <option value="1.725">Very Active — 6–7 days/week</option>
+            <option value="1.9">Athlete — twice/day or physical job</option>
+          </select>
+        </div>
+      </div>
+
+      <p class="form-section-title">Step 3 — Your Goal</p>
+      <div class="goal-grid">
+        <div class="goal-card active" id="goal-fat-loss" onclick="setGoal('fat-loss')">
+          <span class="goal-icon">🔥</span>
+          <div class="goal-text">
+            <h4>Fat Loss</h4>
+            <p>Lean out while protecting muscle</p>
+          </div>
+        </div>
+        <div class="goal-card" id="goal-muscle-gain" onclick="setGoal('muscle-gain')">
+          <span class="goal-icon">💪</span>
+          <div class="goal-text">
+            <h4>Muscle Gain</h4>
+            <p>Build size and strength</p>
+          </div>
+        </div>
+        <div class="goal-card" id="goal-maintenance" onclick="setGoal('maintenance')">
+          <span class="goal-icon">⚖️</span>
+          <div class="goal-text">
+            <h4>Maintenance</h4>
+            <p>Stay lean and hold your gains</p>
+          </div>
+        </div>
+        <div class="goal-card" id="goal-contest-prep" onclick="setGoal('contest-prep')">
+          <span class="goal-icon">🏆</span>
+          <div class="goal-text">
+            <h4>Contest Prep</h4>
+            <p>Stage-ready conditioning</p>
+          </div>
+        </div>
+      </div>
+
+      <button class="calc-btn" onclick="calculate()">Calculate My Macros</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="results-panel" id="results-panel">
+
+      <div class="results-header">
+        <h3>Your Blueprint Macros</h3>
+        <span class="results-goal-tag" id="results-goal-tag">Fat Loss</span>
+      </div>
+
+      <div class="results-body">
+
+        <!-- Calories -->
+        <div class="results-calories">
+          <div class="cal-number" id="res-calories">2,450</div>
+          <div class="cal-label">Daily Calories</div>
+        </div>
+
+        <!-- Macros -->
+        <div class="macros-grid">
+          <div class="macro-card protein">
+            <div class="macro-value" id="res-protein">190</div>
+            <div class="macro-unit">grams</div>
+            <div class="macro-name">Protein</div>
+          </div>
+          <div class="macro-card carbs">
+            <div class="macro-value" id="res-carbs">245</div>
+            <div class="macro-unit">grams</div>
+            <div class="macro-name">Carbs</div>
+          </div>
+          <div class="macro-card fats">
+            <div class="macro-value" id="res-fats">68</div>
+            <div class="macro-unit">grams</div>
+            <div class="macro-name">Fats</div>
+          </div>
+        </div>
+
+        <!-- Bar -->
+        <div class="macro-bar-wrap">
+          <div class="macro-bar">
+            <div class="bar-protein" id="bar-protein" style="width:33%"></div>
+            <div class="bar-carbs"   id="bar-carbs"   style="width:40%"></div>
+            <div class="bar-fats"    id="bar-fats"    style="width:27%"></div>
+          </div>
+          <div class="macro-bar-legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#E84B1A"></div> Protein <span id="pct-protein" style="color:var(--text);margin-left:2px;"></span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#F5A800"></div> Carbs <span id="pct-carbs" style="color:var(--text);margin-left:2px;"></span></div>
+            <div class="legend-item"><div class="legend-dot" style="background:#8AB4F8"></div> Fats <span id="pct-fats" style="color:var(--text);margin-left:2px;"></span></div>
+          </div>
+        </div>
+
+        <!-- Blueprint Mode Toggle -->
+        <div class="mode-toggle-wrap">
+          <div class="mode-toggle-title">Choose Your Blueprint</div>
+          <div class="mode-toggle">
+            <div class="mode-btn active" id="mode-steady" onclick="setMode('steady')">
+              <div class="mode-name">Steady Blueprint</div>
+              <div class="mode-desc">One consistent daily target, every day.</div>
+            </div>
+            <div class="mode-btn" id="mode-cycling" onclick="setMode('cycling')">
+              <div class="mode-name">Cycling Blueprint</div>
+              <div class="mode-desc">Refeed and Deficit days, built around your training and prep stage.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calorie Cycling Toggle -->
+        <div class="cycling-toggle-wrap" id="cycling-toggle-wrap" style="display:none;">
+          <div class="cycling-toggle-header" onclick="toggleCycling()">
+            <div class="cycling-label">
+              <span class="badge">Blueprint Method</span>
+              <span>Refeed / Deficit Cycling</span>
+            </div>
+            <span class="cycling-chevron" id="cycling-chevron">▼</span>
+          </div>
+          <div class="cycling-content" id="cycling-content">
+            <p class="cycling-intro">
+              Coach Charles uses <strong style="color:var(--text);">high and low calorie cycling</strong> to maximize fat loss while protecting muscle — giving you flexibility to adjust based on your training, recovery, and prep stage. Here's how your numbers break down.
+            </p>
+            <div class="cycling-days">
+              <div class="cycling-day high">
+                <h4>Refeed Day</h4>
+                <div class="day-cal" id="cycle-high-cal">—</div>
+                <div class="day-macros">
+                  <div>Protein: <span id="cycle-high-protein">—</span>g</div>
+                  <div>Carbs: <span id="cycle-high-carbs">—</span>g</div>
+                  <div>Fats: <span id="cycle-high-fats">—</span>g</div>
+                </div>
+              </div>
+              <div class="cycling-day low">
+                <h4>Deficit Day</h4>
+                <div class="day-cal" id="cycle-low-cal">—</div>
+                <div class="day-macros">
+                  <div>Protein: <span id="cycle-low-protein">—</span>g</div>
+                  <div>Carbs: <span id="cycle-low-carbs">—</span>g</div>
+                  <div>Fats: <span id="cycle-low-fats">—</span>g</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="results-cta">
+          <p>Team See Me Now Fitness</p>
+          <h4>Numbers Are Just The Start</h4>
+          <p class="sub">Knowing your macros is step one. Executing them consistently — with the right plan, the right coaching, and the right team behind you — is where the real transformation happens.</p>
+          <div class="cta-buttons">
+            <button class="btn-primary" onclick="trackTheseMacros()" style="border:none; cursor:pointer;">Track These Macros →</button>
+            <a href="https://www.jotform.com/230088439218156" target="_blank" rel="noopener" class="btn-outline">Join The Team — Apply Now</a>
+            <a href="services.html#nutrition" class="btn-outline">Nutrition Coaching</a>
+          </div>
+          <p style="font-size:0.72rem; color:var(--muted); margin-top:0.75rem;">Opens the See Me Now Food Tracker with your macro targets pre-loaded.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <p class="disclaimer">
+      These calculations are estimates based on the Mifflin-St Jeor equation and general macronutrient guidelines.<br>
+      For a fully customized nutrition plan, work with a certified coach. Results may vary based on individual factors.
+    </p>
+
+  </div>
+
+  <script>
+    let gender = 'male';
+    let goal = 'fat-loss';
+    let unit = 'imperial';
+    // ── TRACK THESE MACROS → Food Tracker connection ──────────────────
+    function trackTheseMacros() {
+      const cal     = document.getElementById('res-calories')?.textContent || '';
+      const protein = document.getElementById('res-protein')?.textContent  || '';
+      const carbs   = document.getElementById('res-carbs')?.textContent    || '';
+      const fats    = document.getElementById('res-fats')?.textContent     || '';
+
+      const clean = v => v.replace(/[^0-9.]/g, '');
+
+      // Update this URL to your actual hosted Food Tracker URL once live on GitHub Pages
+      const trackerURL = `food-tracker.html?cal=${clean(cal)}&protein=${clean(protein)}&carbs=${clean(carbs)}&fats=${clean(fats)}`;
+      window.open(trackerURL, '_blank');
+    }
+
+    let blueprintMode = 'steady';
+
+    function setMode(m) {
+      blueprintMode = m;
+      document.getElementById('mode-steady').classList.toggle('active', m === 'steady');
+      document.getElementById('mode-cycling').classList.toggle('active', m === 'cycling');
+
+      const cyclingWrap = document.getElementById('cycling-toggle-wrap');
+      const cyclingContent = document.getElementById('cycling-content');
+      const cyclingChevron = document.getElementById('cycling-chevron');
+
+      if (m === 'cycling') {
+        cyclingWrap.style.display = '';
+        cyclingContent.classList.add('open');
+        cyclingChevron.classList.add('open');
+      } else {
+        cyclingWrap.style.display = 'none';
+      }
+    }
+
+    function setGender(g) {
+      gender = g;
+      document.getElementById('btn-male').classList.toggle('active', g === 'male');
+      document.getElementById('btn-female').classList.toggle('active', g === 'female');
+    }
+
+    function setGoal(g) {
+      goal = g;
+      document.querySelectorAll('.goal-card').forEach(c => c.classList.remove('active'));
+      document.getElementById('goal-' + g).classList.add('active');
+    }
+
+    function setUnit(u) {
+      unit = u;
+      document.querySelectorAll('.unit-btn').forEach((b, i) => {
+        b.classList.toggle('active', (i === 0 && u === 'imperial') || (i === 1 && u === 'metric'));
+      });
+      document.getElementById('height-imperial-wrap').style.display = u === 'imperial' ? '' : 'none';
+      document.getElementById('height-metric-wrap').style.display  = u === 'metric'   ? '' : 'none';
+      document.getElementById('weight-label').textContent = u === 'imperial' ? 'Weight (lbs)' : 'Weight (kg)';
+      document.getElementById('weight').placeholder = u === 'imperial' ? 'e.g. 185' : 'e.g. 84';
+    }
+
+    function toggleCycling() {
+      const content  = document.getElementById('cycling-content');
+      const chevron  = document.getElementById('cycling-chevron');
+      const isOpen   = content.classList.contains('open');
+      content.classList.toggle('open', !isOpen);
+      chevron.classList.toggle('open', !isOpen);
+    }
+
+    function calculate() {
+      const age    = parseFloat(document.getElementById('age').value);
+      const weight = parseFloat(document.getElementById('weight').value);
+      const bf     = parseFloat(document.getElementById('bodyfat').value);
+      const act    = parseFloat(document.getElementById('activity').value);
+
+      let heightCm;
+      if (unit === 'imperial') {
+        const ft = parseFloat(document.getElementById('height-ft').value) || 0;
+        const inches = parseFloat(document.getElementById('height-in').value) || 0;
+        heightCm = (ft * 12 + inches) * 2.54;
+      } else {
+        heightCm = parseFloat(document.getElementById('height-cm').value);
+      }
+
+      const weightKg = unit === 'imperial' ? weight * 0.453592 : weight;
+
+      if (!age || !weight || !heightCm) {
+        alert('Please fill in your age, weight, and height to calculate.');
+        return;
+      }
+
+      // BMR — Mifflin-St Jeor (or Katch-McArdle if BF provided)
+      let bmr;
+      if (!isNaN(bf) && bf > 0 && bf < 60) {
+        const lbm = weightKg * (1 - bf / 100);
+        bmr = 370 + (21.6 * lbm); // Katch-McArdle
+      } else {
+        if (gender === 'male') {
+          bmr = 10 * weightKg + 6.25 * heightCm - 5 * age + 5;
+        } else {
+          bmr = 10 * weightKg + 6.25 * heightCm - 5 * age - 161;
+        }
+      }
+
+      const tdee = bmr * act;
+
+      // Goal adjustments
+      const goalLabels = {
+        'fat-loss':    'Fat Loss',
+        'muscle-gain': 'Muscle Gain',
+        'maintenance': 'Maintenance',
+        'contest-prep':'Contest Prep'
+      };
+
+      let calories, proteinRatio, carbRatio, fatRatio;
+
+      switch (goal) {
+        case 'fat-loss':
+          calories    = tdee * 0.80;
+          proteinRatio = 0.38;
+          carbRatio    = 0.38;
+          fatRatio     = 0.24;
+          break;
+        case 'muscle-gain':
+          calories    = tdee * 1.10;
+          proteinRatio = 0.30;
+          carbRatio    = 0.45;
+          fatRatio     = 0.25;
+          break;
+        case 'maintenance':
+          calories    = tdee;
+          proteinRatio = 0.30;
+          carbRatio    = 0.42;
+          fatRatio     = 0.28;
+          break;
+        case 'contest-prep':
+          calories    = tdee * 0.75;
+          proteinRatio = 0.42;
+          carbRatio    = 0.35;
+          fatRatio     = 0.23;
+          break;
+      }
+
+      const proteinCals = calories * proteinRatio;
+      const carbCals    = calories * carbRatio;
+      const fatCals     = calories * fatRatio;
+
+      const protein = Math.round(proteinCals / 4);
+      const carbs   = Math.round(carbCals / 4);
+      const fats    = Math.round(fatCals / 9);
+
+      const totalCals = protein * 4 + carbs * 4 + fats * 9;
+
+      // Calorie cycling
+      const highCals = Math.round(calories * 1.15);
+      const lowCals  = Math.round(calories * 0.85);
+
+      const highProtein = Math.round(protein * 1.05);
+      const highCarbs   = Math.round(carbs   * 1.30);
+      const highFats    = Math.round(fats    * 0.90);
+
+      const lowProtein  = Math.round(protein * 1.00);
+      const lowCarbs    = Math.round(carbs   * 0.65);
+      const lowFats     = Math.round(fats    * 1.10);
+
+      // Percentages for bar
+      const pctP = Math.round(proteinRatio * 100);
+      const pctC = Math.round(carbRatio    * 100);
+      const pctF = Math.round(fatRatio     * 100);
+
+      // Update DOM
+      document.getElementById('res-calories').textContent = Math.round(calories).toLocaleString();
+      document.getElementById('res-protein').textContent  = protein;
+      document.getElementById('res-carbs').textContent    = carbs;
+      document.getElementById('res-fats').textContent     = fats;
+
+      document.getElementById('bar-protein').style.width  = pctP + '%';
+      document.getElementById('bar-carbs').style.width    = pctC + '%';
+      document.getElementById('bar-fats').style.width     = pctF + '%';
+
+      document.getElementById('pct-protein').textContent  = pctP + '%';
+      document.getElementById('pct-carbs').textContent    = pctC + '%';
+      document.getElementById('pct-fats').textContent     = pctF + '%';
+
+      document.getElementById('results-goal-tag').textContent = goalLabels[goal];
+
+      document.getElementById('cycle-high-cal').textContent     = highCals.toLocaleString() + ' cal';
+      document.getElementById('cycle-high-protein').textContent = highProtein;
+      document.getElementById('cycle-high-carbs').textContent   = highCarbs;
+      document.getElementById('cycle-high-fats').textContent    = highFats;
+
+      document.getElementById('cycle-low-cal').textContent      = lowCals.toLocaleString() + ' cal';
+      document.getElementById('cycle-low-protein').textContent  = lowProtein;
+      document.getElementById('cycle-low-carbs').textContent    = lowCarbs;
+      document.getElementById('cycle-low-fats').textContent     = lowFats;
+
+      // Show results
+      const panel = document.getElementById('results-panel');
+      panel.classList.add('visible');
+      setMode(blueprintMode); // re-apply current mode's display state to fresh results
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  </script>
+</body>
+</html>
