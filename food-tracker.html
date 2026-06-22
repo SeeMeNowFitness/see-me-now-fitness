@@ -848,36 +848,19 @@
       }
 
       scanActive = true;
-      status.textContent = 'Starting scanner...';
+      status.textContent = 'Point camera at a barcode...';
 
       try {
         zxingReader = new ZXingLib.BrowserMultiFormatReader();
-        status.textContent = 'Point camera at a barcode...';
 
-        // Try rear camera first (phones), fall back to any camera (laptops)
-        let started = false;
-        try {
-          await zxingReader.decodeFromConstraints(
-            { video: { facingMode: { exact: 'environment' } } },
-            video,
-            (result, err) => {
-              if (result) { stopScan(); lookupBarcode(result.getText()); }
-            }
-          );
-          started = true;
-        } catch (rearErr) {
-          // Rear camera not available — try any camera
-          zxingReader.reset();
-          zxingReader = new ZXingLib.BrowserMultiFormatReader();
-          await zxingReader.decodeFromConstraints(
-            { video: true },
-            video,
-            (result, err) => {
-              if (result) { stopScan(); lookupBarcode(result.getText()); }
-            }
-          );
-          started = true;
-        }
+        // Use ideal (not exact) facingMode so it works on both phones and laptops
+        await zxingReader.decodeFromConstraints(
+          { video: { facingMode: { ideal: 'environment' } } },
+          video,
+          (result, err) => {
+            if (result) { stopScan(); lookupBarcode(result.getText()); }
+          }
+        );
 
       } catch (err) {
         scanActive = false;
