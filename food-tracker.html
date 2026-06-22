@@ -852,21 +852,32 @@
 
       try {
         zxingReader = new ZXingLib.BrowserMultiFormatReader();
-
         status.textContent = 'Point camera at a barcode...';
 
-        // Use constraints directly instead of listVideoInputDevices
-        await zxingReader.decodeFromConstraints(
-          { video: { facingMode: 'environment' } },
-          video,
-          (result, err) => {
-            if (result) {
-              stopScan();
-              lookupBarcode(result.getText());
+        // Try rear camera first (phones), fall back to any camera (laptops)
+        let started = false;
+        try {
+          await zxingReader.decodeFromConstraints(
+            { video: { facingMode: { exact: 'environment' } } },
+            video,
+            (result, err) => {
+              if (result) { stopScan(); lookupBarcode(result.getText()); }
             }
-            // err on each frame just means no barcode found yet — keep scanning
-          }
-        );
+          );
+          started = true;
+        } catch (rearErr) {
+          // Rear camera not available — try any camera
+          zxingReader.reset();
+          zxingReader = new ZXingLib.BrowserMultiFormatReader();
+          await zxingReader.decodeFromConstraints(
+            { video: true },
+            video,
+            (result, err) => {
+              if (result) { stopScan(); lookupBarcode(result.getText()); }
+            }
+          );
+          started = true;
+        }
 
       } catch (err) {
         scanActive = false;
