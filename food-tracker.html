@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Food Tracker – See Me Now Fitness</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/@zxing/library@0.19.1/umd/index.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -811,57 +812,83 @@
       }
     }
 
-    // ── BARCODE SCANNING ──────────────────────────────────────────────
-    let scanStream = null;
-    let scanInterval = null;
+    // ── BARCODE SCANNING (ZXing — works on iPhone Safari + Android Chrome) ──
+    let zxingReader = null;
+    let scanActive = false;
 
     async function startScan() {
       const wrap = document.getElementById('scanner-wrap');
       const video = document.getElementById('scanner-video');
       const status = document.getElementById('scan-status');
 
+      if (scanActive) return;
+      wrap.style.display = '';
+      status.style.color = '';
+
+      // Check ZXing loaded correctly
+      const ZXingLib = window.ZXing || window.ZxingLibrary || window['@zxing/library'];
+      if (!ZXingLib || !ZXingLib.BrowserMultiFormatReader) {
+        status.style.color = '#E84B1A';
+        status.textContent = '❌ Scanner library failed to load. Please refresh the page and try again.';
+        return;
+      }
+
+      status.textContent = 'Requesting camera access...';
+
+      // Step 1: Test getUserMedia directly first before ZXing
       try {
-        scanStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' }
-        });
-        video.srcObject = scanStream;
-        wrap.style.display = '';
+        const testStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        // Camera access granted — stop test stream and hand off to ZXing
+        testStream.getTracks().forEach(t => t.stop());
+      } catch (err) {
+        scanActive = false;
+        status.style.color = '#E84B1A';
+        status.textContent = `❌ ${err.name}: ${err.message}`;
+        return;
+      }
+
+      scanActive = true;
+      status.textContent = 'Starting scanner...';
+
+      try {
+        zxingReader = new ZXingLib.BrowserMultiFormatReader();
+
         status.textContent = 'Point camera at a barcode...';
 
-        if ('BarcodeDetector' in window) {
-          const detector = new BarcodeDetector({ formats: ['ean_13','ean_8','upc_a','upc_e','code_128','code_39'] });
-          scanInterval = setInterval(async () => {
-            try {
-              const barcodes = await detector.detect(video);
-              if (barcodes.length > 0) {
-                stopScan();
-                lookupBarcode(barcodes[0].rawValue);
-              }
-            } catch (e) {}
-          }, 500);
-        } else {
-          status.textContent = 'Auto-scan not supported on this browser. Enter barcode manually:';
-          const input = document.createElement('input');
-          input.type = 'number';
-          input.placeholder = 'Type barcode number...';
-          input.style.cssText = 'display:block;margin:0.5rem auto;padding:0.5rem;width:80%;border-radius:4px;border:1px solid #2A2A2A;background:#111;color:#E8E8E8;text-align:center;';
-          const btn = document.createElement('button');
-          btn.textContent = 'Look Up';
-          btn.style.cssText = 'display:block;margin:0.5rem auto;padding:0.5rem 1.5rem;background:#F5A800;color:#000;border:none;border-radius:4px;cursor:pointer;font-weight:700;';
-          btn.onclick = () => { stopScan(); lookupBarcode(input.value); };
-          wrap.appendChild(input);
-          wrap.appendChild(btn);
-        }
+        // Use constraints directly instead of listVideoInputDevices
+        await zxingReader.decodeFromConstraints(
+          { video: { facingMode: 'environment' } },
+          video,
+          (result, err) => {
+            if (result) {
+              stopScan();
+              lookupBarcode(result.getText());
+            }
+            // err on each frame just means no barcode found yet — keep scanning
+          }
+        );
+
       } catch (err) {
-        status.textContent = '❌ Camera access denied. Allow camera in browser settings and try again.';
-        wrap.style.display = '';
+        scanActive = false;
+        status.style.color = '#E84B1A';
+        status.textContent = `❌ Scanner error: ${err.name} — ${err.message}`;
       }
     }
 
     function stopScan() {
-      if (scanStream) { scanStream.getTracks().forEach(t => t.stop()); scanStream = null; }
-      if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
-      document.getElementById('scanner-wrap').style.display = 'none';
+      if (zxingReader) {
+        zxingReader.reset();
+        zxingReader = null;
+      }
+      scanActive = false;
+      const wrap = document.getElementById('scanner-wrap');
+      const video = document.getElementById('scanner-video');
+      if (video.srcObject) {
+        video.srcObject.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+      }
+      wrap.style.display = 'none';
+      document.getElementById('scan-status').style.color = '';
     }
 
     async function lookupBarcode(barcode) {
