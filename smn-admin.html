@@ -205,13 +205,10 @@ a { color: var(--gold); }
       <div id="macros-standard">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">Daily Targets</div>
         <div class="grid-4">
-          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein"></div>
-          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs"></div>
-          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat"></div>
-          <div class="field"><label>Calories</label><input type="number" id="e-calories"></div>
-        </div>
-        <div style="margin-top:8px;">
-          <button class="btn btn-outline btn-sm" onclick="autoCalcCalories('standard')">Auto-calc calories</button>
+          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein" oninput="autoCalcCalories('standard')"></div>
+          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs" oninput="autoCalcCalories('standard')"></div>
+          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat" oninput="autoCalcCalories('standard')"></div>
+          <div class="field"><label>Calories (auto)</label><input type="number" id="e-calories" style="color:var(--gold)"></div>
         </div>
       </div>
 
@@ -219,23 +216,18 @@ a { color: var(--gold); }
       <div id="macros-zigzag" style="display:none;">
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">🔥 High Day</div>
         <div class="grid-4">
-          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein-high"></div>
-          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-high"></div>
-          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat-high"></div>
-          <div class="field"><label>Calories</label><input type="number" id="e-calories-high"></div>
+          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein-high" oninput="autoCalcCalories('high')"></div>
+          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-high" oninput="autoCalcCalories('high')"></div>
+          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat-high" oninput="autoCalcCalories('high')"></div>
+          <div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-high" style="color:var(--gold)"></div>
         </div>
-        <div style="margin-top:8px;margin-bottom:16px;">
-          <button class="btn btn-outline btn-sm" onclick="autoCalcCalories('high')">Auto-calc calories</button>
-        </div>
+        <div style="margin-bottom:16px;"></div>
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">❄️ Low Day</div>
         <div class="grid-4">
-          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein-low"></div>
-          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-low"></div>
-          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat-low"></div>
-          <div class="field"><label>Calories</label><input type="number" id="e-calories-low"></div>
-        </div>
-        <div style="margin-top:8px;">
-          <button class="btn btn-outline btn-sm" onclick="autoCalcCalories('low')">Auto-calc calories</button>
+          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein-low" oninput="autoCalcCalories('low')"></div>
+          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-low" oninput="autoCalcCalories('low')"></div>
+          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat-low" oninput="autoCalcCalories('low')"></div>
+          <div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-low" style="color:var(--gold)"></div>
         </div>
       </div>
 
@@ -245,9 +237,6 @@ a { color: var(--gold); }
     <div class="form-section" id="edit-bmr" style="display:none;">
       <h3>BMR Inputs (Mifflin-St Jeor)</h3>
       <div class="grid-4">
-        <div class="field"><label>Weight (lbs)</label><input type="number" id="e-weight-lbs" oninput="calcBMRPreview()"></div>
-        <div class="field"><label>Height (cm)</label><input type="number" id="e-height-cm" oninput="calcBMRPreview()"></div>
-        <div class="field"><label>Age</label><input type="number" id="e-age" oninput="calcBMRPreview()"></div>
         <div class="field">
           <label>Gender</label>
           <select id="e-gender" onchange="calcBMRPreview()">
@@ -255,6 +244,9 @@ a { color: var(--gold); }
             <option value="female">Female</option>
           </select>
         </div>
+        <div class="field"><label>Age</label><input type="number" id="e-age" oninput="calcBMRPreview()" placeholder="e.g. 30"></div>
+        <div class="field"><label>Height (ft'in or cm)</label><input type="text" id="e-height-input" oninput="parseHeight()" placeholder="e.g. 6'1 or 185"><input type="hidden" id="e-height-cm"></div>
+        <div class="field"><label>Weight (lbs)</label><input type="number" id="e-weight-lbs" oninput="calcBMRPreview()" placeholder="e.g. 220"></div>
       </div>
       <div id="bmr-preview" style="font-size:13px;color:var(--gold);margin-top:8px;"></div>
     </div>
@@ -506,6 +498,7 @@ async function loadClientIntoForm(id) {
   const b = client.bmr_inputs || {};
   document.getElementById('e-weight-lbs').value = b.weight_lbs || '';
   document.getElementById('e-height-cm').value = b.height_cm || '';
+  document.getElementById('e-height-input').value = b.height_cm ? b.height_cm + 'cm' : '';
   document.getElementById('e-age').value = b.age || '';
   document.getElementById('e-gender').value = b.gender || 'male';
 
@@ -575,16 +568,48 @@ function autoCalcCalories(type) {
   }
 }
 
+function parseHeight() {
+  const input = document.getElementById('e-height-input').value.trim();
+  let cm = 0;
+  // Handles: 6'1, 6'1", 6 1, 185, 185cm
+  const feetInches = input.match(/^(\d+)['\s](\d+)/);
+  const feetOnly = input.match(/^(\d+)'?\s*"?$/);
+  const cmOnly = input.match(/^(\d+\.?\d*)\s*cm?$/i);
+  const numberOnly = input.match(/^(\d+\.?\d*)$/);
+
+  if (feetInches) {
+    const ft = parseInt(feetInches[1]);
+    const inch = parseInt(feetInches[2]);
+    cm = Math.round((ft * 30.48) + (inch * 2.54));
+  } else if (cmOnly) {
+    cm = parseFloat(cmOnly[1]);
+  } else if (numberOnly) {
+    const val = parseFloat(numberOnly[1]);
+    // If value < 10 treat as feet, if > 100 treat as cm
+    cm = val > 100 ? val : Math.round(val * 30.48);
+  } else if (feetOnly) {
+    cm = Math.round(parseInt(feetOnly[1]) * 30.48);
+  }
+
+  document.getElementById('e-height-cm').value = cm || '';
+  if (cm > 0) {
+    document.getElementById('bmr-preview').style.display = '';
+  }
+  calcBMRPreview();
+}
+
 function calcBMRPreview() {
   const w = parseFloat(document.getElementById('e-weight-lbs').value);
   const h = parseFloat(document.getElementById('e-height-cm').value);
   const age = parseFloat(document.getElementById('e-age').value);
   const gender = document.getElementById('e-gender').value;
-  if (!w || !h || !age) { document.getElementById('bmr-preview').textContent = ''; return; }
+  const preview = document.getElementById('bmr-preview');
+  if (!w || !h || !age) { preview.textContent = h > 0 ? `Height: ${h}cm` : ''; return; }
   const kg = w * 0.453592;
   let bmr = (10 * kg) + (6.25 * h) - (5 * age);
   bmr += gender === 'male' ? 5 : -161;
-  document.getElementById('bmr-preview').textContent = `Estimated BMR: ${Math.round(bmr)} kcal/day`;
+  const heightInput = document.getElementById('e-height-input').value;
+  preview.textContent = `BMR: ${Math.round(bmr)} kcal/day · Height: ${h}cm`;
 }
 
 async function saveClient() {
