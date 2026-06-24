@@ -19,7 +19,10 @@
     appId: "1:505059193724:web:704a12cbd0a55592612af9"
   };
   const SPOONACULAR_API_KEY = "YOUR_SPOONACULAR_KEY";
-  const CLIENT_ID = new URLSearchParams(window.location.search).get("client") || "demo";
+  // Client ID from URL param, localStorage, or null (triggers email login)
+  const URL_CLIENT_ID = new URLSearchParams(window.location.search).get("client");
+  const STORED_CLIENT_ID = localStorage.getItem('smn_client_id');
+  let CLIENT_ID = URL_CLIENT_ID || STORED_CLIENT_ID || null;
 </script>
 
 <!-- No Firebase SDK needed — using Firestore REST API directly -->
@@ -273,6 +276,38 @@ select option { background: var(--dark); }
 </head>
 <body>
 
+<!-- EMAIL LOGIN SCREEN -->
+<div id="email-login-screen" style="display:none;position:fixed;inset:0;background:var(--black);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="width:100%;max-width:360px;">
+    <div style="text-align:center;margin-bottom:32px;">
+      <img src="https://seemenowfitness.github.io/see-me-now-fitness/logo.png" alt="See Me Now Fitness" style="height:64px;width:auto;object-fit:contain;margin-bottom:16px;">
+      <div style="font-family:'Anton',sans-serif;font-size:28px;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:0.06em;">BLUEPRINT</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px;">Your personal tracking dashboard</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;">
+      <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:6px;">Enter your email to get started</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">Use the same email you gave to See Me Now Fitness.</div>
+      <input type="email" id="login-email-input" placeholder="your@email.com" inputmode="email" autocomplete="email"
+        style="background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);font-size:15px;padding:12px;width:100%;outline:none;margin-bottom:12px;"
+        onkeydown="if(event.key==='Enter')submitEmailLogin()">
+      <button onclick="submitEmailLogin()" id="login-btn"
+        style="width:100%;padding:13px;background:var(--gold);color:var(--black);border:none;border-radius:8px;font-family:'Anton',sans-serif;font-size:15px;letter-spacing:0.08em;cursor:pointer;">
+        OPEN MY TRACKER
+      </button>
+      <div id="login-error" style="display:none;color:var(--red);font-size:12px;margin-top:10px;text-align:center;"></div>
+      <div style="margin-top:12px;">
+        <button onclick="startDemo()"
+          style="width:100%;padding:11px;background:none;color:var(--muted);border:1px solid var(--border);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:0.04em;">
+          Try the demo (no login)
+        </button>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);text-align:center;">
+        Not a client yet? <a href="https://seemenowfitness.com/pricing" style="color:var(--gold);font-weight:700;">View coaching plans →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="app">
 
   <!-- HEADER -->
@@ -287,6 +322,7 @@ select option { background: var(--dark); }
         <button onclick="changeDay(1)">›</button>
       </div>
       <div class="date-label" id="date-label"></div>
+      <button onclick="signOut()" style="background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px;" title="Sign out">⏏</button>
     </div>
   </div>
 
@@ -884,7 +920,7 @@ function jsToFirestoreValue(val) {
 //   LOAD CLIENT PROFILE
 // ============================================================
 async function loadClientProfile() {
-  if (CLIENT_ID === 'demo') {
+  if (!CLIENT_ID || CLIENT_ID === 'demo') {
     clientProfile = {
       name: 'Demo Client',
       tier: 'lifestyle',
@@ -933,7 +969,7 @@ function applyTierUI() {
   const zigzagToggle = document.getElementById('zigzag-toggle');
   if (zigzagToggle) zigzagToggle.style.display = clientProfile.tracking_method === 'zigzag' ? 'block' : 'none';
   const setupBanner = document.getElementById('setup-banner');
-  if (setupBanner) setupBanner.style.display = (CLIENT_ID === 'demo') ? 'block' : 'none';
+  if (setupBanner) setupBanner.style.display = (!CLIENT_ID || CLIENT_ID === 'demo') ? 'block' : 'none';
 
   if (tier === 'contest_prep' && clientProfile.show_date) {
     const showD = new Date(clientProfile.show_date);
@@ -1558,7 +1594,7 @@ function saveWater() {
 // ============================================================
 async function loadDay(dateKey) {
   updateDateLabel();
-  if (CLIENT_ID === 'demo') {
+  if (!CLIENT_ID || CLIENT_ID === 'demo') {
     dayData = { meals: [], steps: 0, workout: { type: null, duration: 0, calories: 0, notes: '' }, weight: null, water: 0 };
     renderToday();
     renderMealLog();
@@ -1585,7 +1621,7 @@ async function loadDay(dateKey) {
 }
 
 async function saveDayToFirebase() {
-  if (CLIENT_ID === 'demo') return;
+  if (!CLIENT_ID || CLIENT_ID === 'demo') return;
   try {
     await firestoreSet(`clients/${CLIENT_ID}/days/${currentDateKey}`, dayData);
   } catch (e) {
@@ -1972,10 +2008,102 @@ function showToast(msg) {
 }
 
 // ============================================================
+//   EMAIL LOGIN
+// ============================================================
+async function submitEmailLogin() {
+  const email = document.getElementById('login-email-input').value.trim().toLowerCase();
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  errEl.style.display = 'none';
+
+  if (!email || !email.includes('@')) {
+    errEl.textContent = 'Please enter a valid email address.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  btn.textContent = 'Looking up your profile…';
+  btn.style.opacity = '0.7';
+
+  try {
+    // Query Firestore for client with matching email
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents:runQuery?key=${FIREBASE_CONFIG.apiKey}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'clients' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'email_lower' },
+              op: 'EQUAL',
+              value: { stringValue: email }
+            }
+          },
+          limit: 1
+        }
+      })
+    });
+    const results = await res.json();
+    const match = results.find(r => r.document);
+
+    if (match && match.document) {
+      const docId = match.document.name.split('/').pop();
+      // Save to localStorage so they don't have to log in again
+      localStorage.setItem('smn_client_id', docId);
+      localStorage.setItem('smn_client_email', email);
+      CLIENT_ID = docId;
+      // Hide login screen and start app
+      document.getElementById('email-login-screen').style.display = 'none';
+      await init();
+    } else {
+      errEl.textContent = "We couldn't find an account with that email. Contact Charles at wa.me/17137017828.";
+      errEl.style.display = 'block';
+      btn.textContent = 'OPEN MY TRACKER';
+      btn.style.opacity = '1';
+    }
+  } catch (e) {
+    errEl.textContent = 'Connection error. Please try again.';
+    errEl.style.display = 'block';
+    btn.textContent = 'OPEN MY TRACKER';
+    btn.style.opacity = '1';
+  }
+}
+
+function startDemo() {
+  CLIENT_ID = 'demo';
+  hideEmailLogin();
+  init();
+}
+
+function signOut() {
+  localStorage.removeItem('smn_client_id');
+  localStorage.removeItem('smn_client_email');
+  CLIENT_ID = null;
+  showEmailLogin();
+}
+
+function showEmailLogin() {
+  document.getElementById('email-login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+function hideEmailLogin() {
+  document.getElementById('email-login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+}
+
+// ============================================================
 //   INIT
 // ============================================================
 async function init() {
   updateDateLabel();
+  if (!CLIENT_ID) {
+    showEmailLogin();
+    return;
+  }
+  hideEmailLogin();
   await loadClientProfile();
   await loadDay(currentDateKey);
 }
