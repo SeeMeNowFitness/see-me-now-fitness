@@ -22,9 +22,7 @@
   const CLIENT_ID = new URLSearchParams(window.location.search).get("client") || "demo";
 </script>
 
-<!-- Firebase SDKs (async — don't block render) -->
-<script async src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script async src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- No Firebase SDK needed — using Firestore REST API directly -->
 
 <style>
 /* ============================================================
@@ -761,15 +759,14 @@ let dayData = {
 };
 
 // ============================================================
-//   FIREBASE INIT
+//   FIREBASE INIT — tracker uses REST API, no SDK needed
 // ============================================================
-try {
-  firebase.initializeApp(FIREBASE_CONFIG);
-  db = firebase.firestore();
-  console.log('Firebase connected');
-} catch (e) {
-  console.warn('Firebase not configured — running in demo mode');
+let firebaseAttempts = 0;
+function initFirebase() {
+  // We use the Firestore REST API directly — no SDK dependency
+  init();
 }
+initFirebase();
 
 // ============================================================
 //   DATE UTILS
@@ -803,14 +800,95 @@ function updateDateLabel() {
 }
 
 // ============================================================
+//   FIRESTORE REST API — works on all networks, no WebSockets
+// ============================================================
+const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
+
+async function firestoreGet(path) {
+  const res = await fetch(`${FIRESTORE_BASE}/${path}?key=${FIREBASE_CONFIG.apiKey}`);
+  if (!res.ok) throw new Error('Firestore GET failed: ' + res.status);
+  const doc = await res.json();
+  return firestoreDocToObj(doc);
+}
+
+async function firestoreSet(path, data) {
+  const fields = objToFirestoreFields(data);
+  const res = await fetch(`${FIRESTORE_BASE}/${path}?key=${FIREBASE_CONFIG.apiKey}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields })
+  });
+  if (!res.ok) throw new Error('Firestore SET failed: ' + res.status);
+  return res.json();
+}
+
+async function firestoreAdd(collection, data) {
+  const fields = objToFirestoreFields(data);
+  const res = await fetch(`${FIRESTORE_BASE}/${collection}?key=${FIREBASE_CONFIG.apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields })
+  });
+  if (!res.ok) throw new Error('Firestore ADD failed: ' + res.status);
+  return res.json();
+}
+
+async function firestoreList(collection) {
+  const res = await fetch(`${FIRESTORE_BASE}/${collection}?key=${FIREBASE_CONFIG.apiKey}`);
+  if (!res.ok) throw new Error('Firestore LIST failed: ' + res.status);
+  const data = await res.json();
+  return (data.documents || []).map(doc => ({
+    id: doc.name.split('/').pop(),
+    ...firestoreDocToObj(doc)
+  }));
+}
+
+function firestoreDocToObj(doc) {
+  if (!doc.fields) return null;
+  const obj = {};
+  for (const [key, val] of Object.entries(doc.fields)) {
+    obj[key] = firestoreValueToJS(val);
+  }
+  return obj;
+}
+
+function firestoreValueToJS(val) {
+  if (val.stringValue !== undefined) return val.stringValue;
+  if (val.integerValue !== undefined) return parseInt(val.integerValue);
+  if (val.doubleValue !== undefined) return parseFloat(val.doubleValue);
+  if (val.booleanValue !== undefined) return val.booleanValue;
+  if (val.nullValue !== undefined) return null;
+  if (val.mapValue) return firestoreDocToObj(val.mapValue);
+  if (val.arrayValue) return (val.arrayValue.values || []).map(firestoreValueToJS);
+  return null;
+}
+
+function objToFirestoreFields(obj) {
+  const fields = {};
+  for (const [key, val] of Object.entries(obj)) {
+    fields[key] = jsToFirestoreValue(val);
+  }
+  return fields;
+}
+
+function jsToFirestoreValue(val) {
+  if (val === null || val === undefined) return { nullValue: null };
+  if (typeof val === 'boolean') return { booleanValue: val };
+  if (typeof val === 'number') return Number.isInteger(val) ? { integerValue: val } : { doubleValue: val };
+  if (typeof val === 'string') return { stringValue: val };
+  if (Array.isArray(val)) return { arrayValue: { values: val.map(jsToFirestoreValue) } };
+  if (typeof val === 'object') return { mapValue: { fields: objToFirestoreFields(val) } };
+  return { stringValue: String(val) };
+}
+
+// ============================================================
 //   LOAD CLIENT PROFILE
 // ============================================================
 async function loadClientProfile() {
-  if (!db) {
-    // Demo profile
+  if (CLIENT_ID === 'demo') {
     clientProfile = {
       name: 'Demo Client',
-      tier: 'lifestyle', // contest_prep | lifestyle | inperson | tracker
+      tier: 'lifestyle',
       macros: { protein: 180, carbs: 200, fat: 60, calories: 2020 },
       bmr_inputs: { weight_lbs: 180, height_cm: 178, age: 28, gender: 'male' },
       show_name: null, show_date: null, federation: null,
@@ -819,9 +897,10 @@ async function loadClientProfile() {
     };
   } else {
     try {
-      const snap = await db.collection('clients').doc(CLIENT_ID).get();
-      clientProfile = snap.exists ? snap.data() : getDefaultProfile();
+      const data = await firestoreGet(`clients/${CLIENT_ID}`);
+      clientProfile = data || getDefaultProfile();
     } catch (e) {
+      console.error('Could not load client profile:', e);
       clientProfile = getDefaultProfile();
     }
   }
@@ -1478,37 +1557,36 @@ function saveWater() {
 // ============================================================
 async function loadDay(dateKey) {
   updateDateLabel();
-  if (!db) {
+  if (CLIENT_ID === 'demo') {
     dayData = { meals: [], steps: 0, workout: { type: null, duration: 0, calories: 0, notes: '' }, weight: null, water: 0 };
     renderToday();
     renderMealLog();
     return;
   }
   try {
-    const snap = await db.collection('clients').doc(CLIENT_ID).collection('days').doc(dateKey).get();
-    if (snap.exists) {
-      const d = snap.data();
+    const data = await firestoreGet(`clients/${CLIENT_ID}/days/${dateKey}`);
+    if (data) {
       dayData = {
-        meals: d.meals || [],
-        steps: d.steps || 0,
-        workout: d.workout || { type: null, duration: 0, calories: 0, notes: '' },
-        weight: d.weight || null,
-        water: d.water || 0
+        meals: data.meals || [],
+        steps: data.steps || 0,
+        workout: data.workout || { type: null, duration: 0, calories: 0, notes: '' },
+        weight: data.weight || null,
+        water: data.water || 0
       };
     } else {
       dayData = { meals: [], steps: 0, workout: { type: null, duration: 0, calories: 0, notes: '' }, weight: null, water: 0 };
     }
   } catch (e) {
-    console.error(e);
+    dayData = { meals: [], steps: 0, workout: { type: null, duration: 0, calories: 0, notes: '' }, weight: null, water: 0 };
   }
   renderToday();
   renderMealLog();
 }
 
 async function saveDayToFirebase() {
-  if (!db) return;
+  if (CLIENT_ID === 'demo') return;
   try {
-    await db.collection('clients').doc(CLIENT_ID).collection('days').doc(currentDateKey).set(dayData);
+    await firestoreSet(`clients/${CLIENT_ID}/days/${currentDateKey}`, dayData);
   } catch (e) {
     console.error('Save failed:', e);
   }
@@ -1527,11 +1605,11 @@ async function loadProgressData() {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const key = d.toISOString().split('T')[0];
-    let dayEntry = { key, calories: 0, protein: 0, carbs: 0, fat: 0, steps: 0, weight: null };    if (db) {
+    let dayEntry = { key, calories: 0, protein: 0, carbs: 0, fat: 0, steps: 0, weight: null };
+    if (CLIENT_ID !== 'demo') {
       try {
-        const snap = await db.collection('clients').doc(CLIENT_ID).collection('days').doc(key).get();
-        if (snap.exists) {
-          const dd = snap.data();
+        const dd = await firestoreGet(`clients/${CLIENT_ID}/days/${key}`);
+        if (dd) {
           dayEntry.calories = (dd.meals || []).reduce((s, m) => s + (m.calories || 0), 0);
           dayEntry.protein = (dd.meals || []).reduce((s, m) => s + (m.protein || 0), 0);
           dayEntry.carbs = (dd.meals || []).reduce((s, m) => s + (m.carbs || 0), 0);
@@ -1717,7 +1795,7 @@ async function loadBlueprintApproved() {
     return;
   }
 
-  if (!db) {
+  if (!FIREBASE_CONFIG.apiKey || FIREBASE_CONFIG.apiKey === 'YOUR_FIREBASE_API_KEY') {
     el.innerHTML = `
       <div class="blueprint-lock">
         <div class="lock-icon">🏗️</div>
@@ -1729,8 +1807,7 @@ async function loadBlueprintApproved() {
   }
 
   try {
-    const snap = await db.collection('blueprint_meals').get();
-    const meals = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const meals = await firestoreList('blueprint_meals');
 
     if (meals.length < 5) {
       const remaining = 5 - meals.length;
@@ -1901,8 +1978,6 @@ async function init() {
   await loadClientProfile();
   await loadDay(currentDateKey);
 }
-
-init();
 </script>
 </body>
 </html>
