@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMN Admin — Coach Dashboard</title>
+
+<!-- ============================================================
+  CONFIGURATION — FILL IN BEFORE DEPLOYING
+  ============================================================ -->
+<script>
+  const FIREBASE_CONFIG = {
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+  // Simple admin password — change this
+  const ADMIN_PASSWORD = "seemenow2026";
+</script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+:root {
+  --black:  #0a0a0a;
+  --dark:   #111111;
+  --card:   #181818;
+  --border: #2a2a2a;
+  --gold:   #C9A84C;
+  --gold-d: #8a6f2e;
+  --white:  #f5f5f5;
+  --muted:  #888;
+  --green:  #4caf76;
+  --red:    #e05c5c;
+  --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--black); color: var(--white); font-family: 'Helvetica Neue', Arial, sans-serif; min-height: 100vh; }
+a { color: var(--gold); }
+
+/* LOGIN */
+#login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+.login-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; max-width: 360px; width: 100%; text-align: center; }
+.login-box h1 { font-size: 20px; font-weight: 800; color: var(--gold); margin-bottom: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
+.login-box p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.login-box input { background: var(--black); border: 1px solid var(--border); border-radius: 8px; color: var(--white); font-size: 15px; padding: 12px; width: 100%; outline: none; margin-bottom: 12px; letter-spacing: 0.1em; }
+.login-box input:focus { border-color: var(--gold); }
+.login-box button { background: var(--gold); color: var(--black); border: none; border-radius: 8px; padding: 12px; width: 100%; font-size: 14px; font-weight: 800; cursor: pointer; }
+.login-error { color: var(--red); font-size: 13px; margin-top: 10px; display: none; }
+
+/* MAIN */
+#admin-app { display: none; max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
+.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
+.admin-header h1 { font-size: 18px; font-weight: 800; color: var(--gold); letter-spacing: 0.06em; text-transform: uppercase; }
+.admin-header span { font-size: 12px; color: var(--muted); }
+
+/* TABS */
+.admin-tabs { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 24px; }
+.admin-tab { flex: 1; padding: 9px; border: none; background: none; color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 7px; transition: all 0.15s; }
+.admin-tab.active { background: var(--gold); color: var(--black); }
+
+/* PANELS */
+.admin-panel { display: none; }
+.admin-panel.active { display: block; }
+
+/* FORM */
+.form-section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
+.form-section h3 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 16px; }
+.field { margin-bottom: 14px; }
+.field label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); display: block; margin-bottom: 6px; }
+.field input, .field select, .field textarea { background: var(--black); border: 1px solid var(--border); border-radius: 8px; color: var(--white); font-size: 14px; padding: 10px 12px; width: 100%; outline: none; font-family: inherit; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold); }
+.field select option { background: var(--dark); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
+
+/* CLIENT LIST */
+.client-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; display: flex; justify-content: space-between; align-items: center; }
+.client-card:hover { border-color: var(--gold-d); }
+.client-card.selected { border-color: var(--gold); }
+.client-card .name { font-size: 15px; font-weight: 800; }
+.client-card .meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.tier-pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+.tier-contest { background: rgba(201,168,76,0.15); color: var(--gold); }
+.tier-lifestyle { background: rgba(76,175,118,0.15); color: var(--green); }
+.tier-inperson { background: rgba(76,143,224,0.15); color: #4c8fe0; }
+.tier-tracker { background: rgba(136,136,136,0.15); color: var(--muted); }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; cursor: pointer; border: none; }
+.btn-gold { background: var(--gold); color: var(--black); }
+.btn-outline { background: none; border: 1px solid var(--border); color: var(--white); }
+.btn-red { background: rgba(224,92,92,0.15); color: var(--red); border: 1px solid rgba(224,92,92,0.3); }
+.btn-sm { padding: 7px 14px; font-size: 12px; }
+.btn-full { width: 100%; }
+.btn-row { display: flex; gap: 10px; margin-top: 16px; }
+
+/* MEAL CARDS */
+.meal-admin-card { background: var(--black); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
+.meal-admin-card .meal-name { font-size: 14px; font-weight: 800; }
+.meal-admin-card .meal-macros { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+/* STATUS */
+.status-bar { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.status-dot.error { background: var(--red); }
+
+/* SAVE FEEDBACK */
+.save-feedback { display: none; font-size: 13px; font-weight: 700; color: var(--green); margin-left: 12px; }
+
+/* CLIENT TRACKER LINK */
+.tracker-link-box { background: var(--black); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--gold); word-break: break-all; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <h1>SMN Admin</h1>
+    <p>Coach access only</p>
+    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkLogin()">
+    <button onclick="checkLogin()">Enter</button>
+    <div class="login-error" id="login-error">Wrong password</div>
+  </div>
+</div>
+
+<!-- ADMIN APP -->
+<div id="admin-app">
+  <div class="admin-header">
+    <h1>See Me Now — Coach Dashboard</h1>
+    <span id="firebase-status">Connecting…</span>
+  </div>
+
+  <!-- TABS -->
+  <div class="admin-tabs">
+    <button class="admin-tab active" onclick="switchAdminTab('clients', this)">Clients</button>
+    <button class="admin-tab" onclick="switchAdminTab('edit', this)">Edit Client</button>
+    <button class="admin-tab" onclick="switchAdminTab('meals', this)">Blueprint Meals</button>
+    <button class="admin-tab" onclick="switchAdminTab('new', this)">+ New Client</button>
+  </div>
+
+  <!-- ============ CLIENTS LIST ============ -->
+  <div class="admin-panel active" id="panel-clients">
+    <div id="clients-list">
+      <div style="color:var(--muted);font-size:14px;padding:20px;">Loading clients…</div>
+    </div>
+  </div>
+
+  <!-- ============ EDIT CLIENT ============ -->
+  <div class="admin-panel" id="panel-edit">
+    <div id="edit-client-header" style="margin-bottom:20px;">
+      <div style="font-size:13px;color:var(--muted);">Select a client from the Clients tab first.</div>
+    </div>
+
+    <!-- Basic Info -->
+    <div class="form-section" id="edit-form" style="display:none;">
+      <h3>Client Info</h3>
+      <div class="grid-2">
+        <div class="field">
+          <label>Full Name</label>
+          <input type="text" id="e-name">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="e-email">
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="field">
+          <label>Tier</label>
+          <select id="e-tier" onchange="updateTierFields()">
+            <option value="contest_prep">Contest Prep</option>
+            <option value="lifestyle">Online Lifestyle</option>
+            <option value="inperson">In-Person</option>
+            <option value="tracker">Standalone Tracker ($5)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>WhatsApp / Phone</label>
+          <input type="text" id="e-phone">
+        </div>
+      </div>
+    </div>
+
+    <!-- Macros -->
+    <div class="form-section" id="edit-macros" style="display:none;">
+      <h3>Macro Targets</h3>
+      <div class="grid-4">
+        <div class="field"><label>Protein (g)</label><input type="number" id="e-protein"></div>
+        <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs"></div>
+        <div class="field"><label>Fat (g)</label><input type="number" id="e-fat"></div>
+        <div class="field"><label>Calories</label><input type="number" id="e-calories"></div>
+      </div>
+      <div style="margin-top:8px;">
+        <button class="btn btn-outline btn-sm" onclick="autoCalcCalories()">Auto-calc calories from macros</button>
+      </div>
+    </div>
+
+    <!-- BMR Inputs -->
+    <div class="form-section" id="edit-bmr" style="display:none;">
+      <h3>BMR Inputs (Mifflin-St Jeor)</h3>
+      <div class="grid-4">
+        <div class="field"><label>Weight (lbs)</label><input type="number" id="e-weight-lbs" oninput="calcBMRPreview()"></div>
+        <div class="field"><label>Height (cm)</label><input type="number" id="e-height-cm" oninput="calcBMRPreview()"></div>
+        <div class="field"><label>Age</label><input type="number" id="e-age" oninput="calcBMRPreview()"></div>
+        <div class="field">
+          <label>Gender</label>
+          <select id="e-gender" onchange="calcBMRPreview()">
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+          </select>
+        </div>
+      </div>
+      <div id="bmr-preview" style="font-size:13px;color:var(--gold);margin-top:8px;"></div>
+    </div>
+
+    <!-- Contest Prep (conditional) -->
+    <div class="form-section" id="edit-contest" style="display:none;">
+      <h3>Contest Prep Details</h3>
+      <div class="grid-3">
+        <div class="field"><label>Show Name</label><input type="text" id="e-show-name"></div>
+        <div class="field"><label>Federation</label><input type="text" id="e-federation" placeholder="e.g. OCB, NGA, INBA"></div>
+        <div class="field"><label>Show Date</label><input type="date" id="e-show-date"></div>
+      </div>
+    </div>
+
+    <!-- In-Person (conditional) -->
+    <div class="form-section" id="edit-inperson" style="display:none;">
+      <h3>In-Person Sessions</h3>
+      <div class="grid-3">
+        <div class="field"><label>Sessions Purchased</label><input type="number" id="e-sessions-purchased"></div>
+        <div class="field"><label>Sessions Used</label><input type="number" id="e-sessions-used"></div>
+        <div class="field"><label>Next Session Date</label><input type="date" id="e-next-session"></div>
+      </div>
+    </div>
+
+    <!-- Online (check-in schedule) -->
+    <div class="form-section" id="edit-online" style="display:none;">
+      <h3>Check-In Settings</h3>
+      <div class="grid-2">
+        <div class="field"><label>Check-in Streak (weeks)</label><input type="number" id="e-checkin-streak"></div>
+        <div class="field"><label>Check-in Schedule</label>
+          <select id="e-checkin-schedule">
+            <option value="biweekly">Bi-weekly</option>
+            <option value="weekly">Weekly</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes -->
+    <div class="form-section" id="edit-notes-sec" style="display:none;">
+      <h3>Coach Notes</h3>
+      <div class="field">
+        <label>Internal Notes (not visible to client)</label>
+        <textarea id="e-notes" rows="4" placeholder="Injury history, preferences, goals…"></textarea>
+      </div>
+    </div>
+
+    <!-- Save -->
+    <div class="btn-row" id="edit-save-row" style="display:none;">
+      <button class="btn btn-gold" onclick="saveClient()">Save Client</button>
+      <button class="btn btn-outline" onclick="switchAdminTab('clients', document.querySelectorAll('.admin-tab')[0])">Cancel</button>
+      <span class="save-feedback" id="save-feedback">✓ Saved</span>
+    </div>
+
+    <!-- Tracker Link -->
+    <div id="tracker-link-section" style="display:none;margin-top:20px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Share this link with client:</div>
+      <div class="tracker-link-box" id="tracker-link-display"></div>
+      <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="copyTrackerLink()">Copy Link</button>
+    </div>
+
+  </div><!-- /panel-edit -->
+
+  <!-- ============ BLUEPRINT MEALS ============ -->
+  <div class="admin-panel" id="panel-meals">
+    <div class="form-section">
+      <h3>Add Blueprint Approved Meal</h3>
+      <div class="grid-2">
+        <div class="field"><label>Meal Name</label><input type="text" id="m-name" placeholder="e.g. Contest Prep Chicken Bowl"></div>
+        <div class="field"><label>Emoji</label><input type="text" id="m-emoji" placeholder="🥗" maxlength="2"></div>
+      </div>
+      <div class="grid-4">
+        <div class="field"><label>Calories</label><input type="number" id="m-calories"></div>
+        <div class="field"><label>Protein (g)</label><input type="number" id="m-protein"></div>
+        <div class="field"><label>Carbs (g)</label><input type="number" id="m-carbs"></div>
+        <div class="field"><label>Fat (g)</label><input type="number" id="m-fat"></div>
+      </div>
+      <div class="field"><label>Tags</label><input type="text" id="m-tags" placeholder="contest prep, high protein, chicken — comma separated"></div>
+      <div class="field"><label>Prep Time (optional)</label><input type="text" id="m-preptime" placeholder="e.g. 20 min"></div>
+      <div class="field"><label>Notes / Instructions (optional)</label><textarea id="m-notes" rows="3" placeholder="How to prep this meal…"></textarea></div>
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="saveBlueprintMeal()">Add Meal</button>
+        <span class="save-feedback" id="meal-feedback">✓ Meal added</span>
+      </div>
+    </div>
+
+    <!-- Existing meals -->
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;">
+      Existing Blueprint Meals <span id="meal-count-badge" style="color:var(--gold);"></span>
+    </div>
+    <div id="blueprint-meals-list">
+      <div style="color:var(--muted);font-size:14px;">Loading…</div>
+    </div>
+  </div>
+
+  <!-- ============ NEW CLIENT ============ -->
+  <div class="admin-panel" id="panel-new">
+    <div class="form-section">
+      <h3>New Client</h3>
+      <div class="grid-2">
+        <div class="field"><label>Full Name</label><input type="text" id="n-name"></div>
+        <div class="field"><label>Email</label><input type="email" id="n-email"></div>
+      </div>
+      <div class="grid-2">
+        <div class="field"><label>Tier</label>
+          <select id="n-tier">
+            <option value="lifestyle">Online Lifestyle</option>
+            <option value="contest_prep">Contest Prep</option>
+            <option value="inperson">In-Person</option>
+            <option value="tracker">Standalone Tracker ($5)</option>
+          </select>
+        </div>
+        <div class="field"><label>Phone / WhatsApp</label><input type="text" id="n-phone"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-gold" onclick="createNewClient()">Create Client</button>
+        <span class="save-feedback" id="new-feedback">✓ Client created</span>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /admin-app -->
+
+<script>
+// ============================================================
+//   AUTH
+// ============================================================
+function checkLogin() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === ADMIN_PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-app').style.display = 'block';
+    initAdmin();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+// ============================================================
+//   FIREBASE INIT
+// ============================================================
+let db = null;
+let allClients = [];
+let selectedClientId = null;
+
+async function initAdmin() {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    document.getElementById('firebase-status').textContent = '🟢 Firebase connected';
+    document.getElementById('firebase-status').style.color = '#4caf76';
+  } catch (e) {
+    document.getElementById('firebase-status').textContent = '🔴 Firebase not configured';
+    document.getElementById('firebase-status').style.color = '#e05c5c';
+  }
+  loadClients();
+  loadBlueprintMeals();
+}
+
+// ============================================================
+//   CLIENTS
+// ============================================================
+async function loadClients() {
+  if (!db) {
+    renderClientList([
+      { id: 'demo1', name: 'Demo Client', tier: 'lifestyle', email: 'demo@example.com' },
+      { id: 'demo2', name: 'Contest Athlete', tier: 'contest_prep', email: 'athlete@example.com' }
+    ]);
+    return;
+  }
+  try {
+    const snap = await db.collection('clients').get();
+    allClients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderClientList(allClients);
+  } catch (e) {
+    document.getElementById('clients-list').innerHTML = '<div style="color:var(--red);">Could not load clients.</div>';
+  }
+}
+
+function renderClientList(clients) {
+  const el = document.getElementById('clients-list');
+  if (!clients.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:20px;">No clients yet. Use + New Client to add one.</div>';
+    return;
+  }
+  const tierColors = { contest_prep: 'tier-contest', lifestyle: 'tier-lifestyle', inperson: 'tier-inperson', tracker: 'tier-tracker' };
+  const tierNames = { contest_prep: 'Contest Prep', lifestyle: 'Lifestyle', inperson: 'In-Person', tracker: 'Tracker' };
+  el.innerHTML = clients.map(c => `
+    <div class="client-card ${selectedClientId === c.id ? 'selected' : ''}" onclick="selectClient('${c.id}')">
+      <div>
+        <div class="name">${c.name || 'Unnamed'}</div>
+        <div class="meta">${c.email || ''} ${c.phone ? '· ' + c.phone : ''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+        <span class="tier-pill ${tierColors[c.tier] || 'tier-tracker'}">${tierNames[c.tier] || c.tier}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectClient(id) {
+  selectedClientId = id;
+  // Re-render to show selection
+  renderClientList(allClients);
+  loadClientIntoForm(id);
+  switchAdminTab('edit', document.querySelectorAll('.admin-tab')[1]);
+}
+
+async function loadClientIntoForm(id) {
+  let client;
+  if (!db) {
+    client = allClients.find(c => c.id === id) || {};
+  } else {
+    try {
+      const snap = await db.collection('clients').doc(id).get();
+      client = snap.exists ? { id: snap.id, ...snap.data() } : {};
+    } catch (e) { client = {}; }
+  }
+
+  document.getElementById('edit-client-header').innerHTML = `<div style="font-size:18px;font-weight:800;">${client.name || 'Client'}</div><div style="font-size:12px;color:var(--muted);margin-top:3px;">${client.email || ''}</div>`;
+
+  document.getElementById('e-name').value = client.name || '';
+  document.getElementById('e-email').value = client.email || '';
+  document.getElementById('e-tier').value = client.tier || 'lifestyle';
+  document.getElementById('e-phone').value = client.phone || '';
+
+  const m = client.macros || {};
+  document.getElementById('e-protein').value = m.protein || '';
+  document.getElementById('e-carbs').value = m.carbs || '';
+  document.getElementById('e-fat').value = m.fat || '';
+  document.getElementById('e-calories').value = m.calories || '';
+
+  const b = client.bmr_inputs || {};
+  document.getElementById('e-weight-lbs').value = b.weight_lbs || '';
+  document.getElementById('e-height-cm').value = b.height_cm || '';
+  document.getElementById('e-age').value = b.age || '';
+  document.getElementById('e-gender').value = b.gender || 'male';
+
+  document.getElementById('e-show-name').value = client.show_name || '';
+  document.getElementById('e-federation').value = client.federation || '';
+  document.getElementById('e-show-date').value = client.show_date || '';
+
+  document.getElementById('e-sessions-purchased').value = client.sessions_purchased || '';
+  document.getElementById('e-sessions-used').value = client.sessions_used || '';
+  document.getElementById('e-next-session').value = client.next_session || '';
+
+  document.getElementById('e-checkin-streak').value = client.checkin_streak || 0;
+  document.getElementById('e-checkin-schedule').value = client.checkin_schedule || 'biweekly';
+
+  document.getElementById('e-notes').value = client.notes || '';
+
+  // Show all form sections
+  ['edit-form', 'edit-macros', 'edit-bmr', 'edit-notes-sec', 'edit-save-row'].forEach(id => {
+    document.getElementById(id).style.display = '';
+  });
+
+  updateTierFields();
+  calcBMRPreview();
+
+  // Tracker link
+  const baseUrl = 'https://seemenowfitness.github.io/see-me-now-fitness/food-tracker.html';
+  const link = `${baseUrl}?client=${id}`;
+  document.getElementById('tracker-link-display').textContent = link;
+  document.getElementById('tracker-link-section').style.display = '';
+}
+
+function updateTierFields() {
+  const tier = document.getElementById('e-tier').value;
+  document.getElementById('edit-contest').style.display = tier === 'contest_prep' ? '' : 'none';
+  document.getElementById('edit-inperson').style.display = tier === 'inperson' ? '' : 'none';
+  document.getElementById('edit-online').style.display = (tier === 'lifestyle') ? '' : 'none';
+}
+
+function autoCalcCalories() {
+  const p = parseFloat(document.getElementById('e-protein').value) || 0;
+  const c = parseFloat(document.getElementById('e-carbs').value) || 0;
+  const f = parseFloat(document.getElementById('e-fat').value) || 0;
+  const cals = Math.round((p * 4) + (c * 4) + (f * 9));
+  document.getElementById('e-calories').value = cals;
+}
+
+function calcBMRPreview() {
+  const w = parseFloat(document.getElementById('e-weight-lbs').value);
+  const h = parseFloat(document.getElementById('e-height-cm').value);
+  const age = parseFloat(document.getElementById('e-age').value);
+  const gender = document.getElementById('e-gender').value;
+  if (!w || !h || !age) { document.getElementById('bmr-preview').textContent = ''; return; }
+  const kg = w * 0.453592;
+  let bmr = (10 * kg) + (6.25 * h) - (5 * age);
+  bmr += gender === 'male' ? 5 : -161;
+  document.getElementById('bmr-preview').textContent = `Estimated BMR: ${Math.round(bmr)} kcal/day`;
+}
+
+async function saveClient() {
+  if (!selectedClientId) return;
+  const tier = document.getElementById('e-tier').value;
+  const data = {
+    name: document.getElementById('e-name').value,
+    email: document.getElementById('e-email').value,
+    tier,
+    phone: document.getElementById('e-phone').value,
+    macros: {
+      protein: parseInt(document.getElementById('e-protein').value) || 0,
+      carbs: parseInt(document.getElementById('e-carbs').value) || 0,
+      fat: parseInt(document.getElementById('e-fat').value) || 0,
+      calories: parseInt(document.getElementById('e-calories').value) || 0
+    },
+    bmr_inputs: {
+      weight_lbs: parseFloat(document.getElementById('e-weight-lbs').value) || 0,
+      height_cm: parseFloat(document.getElementById('e-height-cm').value) || 0,
+      age: parseInt(document.getElementById('e-age').value) || 0,
+      gender: document.getElementById('e-gender').value
+    },
+    notes: document.getElementById('e-notes').value,
+    updated_at: new Date().toISOString()
+  };
+
+  if (tier === 'contest_prep') {
+    data.show_name = document.getElementById('e-show-name').value;
+    data.federation = document.getElementById('e-federation').value;
+    data.show_date = document.getElementById('e-show-date').value;
+  }
+  if (tier === 'inperson') {
+    data.sessions_purchased = parseInt(document.getElementById('e-sessions-purchased').value) || 0;
+    data.sessions_used = parseInt(document.getElementById('e-sessions-used').value) || 0;
+    data.next_session = document.getElementById('e-next-session').value;
+  }
+  if (tier === 'lifestyle') {
+    data.checkin_streak = parseInt(document.getElementById('e-checkin-streak').value) || 0;
+    data.checkin_schedule = document.getElementById('e-checkin-schedule').value;
+  }
+
+  if (db) {
+    await db.collection('clients').doc(selectedClientId).set(data, { merge: true });
+  }
+
+  // Update local cache
+  const idx = allClients.findIndex(c => c.id === selectedClientId);
+  if (idx >= 0) allClients[idx] = { id: selectedClientId, ...data };
+  else allClients.push({ id: selectedClientId, ...data });
+
+  const fb = document.getElementById('save-feedback');
+  fb.style.display = 'inline';
+  setTimeout(() => fb.style.display = 'none', 2500);
+}
+
+async function createNewClient() {
+  const name = document.getElementById('n-name').value.trim();
+  if (!name) return;
+  const id = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now().toString().slice(-4);
+  const data = {
+    name,
+    email: document.getElementById('n-email').value,
+    tier: document.getElementById('n-tier').value,
+    phone: document.getElementById('n-phone').value,
+    macros: { protein: 150, carbs: 175, fat: 55, calories: 1795 },
+    bmr_inputs: { weight_lbs: 160, height_cm: 170, age: 30, gender: 'male' },
+    created_at: new Date().toISOString()
+  };
+  if (db) {
+    await db.collection('clients').doc(id).set(data);
+  }
+  allClients.push({ id, ...data });
+  renderClientList(allClients);
+  document.getElementById('n-name').value = '';
+  document.getElementById('n-email').value = '';
+  document.getElementById('n-phone').value = '';
+  const fb = document.getElementById('new-feedback');
+  fb.style.display = 'inline';
+  setTimeout(() => fb.style.display = 'none', 2000);
+  // Auto-select new client
+  selectClient(id);
+}
+
+function copyTrackerLink() {
+  const link = document.getElementById('tracker-link-display').textContent;
+  navigator.clipboard.writeText(link).then(() => alert('Link copied!'));
+}
+
+// ============================================================
+//   BLUEPRINT MEALS
+// ============================================================
+async function loadBlueprintMeals() {
+  const el = document.getElementById('blueprint-meals-list');
+  if (!db) {
+    el.innerHTML = '<div style="color:var(--muted);">Connect Firebase to manage Blueprint meals.</div>';
+    return;
+  }
+  try {
+    const snap = await db.collection('blueprint_meals').get();
+    const meals = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    document.getElementById('meal-count-badge').textContent = `(${meals.length}/5+ to unlock)`;
+    if (!meals.length) {
+      el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:10px 0;">No meals yet. Add 5 to unlock for clients.</div>';
+      return;
+    }
+    el.innerHTML = meals.map(m => `
+      <div class="meal-admin-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div class="meal-name">${m.emoji || '🥗'} ${m.name}</div>
+            <div class="meal-macros">${m.calories} kcal · P: ${m.protein}g · C: ${m.carbs}g · F: ${m.fat}g</div>
+            ${m.tags ? `<div style="font-size:11px;color:var(--gold-d);margin-top:4px;">${m.tags}</div>` : ''}
+          </div>
+          <button class="btn btn-red btn-sm" onclick="deleteBlueprintMeal('${m.id}')">Delete</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    el.innerHTML = '<div style="color:var(--red);">Could not load meals.</div>';
+  }
+}
+
+async function saveBlueprintMeal() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) return;
+  const data = {
+    name,
+    emoji: document.getElementById('m-emoji').value || '🥗',
+    calories: parseInt(document.getElementById('m-calories').value) || 0,
+    protein: parseInt(document.getElementById('m-protein').value) || 0,
+    carbs: parseInt(document.getElementById('m-carbs').value) || 0,
+    fat: parseInt(document.getElementById('m-fat').value) || 0,
+    tags: document.getElementById('m-tags').value,
+    prep_time: document.getElementById('m-preptime').value,
+    notes: document.getElementById('m-notes').value,
+    created_at: new Date().toISOString()
+  };
+  if (db) {
+    await db.collection('blueprint_meals').add(data);
+  }
+  ['m-name','m-emoji','m-calories','m-protein','m-carbs','m-fat','m-tags','m-preptime'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('m-notes').value = '';
+  const fb = document.getElementById('meal-feedback');
+  fb.style.display = 'inline';
+  setTimeout(() => fb.style.display = 'none', 2000);
+  loadBlueprintMeals();
+}
+
+async function deleteBlueprintMeal(id) {
+  if (!confirm('Delete this meal?')) return;
+  if (db) await db.collection('blueprint_meals').doc(id).delete();
+  loadBlueprintMeals();
+}
+
+// ============================================================
+//   UI
+// ============================================================
+function switchAdminTab(name, el) {
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>
