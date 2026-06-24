@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Blueprint Tracker — See Me Now Fitness</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
 
 <!-- ============================================================
   CONFIGURATION — FILL IN BEFORE DEPLOYING
@@ -37,18 +38,28 @@
   --border:  #2a2a2a;
   --gold:    #C9A84C;
   --gold-dim:#8a6f2e;
+  --orange:  #e07c2a;
   --white:   #f5f5f5;
   --muted:   #888;
   --green:   #4caf76;
   --red:     #e05c5c;
-  --orange:  #e07c2a;
   --blue:    #4c8fe0;
   --radius:  12px;
   --tab-h:   56px;
   --header-h:56px;
+  --brand-gradient: linear-gradient(90deg, #C9A84C 0%, #e07c2a 50%, #e05c1a 100%);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html, body { height: 100%; background: var(--black); color: var(--white); font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow: hidden; }
+
+/* Gradient text utility */
+.grad-text {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.anton { font-family: 'Anton', 'Helvetica Neue', sans-serif; }
 
 /* ============================================================
    LAYOUT
@@ -71,10 +82,10 @@ html, body { height: 100%; background: var(--black); color: var(--white); font-f
    TAB BAR
    ============================================================ */
 #tabs { height: var(--tab-h); background: var(--dark); border-top: 1px solid var(--border); display: flex; flex-shrink: 0; position: relative; z-index: 10; }
-.tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; color: var(--muted); font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; border: none; background: none; transition: color 0.15s; }
+.tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; color: var(--muted); font-family: 'Anton', sans-serif; font-size: 10px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; border: none; background: none; transition: color 0.15s; }
 .tab svg { width: 20px; height: 20px; }
-.tab.active { color: var(--gold); }
-.tab.active svg path, .tab.active svg rect, .tab.active svg circle { fill: var(--gold); }
+.tab.active { background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.tab.active svg { filter: drop-shadow(0 0 4px rgba(201,168,76,0.5)); }
 
 /* ============================================================
    CARDS & SHARED
@@ -104,22 +115,24 @@ select option { background: var(--dark); }
    TODAY TAB
    ============================================================ */
 .balance-hero { text-align: center; padding: 24px 16px 20px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; }
-.balance-zone { font-size: 10px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 6px; }
-.balance-zone.deficit { color: var(--green); }
-.balance-zone.maintenance { color: var(--gold); }
-.balance-zone.surplus { color: var(--red); }
-.balance-number { font-size: 56px; font-weight: 900; line-height: 1; letter-spacing: -2px; }
+.balance-zone { font-family: 'Anton', sans-serif; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 6px; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.balance-zone.deficit { background: linear-gradient(90deg, #4caf76, #2d8f55); -webkit-background-clip: text; background-clip: text; }
+.balance-zone.maintenance { background: var(--brand-gradient); -webkit-background-clip: text; background-clip: text; }
+.balance-zone.surplus { background: linear-gradient(90deg, #e05c5c, #c02020); -webkit-background-clip: text; background-clip: text; }
+.balance-number { font-family: 'Anton', sans-serif; font-size: 56px; line-height: 1; letter-spacing: -2px; }
 .balance-number.deficit { color: var(--green); }
-.balance-number.maintenance { color: var(--gold); }
+.balance-number.maintenance { background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .balance-number.surplus { color: var(--red); }
 .balance-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
 .balance-sub { font-size: 11px; color: var(--muted); margin-top: 10px; }
 .balance-sub span { color: var(--white); font-weight: 700; }
+.card-title { font-family: 'Anton', sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 12px; }
+.section-label { font-family: 'Anton', sans-serif; font-size: 12px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin: 20px 0 10px; }
 
 .macro-bars { }
 .macro-row { margin-bottom: 14px; }
 .macro-row-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
-.macro-name { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.macro-name { font-family: 'Anton', sans-serif; font-size: 11px; font-weight: 400; text-transform: uppercase; letter-spacing: 0.1em; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .macro-nums { font-size: 12px; color: var(--muted); }
 .macro-nums span { color: var(--white); font-weight: 700; }
 .bar-track { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; }
@@ -134,7 +147,7 @@ select option { background: var(--dark); }
 .stat-tile { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
 .stat-tile .val { font-size: 28px; font-weight: 900; letter-spacing: -1px; color: var(--white); }
 .stat-tile .unit { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.stat-tile .lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.stat-tile .lbl { font-family: 'Anton', sans-serif; font-size: 10px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 6px; }
 
 .detail-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 10px; }
 .detail-card-header { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; cursor: pointer; }
@@ -148,7 +161,7 @@ select option { background: var(--dark); }
 .chevron.open { transform: rotate(180deg); }
 
 .projection-banner { background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.04)); border: 1px solid var(--gold-dim); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; }
-.projection-banner .proj-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--gold); margin-bottom: 4px; }
+.projection-banner .proj-label { font-family: 'Anton', sans-serif; font-size: 10px; font-weight: 400; letter-spacing: 0.12em; text-transform: uppercase; background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 4px; }
 .projection-banner .proj-val { font-size: 18px; font-weight: 900; color: var(--white); }
 .projection-banner .proj-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
@@ -255,6 +268,12 @@ select option { background: var(--dark); }
 .steps-quick { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .steps-chip { background: var(--border); border: none; color: var(--white); border-radius: 99px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
 .steps-chip:hover { background: var(--gold-dim); }
+
+/* Barcode scan button inside search bar */
+.search-wrap { position: relative; }
+.search-wrap input { padding-left: 38px; padding-right: 46px; }
+.barcode-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; padding: 4px; }
+.barcode-btn:active { color: var(--gold); }
 </style>
 </head>
 <body>
@@ -263,7 +282,10 @@ select option { background: var(--dark); }
 
   <!-- HEADER -->
   <div id="header">
-    <div class="logo">Blueprint</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <img src="https://seemenowfitness.github.io/see-me-now-fitness/See%20Me%20Now%20Fitness_Logo_PNG.png" alt="SMN" style="height:30px;width:auto;object-fit:contain;">
+      <div class="logo anton grad-text">Blueprint</div>
+    </div>
     <div style="display:flex;align-items:center;gap:12px;">
       <div class="nav-arrows">
         <button onclick="changeDay(-1)">‹</button>
@@ -279,7 +301,14 @@ select option { background: var(--dark); }
     <!-- ==================== TAB 1: TODAY ==================== -->
     <div class="panel active" id="panel-today">
 
-      <div class="balance-hero" id="balance-hero">
+      <!-- Setup banner — shown when no client profile is linked -->
+    <div id="setup-banner" style="display:none;background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.04));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Demo Mode</div>
+      <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px;">Macros shown are sample targets</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;">Your coach will send you a personal link with your real macro targets set after your intake call. You can still log food and explore the tracker.</div>
+    </div>
+
+    <div class="balance-hero" id="balance-hero">
         <div class="balance-zone" id="balance-zone-label">Calculating…</div>
         <div class="balance-number" id="balance-number">—</div>
         <div class="balance-label">kcal net balance</div>
@@ -421,8 +450,34 @@ select option { background: var(--dark); }
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <input type="text" id="food-search-input" placeholder="Search foods…" oninput="debounceSearch()" />
+        <button class="barcode-btn" onclick="openBarcodeScanner()" title="Scan barcode">
+          <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="8" x2="7" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="8" x2="10" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="13" y1="8" x2="13" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
       </div>
       <div id="food-search-results"></div>
+
+      <!-- Barcode scanner overlay -->
+      <div id="barcode-overlay" style="display:none;position:fixed;inset:0;background:#000;z-index:300;flex-direction:column;align-items:center;justify-content:center;">
+        <div style="position:relative;width:100%;max-width:480px;height:100%;">
+          <video id="barcode-video" style="width:100%;height:100%;object-fit:cover;" autoplay playsinline muted></video>
+          <!-- Viewfinder -->
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+            <div style="width:240px;height:140px;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.55);position:relative;">
+              <div style="position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:4px 0 0 0;"></div>
+              <div style="position:absolute;top:-1px;right:-1px;width:20px;height:20px;border-top:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 4px 0 0;"></div>
+              <div style="position:absolute;bottom:-1px;left:-1px;width:20px;height:20px;border-bottom:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:0 0 0 4px;"></div>
+              <div style="position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 0 4px 0;"></div>
+            </div>
+          </div>
+          <!-- Instructions -->
+          <div style="position:absolute;bottom:100px;left:0;right:0;text-align:center;">
+            <div style="font-size:13px;color:var(--white);font-weight:700;margin-bottom:4px;" id="barcode-status">Point camera at a barcode</div>
+            <div style="font-size:11px;color:var(--muted);">Works with food packaging barcodes</div>
+          </div>
+          <!-- Close -->
+          <button onclick="closeBarcodeScanner()" style="position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.6);border:1px solid var(--border);color:var(--white);border-radius:99px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">Cancel</button>
+        </div>
+      </div>
 
       <!-- Today's log -->
       <div class="section-label">Today's Log</div>
@@ -534,7 +589,7 @@ select option { background: var(--dark); }
       Progress
     </button>
     <button class="tab" onclick="switchTab('recipes', this)">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="currentColor"/></svg>
+      <svg viewBox="0 0 24 24" fill="none"><path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke="currentColor" stroke-width="0"/><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       Recipes
     </button>
   </div>
@@ -645,6 +700,8 @@ select option { background: var(--dark); }
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<!-- ZXing barcode scanner -->
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
 
 <script>
 // ============================================================
@@ -753,6 +810,11 @@ function applyTierUI() {
   document.getElementById('checkin-streak').style.display = (tier === 'lifestyle') ? 'block' : 'none';
   document.getElementById('upsell-block').style.display = tier === 'tracker' ? 'block' : 'none';
 
+  // Show setup banner if on demo / unconfigured profile
+  const isDemo = CLIENT_ID === 'demo' || !db;
+  const setupBanner = document.getElementById('setup-banner');
+  if (setupBanner) setupBanner.style.display = isDemo ? 'block' : 'none';
+
   if (tier === 'contest_prep' && clientProfile.show_date) {
     const showD = new Date(clientProfile.show_date);
     const today = new Date();
@@ -836,26 +898,43 @@ function getZone(net) {
 function renderToday() {
   updateDateLabel();
   const e = calcEnergyBalance();
+  const noMealsLogged = dayData.meals.length === 0;
   const zone = getZone(e.net);
   const zoneLabels = { deficit: 'FAT LOSS DEFICIT', maintenance: 'MAINTENANCE', surplus: 'SURPLUS' };
 
-  const hero = document.getElementById('balance-hero');
   const zoneEl = document.getElementById('balance-zone-label');
   const numEl = document.getElementById('balance-number');
-  zoneEl.textContent = zoneLabels[zone];
-  zoneEl.className = 'balance-zone ' + zone;
-  numEl.textContent = (e.net >= 0 ? '+' : '') + Math.round(e.net);
-  numEl.className = 'balance-number ' + zone;
 
-  document.getElementById('balance-sub').innerHTML =
-    `<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;
+  if (noMealsLogged) {
+    // First load — don't show a misleading deficit number
+    zoneEl.textContent = 'START LOGGING';
+    zoneEl.className = 'balance-zone maintenance';
+    numEl.textContent = '—';
+    numEl.className = 'balance-number maintenance';
+    document.getElementById('balance-sub').innerHTML =
+      `Log your first meal to see your energy balance`;
+  } else {
+    zoneEl.textContent = zoneLabels[zone];
+    zoneEl.className = 'balance-zone ' + zone;
+    numEl.textContent = (e.net >= 0 ? '+' : '') + Math.round(e.net);
+    numEl.className = 'balance-number ' + zone;
+    document.getElementById('balance-sub').innerHTML =
+      `<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;
+  }
 
   // Projection
   const weeklyDeficit = e.net * 7;
   const lbsPerWeek = (weeklyDeficit / 3500).toFixed(2);
   const lbs4weeks = (weeklyDeficit * 4 / 3500).toFixed(1);
   const banner = document.getElementById('projection-banner');
-  if (zone === 'deficit') {
+  if (noMealsLogged) {
+    banner.innerHTML = `
+      <div class="proj-label">👇 How to get started</div>
+      <div class="proj-val" style="font-size:15px;font-weight:700;">Tap Log → search a food → add it</div>
+      <div class="proj-sub">Your macros, deficit, and projections appear once you start logging.</div>
+    `;
+    banner.style.display = '';
+  } else if (zone === 'deficit') {
     banner.innerHTML = `
       <div class="proj-label">📉 Projected Fat Loss</div>
       <div class="proj-val">${Math.abs(lbsPerWeek)} lbs / week</div>
@@ -866,7 +945,7 @@ function renderToday() {
     banner.innerHTML = `
       <div class="proj-label">📈 Caloric Surplus</div>
       <div class="proj-val">${Math.abs(e.net)} kcal over maintenance</div>
-      <div class="proj-sub">Adjust intake to hit deficit target</div>
+      <div class="proj-sub">Adjust intake to hit your deficit target</div>
     `;
     banner.style.display = '';
   } else {
@@ -981,8 +1060,10 @@ function deleteMeal(index) {
 }
 
 // ============================================================
-//   FOOD SEARCH — Spoonacular
+//   FOOD SEARCH — USDA FoodData Central (free, no key needed)
 // ============================================================
+const USDA_API_KEY = 'aLAQ0gLcU06f7ZeHlpt28KzKnK6TxsQ3DWFFzJve';
+
 function debounceSearch() {
   clearTimeout(searchTimer);
   const q = document.getElementById('food-search-input').value.trim();
@@ -990,36 +1071,44 @@ function debounceSearch() {
     document.getElementById('food-search-results').innerHTML = '';
     return;
   }
-  searchTimer = setTimeout(() => searchFood(q), 500);
+  searchTimer = setTimeout(() => searchFoodUSDA(q), 500);
 }
 
-async function searchFood(query) {
+async function searchFoodUSDA(query) {
   const el = document.getElementById('food-search-results');
-  el.innerHTML = '<div class="loading">Searching…</div>';
-
-  if (!SPOONACULAR_API_KEY || SPOONACULAR_API_KEY === 'YOUR_SPOONACULAR_KEY') {
-    el.innerHTML = renderDemoFoodResults(query);
-    return;
-  }
-
+  el.innerHTML = '<div class="loading">Searching USDA database…</div>';
   try {
-    const url = `https://api.spoonacular.com/food/ingredients/search?query=${encodeURIComponent(query)}&number=5&apiKey=${SPOONACULAR_API_KEY}`;
+    const url = `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&pageSize=6&api_key=${USDA_API_KEY}`;
     const res = await fetch(url);
     const data = await res.json();
-    if (!data.results?.length) {
-      el.innerHTML = '<div class="loading">No results found.</div>';
+    if (!data.foods?.length) {
+      el.innerHTML = '<div class="loading">No results found. Try a different search term.</div>';
       return;
     }
-    el.innerHTML = data.results.map(item => `
-      <div class="food-result">
-        <div class="food-result-img">🥗</div>
-        <div class="food-result-info">
-          <div class="food-result-name">${item.name}</div>
-          <div class="food-result-macros">Tap Add for serving details</div>
+    el.innerHTML = data.foods.map(food => {
+      const nutrients = {};
+      (food.foodNutrients || []).forEach(n => {
+        if (n.nutrientName === 'Energy') nutrients.calories = Math.round(n.value || 0);
+        if (n.nutrientName === 'Protein') nutrients.protein = Math.round(n.value || 0);
+        if (n.nutrientName === 'Carbohydrate, by difference') nutrients.carbs = Math.round(n.value || 0);
+        if (n.nutrientName === 'Total lipid (fat)') nutrients.fat = Math.round(n.value || 0);
+      });
+      const cals = nutrients.calories || 0;
+      const p = nutrients.protein || 0;
+      const c = nutrients.carbs || 0;
+      const f = nutrients.fat || 0;
+      const name = food.description.length > 40 ? food.description.slice(0, 40) + '…' : food.description;
+      return `
+        <div class="food-result">
+          <div class="food-result-img">🥗</div>
+          <div class="food-result-info">
+            <div class="food-result-name">${name}</div>
+            <div class="food-result-macros">${cals} kcal/100g &nbsp;·&nbsp; P:<span>${p}g</span> C:<span>${c}g</span> F:<span>${f}g</span></div>
+          </div>
+          <button class="food-result-add" onclick="prepareAddFood(null,'${food.description.replace(/'/g, "\\'")}',${cals},${p},${c},${f})">Add</button>
         </div>
-        <button class="food-result-add" onclick="prepareAddFood('${item.id}','${item.name}',null,null,null,null)">Add</button>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   } catch (e) {
     el.innerHTML = renderDemoFoodResults(query);
   }
@@ -1036,19 +1125,143 @@ function renderDemoFoodResults(query) {
     { name: 'Salmon (cooked)', cals: 208, p: 20, c: 0, f: 13 },
     { name: 'Broccoli', cals: 34, p: 2.8, c: 7, f: 0.4 }
   ].filter(d => d.name.toLowerCase().includes(query.toLowerCase()));
-
-  if (!demos.length) return '<div class="loading">No results — add Spoonacular API key for live search.</div>';
-
+  if (!demos.length) return '<div class="loading">No results found.</div>';
   return demos.map(d => `
     <div class="food-result">
       <div class="food-result-img">🥗</div>
       <div class="food-result-info">
         <div class="food-result-name">${d.name}</div>
-        <div class="food-result-macros">${d.cals} kcal / 100g &nbsp;·&nbsp; P:<span>${d.p}g</span> C:<span>${d.c}g</span> F:<span>${d.f}g</span></div>
+        <div class="food-result-macros">${d.cals} kcal/100g &nbsp;·&nbsp; P:<span>${d.p}g</span> C:<span>${d.c}g</span> F:<span>${d.f}g</span></div>
       </div>
       <button class="food-result-add" onclick="prepareAddFood(null,'${d.name}',${d.cals},${d.p},${d.c},${d.f})">Add</button>
     </div>
   `).join('');
+}
+
+// ============================================================
+//   BARCODE SCANNER — Open Food Facts (free, no key needed)
+// ============================================================
+let barcodeReader = null;
+let barcodeStream = null;
+
+async function openBarcodeScanner() {
+  const overlay = document.getElementById('barcode-overlay');
+  overlay.style.display = 'flex';
+  document.getElementById('barcode-status').textContent = 'Starting camera…';
+
+  try {
+    const hints = new Map();
+    const formats = [
+      ZXing.BarcodeFormat.EAN_13,
+      ZXing.BarcodeFormat.EAN_8,
+      ZXing.BarcodeFormat.UPC_A,
+      ZXing.BarcodeFormat.UPC_E,
+      ZXing.BarcodeFormat.CODE_128,
+      ZXing.BarcodeFormat.CODE_39
+    ];
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, formats);
+
+    barcodeReader = new ZXing.BrowserMultiFormatReader(hints);
+    const videoEl = document.getElementById('barcode-video');
+
+    barcodeStream = await barcodeReader.decodeFromConstraints(
+      { video: { facingMode: 'environment' } },
+      videoEl,
+      (result, err) => {
+        if (result) {
+          const barcode = result.getText();
+          closeBarcodeScanner();
+          lookupBarcode(barcode);
+        }
+      }
+    );
+    document.getElementById('barcode-status').textContent = 'Point camera at a barcode';
+  } catch (e) {
+    document.getElementById('barcode-status').textContent = 'Camera not available — try searching instead';
+    console.error('Barcode scanner error:', e);
+  }
+}
+
+function closeBarcodeScanner() {
+  const overlay = document.getElementById('barcode-overlay');
+  overlay.style.display = 'none';
+  if (barcodeReader) {
+    try { barcodeReader.reset(); } catch(e) {}
+    barcodeReader = null;
+  }
+  if (barcodeStream) {
+    try {
+      barcodeStream.getTracks?.().forEach(t => t.stop());
+    } catch(e) {}
+    barcodeStream = null;
+  }
+}
+
+async function lookupBarcode(barcode) {
+  const el = document.getElementById('food-search-results');
+  el.innerHTML = `<div class="loading">Looking up barcode ${barcode}…</div>`;
+  // Scroll to search results
+  document.getElementById('food-search-input').value = '';
+
+  // Try Spoonacular first if key available
+  if (SPOONACULAR_API_KEY && SPOONACULAR_API_KEY !== 'YOUR_SPOONACULAR_KEY') {
+    try {
+      const url = `https://api.spoonacular.com/food/products/upc/${barcode}?apiKey=${SPOONACULAR_API_KEY}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        const servingCals = data.nutrition?.nutrients?.find(n => n.name === 'Calories')?.amount || 0;
+        const servingP = Math.round(data.nutrition?.nutrients?.find(n => n.name === 'Protein')?.amount || 0);
+        const servingC = Math.round(data.nutrition?.nutrients?.find(n => n.name === 'Carbohydrates')?.amount || 0);
+        const servingF = Math.round(data.nutrition?.nutrients?.find(n => n.name === 'Fat')?.amount || 0);
+        showBarcodeResult(data.title || 'Scanned Product', Math.round(servingCals), servingP, servingC, servingF, data.servingSize);
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // Fallback — Open Food Facts (free, no key, 3M+ products)
+  try {
+    const url = `https://world.openfoodfacts.org/api/v0/product/${barcode}.json`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data.status === 1 && data.product) {
+      const p = data.product;
+      const n = p.nutriments || {};
+      const name = p.product_name || p.generic_name || 'Scanned Product';
+      const cals = Math.round(n['energy-kcal_100g'] || n['energy-kcal'] || 0);
+      const protein = Math.round(n['proteins_100g'] || 0);
+      const carbs = Math.round(n['carbohydrates_100g'] || 0);
+      const fat = Math.round(n['fat_100g'] || 0);
+      const serving = p.serving_size || '100g';
+      showBarcodeResult(name, cals, protein, carbs, fat, serving);
+    } else {
+      el.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">🔍</div>
+          <h4>Product not found</h4>
+          <p>Barcode ${barcode} isn't in the database yet. Try searching by name instead.</p>
+        </div>`;
+    }
+  } catch(e) {
+    el.innerHTML = '<div class="loading">Could not look up barcode. Try searching by name.</div>';
+  }
+}
+
+function showBarcodeResult(name, cals, protein, carbs, fat, serving) {
+  const el = document.getElementById('food-search-results');
+  const displayName = name.length > 40 ? name.slice(0, 40) + '…' : name;
+  el.innerHTML = `
+    <div style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">✓ Barcode scanned</div>
+    <div class="food-result">
+      <div class="food-result-img">📦</div>
+      <div class="food-result-info">
+        <div class="food-result-name">${displayName}</div>
+        <div class="food-result-macros">${cals} kcal${serving ? ' · ' + serving : '/100g'} &nbsp;·&nbsp; P:<span>${protein}g</span> C:<span>${carbs}g</span> F:<span>${fat}g</span></div>
+      </div>
+      <button class="food-result-add" onclick="prepareAddFood(null,'${name.replace(/'/g,"\\'")}',${cals},${protein},${carbs},${fat})">Add</button>
+    </div>
+  `;
 }
 
 // ============================================================
