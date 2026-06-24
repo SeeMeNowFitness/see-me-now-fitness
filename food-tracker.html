@@ -764,9 +764,8 @@ let dayData = {
 let firebaseAttempts = 0;
 function initFirebase() {
   // We use the Firestore REST API directly — no SDK dependency
-  init();
+  // Called at bottom of script after all declarations
 }
-initFirebase();
 
 // ============================================================
 //   DATE UTILS
@@ -897,7 +896,9 @@ async function loadClientProfile() {
     };
   } else {
     try {
+      console.log('Loading client profile for:', CLIENT_ID);
       const data = await firestoreGet(`clients/${CLIENT_ID}`);
+      console.log('Profile data:', JSON.stringify(data));
       clientProfile = data || getDefaultProfile();
     } catch (e) {
       console.error('Could not load client profile:', e);
@@ -932,7 +933,7 @@ function applyTierUI() {
   const zigzagToggle = document.getElementById('zigzag-toggle');
   if (zigzagToggle) zigzagToggle.style.display = clientProfile.tracking_method === 'zigzag' ? 'block' : 'none';
   const setupBanner = document.getElementById('setup-banner');
-  if (setupBanner) setupBanner.style.display = isDemo ? 'block' : 'none';
+  if (setupBanner) setupBanner.style.display = (CLIENT_ID === 'demo') ? 'block' : 'none';
 
   if (tier === 'contest_prep' && clientProfile.show_date) {
     const showD = new Date(clientProfile.show_date);
@@ -1978,6 +1979,9 @@ async function init() {
   await loadClientProfile();
   await loadDay(currentDateKey);
 }
+
+// Start the app — called here so all functions and constants are declared first
+init();
 </script>
 </body>
 </html>
