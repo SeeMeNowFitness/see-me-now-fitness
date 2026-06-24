@@ -63,7 +63,7 @@ html, body { height: 100%; background: var(--black); color: var(--white); font-f
 /* ============================================================
    LAYOUT
    ============================================================ */
-#app { display: flex; flex-direction: column; height: 100vh; max-width: 480px; margin: 0 auto; position: relative; }
+#app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; max-width: 480px; margin: 0 auto; position: relative; }
 #header { height: var(--header-h); background: var(--dark); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; flex-shrink: 0; }
 #header .logo { font-size: 13px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold); }
 #header .date-label { font-size: 12px; color: var(--muted); }
@@ -74,13 +74,13 @@ html, body { height: 100%; background: var(--black); color: var(--white); font-f
 #content { flex: 1; overflow-y: auto; overflow-x: hidden; }
 #content::-webkit-scrollbar { width: 0; }
 
-.panel { display: none; padding: 16px; padding-bottom: 80px; }
+.panel { display: none; padding: 16px; padding-bottom: 90px; }
 .panel.active { display: block; }
 
 /* ============================================================
    TAB BAR
    ============================================================ */
-#tabs { height: var(--tab-h); background: var(--dark); border-top: 1px solid var(--border); display: flex; flex-shrink: 0; position: relative; z-index: 10; }
+#tabs { height: var(--tab-h); background: var(--dark); border-top: 1px solid var(--border); display: flex; flex-shrink: 0; position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: 100%; max-width: 480px; z-index: 10; }
 .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; color: var(--muted); font-family: 'Anton', sans-serif; font-size: 10px; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; border: none; background: none; transition: color 0.15s; }
 .tab svg { width: 20px; height: 20px; }
 .tab.active { background: var(--brand-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
