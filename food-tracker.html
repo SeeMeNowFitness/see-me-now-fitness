@@ -506,48 +506,85 @@ select option { background: var(--dark); }
     <!-- ==================== TAB 3: PROGRESS ==================== -->
     <div class="panel" id="panel-progress">
 
+      <!-- Adherence -->
       <div class="adherence-big">
         <div class="pct" id="adherence-pct">—%</div>
         <div class="lbl">7-Day Macro Adherence</div>
       </div>
 
-      <div class="week-stats">
-        <div class="week-stat">
-          <div class="v" id="ws-avg-cal" style="color:var(--green)">—</div>
-          <div class="l">Avg kcal</div>
+      <!-- Weekly caloric average card -->
+      <div class="card" id="weekly-avg-card" style="margin-bottom:12px;">
+        <div class="card-title">Weekly Caloric Average</div>
+        <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:8px;">
+          <div style="font-size:40px;font-weight:900;font-family:'Anton',sans-serif;letter-spacing:-1px;" id="ws-weekly-avg">—</div>
+          <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">kcal/day</div>
         </div>
+        <div style="font-size:12px;color:var(--muted);" id="ws-weekly-avg-sub"></div>
+        <!-- Zigzag breakdown — only for zigzag clients -->
+        <div id="zigzag-breakdown" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <div style="display:flex;gap:16px;">
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);margin-bottom:3px;">🔥 High Days</div>
+              <div style="font-size:16px;font-weight:800;" id="zz-high-avg">—</div>
+              <div style="font-size:11px;color:var(--muted);" id="zz-high-count"></div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--blue);margin-bottom:3px;">❄️ Low Days</div>
+              <div style="font-size:16px;font-weight:800;" id="zz-low-avg">—</div>
+              <div style="font-size:11px;color:var(--muted);" id="zz-low-count"></div>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;">Weekly Total</div>
+              <div style="font-size:16px;font-weight:800;" id="zz-weekly-total">—</div>
+              <div style="font-size:11px;color:var(--muted);">kcal this week</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick stats row -->
+      <div class="week-stats">
         <div class="week-stat">
           <div class="v" id="ws-avg-steps" style="color:var(--blue)">—</div>
           <div class="l">Avg steps</div>
         </div>
         <div class="week-stat">
-          <div class="v" id="ws-checkins" style="color:var(--gold)">—</div>
+          <div class="v" id="ws-avg-protein" style="color:var(--gold)">—</div>
+          <div class="l">Avg protein</div>
+        </div>
+        <div class="week-stat">
+          <div class="v" id="ws-checkins" style="color:var(--green)">—</div>
           <div class="l">Check-ins</div>
         </div>
       </div>
 
+      <!-- Calorie trend -->
       <div class="section-label">Calorie Trend (7 days)</div>
       <div class="chart-wrap">
         <canvas id="chart-calories" height="140"></canvas>
       </div>
 
-      <div class="section-label">Macro Adherence</div>
+      <!-- Weight trend -->
+      <div class="section-label">Weight Trend</div>
+      <div class="chart-wrap" id="chart-weight-wrap">
+        <canvas id="chart-weight" height="140"></canvas>
+      </div>
+      <div id="no-weight-data" style="display:none;text-align:center;padding:20px;color:var(--muted);font-size:13px;">Log your weight daily to see your trend</div>
+
+      <!-- Macro adherence -->
+      <div class="section-label">Macro Adherence vs Target</div>
       <div class="chart-wrap">
         <canvas id="chart-macros" height="140"></canvas>
       </div>
 
-      <div class="section-label">Weight Trend</div>
-      <div class="chart-wrap">
-        <canvas id="chart-weight" height="140"></canvas>
-      </div>
-
+      <!-- Step trend -->
       <div class="section-label">Step Trend</div>
       <div class="chart-wrap">
         <canvas id="chart-steps" height="140"></canvas>
       </div>
 
-      <!-- Energy balance history -->
-      <div class="section-label">Energy Balance History</div>
+      <!-- Daily log history -->
+      <div class="section-label">Daily Log</div>
       <div id="energy-history-list"></div>
 
     </div><!-- /panel-progress -->
@@ -1490,9 +1527,7 @@ async function loadProgressData() {
     const d = new Date();
     d.setDate(d.getDate() - i);
     const key = d.toISOString().split('T')[0];
-    let dayEntry = { key, calories: 0, protein: 0, carbs: 0, fat: 0, steps: 0, weight: null };
-
-    if (db) {
+    let dayEntry = { key, calories: 0, protein: 0, carbs: 0, fat: 0, steps: 0, weight: null };    if (db) {
       try {
         const snap = await db.collection('clients').doc(CLIENT_ID).collection('days').doc(key).get();
         if (snap.exists) {
@@ -1519,63 +1554,134 @@ async function loadProgressData() {
     const d = keyToDate(h.key);
     return d.toLocaleDateString('en-US', { weekday: 'short' });
   });
-  const target = clientProfile?.macros || { calories: 2000, protein: 150 };
 
-  // Adherence
+  const isZigzag = clientProfile?.tracking_method === 'zigzag';
+  const target = getActiveMacros();
+
+  // ---- ADHERENCE ----
   const daysHit = history.filter(h => {
+    if (!h.calories) return false;
     const proteinPct = h.protein / target.protein;
     const calPct = h.calories / target.calories;
     return proteinPct >= 0.9 && proteinPct <= 1.1 && calPct >= 0.9 && calPct <= 1.1;
   }).length;
-  const adherencePct = Math.round((daysHit / 7) * 100);
+  const loggedDays = history.filter(h => h.calories > 0).length;
+  const adherencePct = loggedDays > 0 ? Math.round((daysHit / loggedDays) * 100) : 0;
   document.getElementById('adherence-pct').textContent = adherencePct + '%';
 
-  const avgCal = Math.round(history.reduce((s, h) => s + h.calories, 0) / 7);
+  // ---- WEEKLY CALORIC AVERAGE ----
+  const totalCals = history.reduce((s, h) => s + h.calories, 0);
+  const avgCal = loggedDays > 0 ? Math.round(totalCals / loggedDays) : 0;
+  const weeklyTotal = totalCals;
+
+  document.getElementById('ws-weekly-avg').textContent = avgCal.toLocaleString();
+  document.getElementById('ws-weekly-avg-sub').textContent = loggedDays > 0
+    ? `${loggedDays} days logged · ${weeklyTotal.toLocaleString()} kcal total this week`
+    : 'No days logged yet this week';
+
+  // ---- ZIGZAG BREAKDOWN ----
+  const zigzagBreakdown = document.getElementById('zigzag-breakdown');
+  if (isZigzag && loggedDays > 0) {
+    zigzagBreakdown.style.display = 'block';
+    const highTarget = clientProfile.macros_high?.calories || 0;
+    const lowTarget = clientProfile.macros_low?.calories || 0;
+    // Classify days as high or low based on which target they're closer to
+    const highDays = history.filter(h => h.calories > 0 && Math.abs(h.calories - highTarget) <= Math.abs(h.calories - lowTarget));
+    const lowDays = history.filter(h => h.calories > 0 && Math.abs(h.calories - lowTarget) < Math.abs(h.calories - highTarget));
+    const highAvg = highDays.length > 0 ? Math.round(highDays.reduce((s, h) => s + h.calories, 0) / highDays.length) : 0;
+    const lowAvg = lowDays.length > 0 ? Math.round(lowDays.reduce((s, h) => s + h.calories, 0) / lowDays.length) : 0;
+    document.getElementById('zz-high-avg').textContent = highAvg > 0 ? highAvg.toLocaleString() + ' kcal' : '—';
+    document.getElementById('zz-high-count').textContent = highDays.length + ' day' + (highDays.length !== 1 ? 's' : '');
+    document.getElementById('zz-low-avg').textContent = lowAvg > 0 ? lowAvg.toLocaleString() + ' kcal' : '—';
+    document.getElementById('zz-low-count').textContent = lowDays.length + ' day' + (lowDays.length !== 1 ? 's' : '');
+    document.getElementById('zz-weekly-total').textContent = weeklyTotal.toLocaleString();
+  } else {
+    zigzagBreakdown.style.display = 'none';
+  }
+
+  // ---- QUICK STATS ----
   const avgSteps = Math.round(history.reduce((s, h) => s + h.steps, 0) / 7);
-  document.getElementById('ws-avg-cal').textContent = avgCal.toLocaleString();
-  document.getElementById('ws-avg-steps').textContent = avgSteps.toLocaleString();
+  const avgProtein = loggedDays > 0 ? Math.round(history.reduce((s, h) => s + h.protein, 0) / loggedDays) : 0;
+  document.getElementById('ws-avg-steps').textContent = avgSteps > 0 ? avgSteps.toLocaleString() : '—';
+  document.getElementById('ws-avg-protein').textContent = avgProtein > 0 ? avgProtein + 'g' : '—';
   document.getElementById('ws-checkins').textContent = clientProfile?.checkin_streak || 0;
 
-  const chartDefaults = { responsive: true, plugins: { legend: { display: false } }, scales: {
-    x: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: '#2a2a2a' } },
-    y: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: '#2a2a2a' } }
-  }};
+  // ---- CHART DEFAULTS ----
+  const chartDefaults = {
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: '#2a2a2a' } },
+      y: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: '#2a2a2a' } }
+    }
+  };
 
-  buildChart('chart-calories', 'line', labels,
-    [{ data: history.map(h => h.calories), borderColor: '#4caf76', backgroundColor: 'rgba(76,175,118,0.1)', tension: 0.3, fill: true }],
-    chartDefaults);
+  // Calorie trend — show high/low target lines for zigzag clients
+  const calDatasets = [
+    { data: history.map(h => h.calories || null), borderColor: '#4caf76', backgroundColor: 'rgba(76,175,118,0.1)', tension: 0.3, fill: true, spanGaps: true, label: 'Calories' }
+  ];
+  if (isZigzag) {
+    calDatasets.push({ data: history.map(() => clientProfile.macros_high?.calories || null), borderColor: 'rgba(201,168,76,0.5)', borderDash: [4,4], pointRadius: 0, label: 'High target' });
+    calDatasets.push({ data: history.map(() => clientProfile.macros_low?.calories || null), borderColor: 'rgba(76,143,224,0.5)', borderDash: [4,4], pointRadius: 0, label: 'Low target' });
+  } else {
+    calDatasets.push({ data: history.map(() => target.calories), borderColor: 'rgba(201,168,76,0.4)', borderDash: [4,4], pointRadius: 0, label: 'Target' });
+  }
+  buildChart('chart-calories', 'line', labels, calDatasets,
+    { ...chartDefaults, plugins: { legend: { display: true, labels: { color: '#888', font: { size: 10 }, boxWidth: 12 } } } });
 
-  buildChart('chart-macros', 'bar', labels, [
-    { data: history.map(h => Math.round((h.protein / target.protein) * 100)), backgroundColor: '#C9A84C', label: 'Protein %' },
-    { data: history.map(h => Math.round((h.calories / target.calories) * 100)), backgroundColor: '#4c8fe0', label: 'Calories %' }
-  ], { ...chartDefaults, plugins: { legend: { display: true, labels: { color: '#888', font: { size: 11 } } } } });
-
-  const weightData = history.map(h => h.weight);
-  if (weightData.some(w => w)) {
+  // Weight trend
+  const weightData = history.map(h => h.weight || null);
+  const hasWeight = weightData.some(w => w);
+  document.getElementById('chart-weight-wrap').style.display = hasWeight ? '' : 'none';
+  document.getElementById('no-weight-data').style.display = hasWeight ? 'none' : 'block';
+  if (hasWeight) {
     buildChart('chart-weight', 'line', labels,
       [{ data: weightData, borderColor: '#C9A84C', backgroundColor: 'rgba(201,168,76,0.1)', tension: 0.3, fill: true, spanGaps: true }],
       chartDefaults);
   }
 
+  // Macro adherence bars
+  buildChart('chart-macros', 'bar', labels, [
+    { data: history.map(h => h.protein > 0 ? Math.min(120, Math.round((h.protein / target.protein) * 100)) : null), backgroundColor: '#C9A84C', label: 'Protein %' },
+    { data: history.map(h => h.calories > 0 ? Math.min(120, Math.round((h.calories / target.calories) * 100)) : null), backgroundColor: '#4c8fe0', label: 'Calories %' }
+  ], {
+    ...chartDefaults,
+    plugins: { legend: { display: true, labels: { color: '#888', font: { size: 10 }, boxWidth: 12 } } },
+    scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, max: 120, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '%' } } }
+  });
+
+  // Step trend
   buildChart('chart-steps', 'bar', labels,
-    [{ data: history.map(h => h.steps), backgroundColor: '#4c8fe0' }],
+    [{ data: history.map(h => h.steps || 0), backgroundColor: history.map(h => h.steps >= 10000 ? '#4caf76' : '#4c8fe0') }],
     chartDefaults);
 
-  // Energy balance history
+  // ---- DAILY LOG HISTORY ----
   const histEl = document.getElementById('energy-history-list');
   histEl.innerHTML = history.slice().reverse().map(h => {
-    const e = calcEnergyBalance();
-    const zone = h.calories > 0 ? (h.calories < target.calories * 0.95 ? 'deficit' : h.calories > target.calories * 1.05 ? 'surplus' : 'maintenance') : 'maintenance';
-    const zoneColors = { deficit: 'var(--green)', maintenance: 'var(--gold)', surplus: 'var(--red)' };
-    return `
-      <div class="card" style="margin-bottom:8px;">
+    if (!h.calories) return `
+      <div class="card" style="margin-bottom:8px;opacity:0.5;">
         <div class="row-between">
           <div style="font-size:13px;font-weight:700;">${friendlyDate(h.key)}</div>
-          <div style="font-size:13px;font-weight:800;color:${zoneColors[zone]}">${h.calories > 0 ? h.calories + ' kcal' : '—'}</div>
+          <div style="font-size:12px;color:var(--muted);">Not logged</div>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:4px;">${h.steps.toLocaleString()} steps · P: ${Math.round(h.protein)}g</div>
-      </div>
-    `;
+      </div>`;
+    const zone = h.calories < target.calories * 0.95 ? 'deficit' : h.calories > target.calories * 1.05 ? 'surplus' : 'maintenance';
+    const zoneColors = { deficit: 'var(--green)', maintenance: 'var(--gold)', surplus: 'var(--red)' };
+    const zoneLabels = { deficit: '↓ Deficit', maintenance: '= Maintenance', surplus: '↑ Surplus' };
+    return `
+      <div class="card" style="margin-bottom:8px;">
+        <div class="row-between" style="margin-bottom:6px;">
+          <div style="font-size:13px;font-weight:700;">${friendlyDate(h.key)}</div>
+          <div style="font-size:12px;font-weight:800;color:${zoneColors[zone]}">${zoneLabels[zone]}</div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <span style="font-size:12px;color:var(--white);font-weight:700;">${h.calories.toLocaleString()} kcal</span>
+          <span style="font-size:12px;color:var(--muted);">P: ${Math.round(h.protein)}g</span>
+          <span style="font-size:12px;color:var(--muted);">C: ${Math.round(h.carbs)}g</span>
+          <span style="font-size:12px;color:var(--muted);">F: ${Math.round(h.fat)}g</span>
+          <span style="font-size:12px;color:var(--muted);">${h.steps.toLocaleString()} steps</span>
+        </div>
+      </div>`;
   }).join('');
 }
 
