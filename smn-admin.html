@@ -191,15 +191,54 @@ a { color: var(--gold); }
     <!-- Macros -->
     <div class="form-section" id="edit-macros" style="display:none;">
       <h3>Macro Targets</h3>
-      <div class="grid-4">
-        <div class="field"><label>Protein (g)</label><input type="number" id="e-protein"></div>
-        <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs"></div>
-        <div class="field"><label>Fat (g)</label><input type="number" id="e-fat"></div>
-        <div class="field"><label>Calories</label><input type="number" id="e-calories"></div>
+
+      <!-- Tracking method toggle -->
+      <div class="field" style="margin-bottom:16px;">
+        <label>Tracking Method</label>
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button id="method-standard" onclick="setTrackingMethod('standard')" class="btn btn-gold btn-sm" style="flex:1;">Standard</button>
+          <button id="method-zigzag" onclick="setTrackingMethod('zigzag')" class="btn btn-outline btn-sm" style="flex:1;">Zig Zag (High / Low)</button>
+        </div>
       </div>
-      <div style="margin-top:8px;">
-        <button class="btn btn-outline btn-sm" onclick="autoCalcCalories()">Auto-calc calories from macros</button>
+
+      <!-- Standard macros -->
+      <div id="macros-standard">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">Daily Targets</div>
+        <div class="grid-4">
+          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein"></div>
+          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs"></div>
+          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat"></div>
+          <div class="field"><label>Calories</label><input type="number" id="e-calories"></div>
+        </div>
+        <div style="margin-top:8px;">
+          <button class="btn btn-outline btn-sm" onclick="autoCalcCalories('standard')">Auto-calc calories</button>
+        </div>
       </div>
+
+      <!-- Zig Zag macros -->
+      <div id="macros-zigzag" style="display:none;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">🔥 High Day</div>
+        <div class="grid-4">
+          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein-high"></div>
+          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-high"></div>
+          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat-high"></div>
+          <div class="field"><label>Calories</label><input type="number" id="e-calories-high"></div>
+        </div>
+        <div style="margin-top:8px;margin-bottom:16px;">
+          <button class="btn btn-outline btn-sm" onclick="autoCalcCalories('high')">Auto-calc calories</button>
+        </div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">❄️ Low Day</div>
+        <div class="grid-4">
+          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein-low"></div>
+          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-low"></div>
+          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat-low"></div>
+          <div class="field"><label>Calories</label><input type="number" id="e-calories-low"></div>
+        </div>
+        <div style="margin-top:8px;">
+          <button class="btn btn-outline btn-sm" onclick="autoCalcCalories('low')">Auto-calc calories</button>
+        </div>
+      </div>
+
     </div>
 
     <!-- BMR Inputs -->
@@ -443,10 +482,26 @@ async function loadClientIntoForm(id) {
   document.getElementById('e-phone').value = client.phone || '';
 
   const m = client.macros || {};
+  const method = client.tracking_method || 'standard';
+  setTrackingMethod(method);
+
+  // Standard macros
   document.getElementById('e-protein').value = m.protein || '';
   document.getElementById('e-carbs').value = m.carbs || '';
   document.getElementById('e-fat').value = m.fat || '';
   document.getElementById('e-calories').value = m.calories || '';
+
+  // Zig zag macros
+  const mh = client.macros_high || {};
+  const ml = client.macros_low || {};
+  document.getElementById('e-protein-high').value = mh.protein || '';
+  document.getElementById('e-carbs-high').value = mh.carbs || '';
+  document.getElementById('e-fat-high').value = mh.fat || '';
+  document.getElementById('e-calories-high').value = mh.calories || '';
+  document.getElementById('e-protein-low').value = ml.protein || '';
+  document.getElementById('e-carbs-low').value = ml.carbs || '';
+  document.getElementById('e-fat-low').value = ml.fat || '';
+  document.getElementById('e-calories-low').value = ml.calories || '';
 
   const b = client.bmr_inputs || {};
   document.getElementById('e-weight-lbs').value = b.weight_lbs || '';
@@ -489,12 +544,35 @@ function updateTierFields() {
   document.getElementById('edit-online').style.display = (tier === 'lifestyle') ? '' : 'none';
 }
 
-function autoCalcCalories() {
-  const p = parseFloat(document.getElementById('e-protein').value) || 0;
-  const c = parseFloat(document.getElementById('e-carbs').value) || 0;
-  const f = parseFloat(document.getElementById('e-fat').value) || 0;
-  const cals = Math.round((p * 4) + (c * 4) + (f * 9));
-  document.getElementById('e-calories').value = cals;
+let currentTrackingMethod = 'standard';
+
+function setTrackingMethod(method) {
+  currentTrackingMethod = method;
+  document.getElementById('macros-standard').style.display = method === 'standard' ? '' : 'none';
+  document.getElementById('macros-zigzag').style.display = method === 'zigzag' ? '' : 'none';
+  document.getElementById('method-standard').className = 'btn btn-sm ' + (method === 'standard' ? 'btn-gold' : 'btn-outline');
+  document.getElementById('method-zigzag').className = 'btn btn-sm ' + (method === 'zigzag' ? 'btn-gold' : 'btn-outline');
+  document.getElementById('method-standard').style.flex = '1';
+  document.getElementById('method-zigzag').style.flex = '1';
+}
+
+function autoCalcCalories(type) {
+  if (type === 'standard') {
+    const p = parseFloat(document.getElementById('e-protein').value) || 0;
+    const c = parseFloat(document.getElementById('e-carbs').value) || 0;
+    const f = parseFloat(document.getElementById('e-fat').value) || 0;
+    document.getElementById('e-calories').value = Math.round((p * 4) + (c * 4) + (f * 9));
+  } else if (type === 'high') {
+    const p = parseFloat(document.getElementById('e-protein-high').value) || 0;
+    const c = parseFloat(document.getElementById('e-carbs-high').value) || 0;
+    const f = parseFloat(document.getElementById('e-fat-high').value) || 0;
+    document.getElementById('e-calories-high').value = Math.round((p * 4) + (c * 4) + (f * 9));
+  } else if (type === 'low') {
+    const p = parseFloat(document.getElementById('e-protein-low').value) || 0;
+    const c = parseFloat(document.getElementById('e-carbs-low').value) || 0;
+    const f = parseFloat(document.getElementById('e-fat-low').value) || 0;
+    document.getElementById('e-calories-low').value = Math.round((p * 4) + (c * 4) + (f * 9));
+  }
 }
 
 function calcBMRPreview() {
@@ -517,11 +595,24 @@ async function saveClient() {
     email: document.getElementById('e-email').value,
     tier,
     phone: document.getElementById('e-phone').value,
+    tracking_method: currentTrackingMethod,
     macros: {
       protein: parseInt(document.getElementById('e-protein').value) || 0,
       carbs: parseInt(document.getElementById('e-carbs').value) || 0,
       fat: parseInt(document.getElementById('e-fat').value) || 0,
       calories: parseInt(document.getElementById('e-calories').value) || 0
+    },
+    macros_high: {
+      protein: parseInt(document.getElementById('e-protein-high').value) || 0,
+      carbs: parseInt(document.getElementById('e-carbs-high').value) || 0,
+      fat: parseInt(document.getElementById('e-fat-high').value) || 0,
+      calories: parseInt(document.getElementById('e-calories-high').value) || 0
+    },
+    macros_low: {
+      protein: parseInt(document.getElementById('e-protein-low').value) || 0,
+      carbs: parseInt(document.getElementById('e-carbs-low').value) || 0,
+      fat: parseInt(document.getElementById('e-fat-low').value) || 0,
+      calories: parseInt(document.getElementById('e-calories-low').value) || 0
     },
     bmr_inputs: {
       weight_lbs: parseFloat(document.getElementById('e-weight-lbs').value) || 0,

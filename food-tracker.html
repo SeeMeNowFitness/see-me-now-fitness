@@ -305,6 +305,14 @@ select option { background: var(--dark); }
       <div style="font-size:12px;color:var(--muted);line-height:1.6;">Your coach will send you a personal link with your real macro targets set after your intake call. You can still log food and explore the tracker.</div>
     </div>
 
+    <!-- Zig Zag day toggle — shown only for zigzag clients -->
+    <div id="zigzag-toggle" style="display:none;margin-bottom:12px;">
+      <div style="display:flex;gap:8px;">
+        <button id="zz-high" onclick="setDayType('high')" style="flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;">🔥 HIGH DAY</button>
+        <button id="zz-low" onclick="setDayType('low')" style="flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;">❄️ LOW DAY</button>
+      </div>
+    </div>
+
     <div class="balance-hero" id="balance-hero">
         <div class="balance-zone" id="balance-zone-label">Calculating…</div>
         <div class="balance-number" id="balance-number">—</div>
@@ -804,8 +812,9 @@ function applyTierUI() {
   document.getElementById('checkin-streak').style.display = (tier === 'lifestyle') ? 'block' : 'none';
   document.getElementById('upsell-block').style.display = tier === 'tracker' ? 'block' : 'none';
 
-  // Show setup banner if on demo / unconfigured profile
-  const isDemo = CLIENT_ID === 'demo' || !db;
+  // Show zigzag toggle if client is on zigzag plan
+  const zigzagToggle = document.getElementById('zigzag-toggle');
+  if (zigzagToggle) zigzagToggle.style.display = clientProfile.tracking_method === 'zigzag' ? 'block' : 'none';
   const setupBanner = document.getElementById('setup-banner');
   if (setupBanner) setupBanner.style.display = isDemo ? 'block' : 'none';
 
@@ -878,6 +887,40 @@ function calcEnergyBalance() {
   const totalConsumed = dayData.meals.reduce((s, m) => s + (m.calories || 0), 0);
   const net = totalBurned - totalConsumed;
   return { bmr, stepCals, workoutCals, totalBurned, totalConsumed, net };
+}
+
+let currentDayType = 'high'; // 'high' or 'low' for zigzag clients
+
+function setDayType(type) {
+  currentDayType = type;
+  const highBtn = document.getElementById('zz-high');
+  const lowBtn = document.getElementById('zz-low');
+  if (type === 'high') {
+    highBtn.style.background = 'var(--gold)';
+    highBtn.style.color = 'var(--black)';
+    highBtn.style.border = 'none';
+    lowBtn.style.background = 'var(--card)';
+    lowBtn.style.color = 'var(--muted)';
+    lowBtn.style.border = '1px solid var(--border)';
+  } else {
+    lowBtn.style.background = 'var(--blue)';
+    lowBtn.style.color = 'var(--white)';
+    lowBtn.style.border = 'none';
+    highBtn.style.background = 'var(--card)';
+    highBtn.style.color = 'var(--muted)';
+    highBtn.style.border = '1px solid var(--border)';
+  }
+  renderToday();
+}
+
+function getActiveMacros() {
+  if (!clientProfile) return { protein: 150, carbs: 175, fat: 55, calories: 1795 };
+  if (clientProfile.tracking_method === 'zigzag') {
+    return currentDayType === 'high'
+      ? (clientProfile.macros_high || clientProfile.macros)
+      : (clientProfile.macros_low || clientProfile.macros);
+  }
+  return clientProfile.macros || { protein: 150, carbs: 175, fat: 55, calories: 1795 };
 }
 
 function getZone(net) {
@@ -973,7 +1016,7 @@ function renderToday() {
 }
 
 function renderMacroBars() {
-  const macros = clientProfile?.macros || { protein: 150, carbs: 175, fat: 55, calories: 1795 };
+  const macros = getActiveMacros();
   const logged = { protein: 0, carbs: 0, fat: 0, calories: 0 };
   dayData.meals.forEach(m => {
     logged.protein += m.protein || 0;
@@ -1632,7 +1675,7 @@ function quickAddBlueprintMeal(id, name, cals, protein, carbs, fat) {
 
 async function loadSpoonacularSuggestions() {
   const el = document.getElementById('spoonacular-results');
-  const macros = clientProfile?.macros || { protein: 150, carbs: 175, fat: 55, calories: 2020 };
+  const macros = getActiveMacros();
   const logged = dayData.meals.reduce((acc, m) => {
     acc.calories += m.calories || 0;
     acc.protein += m.protein || 0;
