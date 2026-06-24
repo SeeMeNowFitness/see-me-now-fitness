@@ -22,10 +22,9 @@
   const CLIENT_ID = new URLSearchParams(window.location.search).get("client") || "demo";
 </script>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<!-- Firebase SDKs (async — don't block render) -->
+<script async src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script async src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <style>
 /* ============================================================
@@ -274,6 +273,8 @@ select option { background: var(--dark); }
 .search-wrap input { padding-left: 38px; padding-right: 46px; }
 .barcode-btn { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; display: flex; align-items: center; padding: 4px; }
 .barcode-btn:active { color: var(--gold); }
+@keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+.barcode-btn.loading { animation: spin 0.8s linear infinite; color: var(--gold); }
 </style>
 </head>
 <body>
@@ -450,7 +451,7 @@ select option { background: var(--dark); }
       <div class="search-wrap">
         <span class="search-icon">🔍</span>
         <input type="text" id="food-search-input" placeholder="Search foods…" oninput="debounceSearch()" />
-        <button class="barcode-btn" onclick="openBarcodeScanner()" title="Scan barcode">
+        <button class="barcode-btn" id="barcode-btn" onclick="startBarcodeScan()" title="Scan barcode">
           <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="8" x2="7" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="8" x2="10" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="13" y1="8" x2="13" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         </button>
       </div>
@@ -698,10 +699,7 @@ select option { background: var(--dark); }
 <!-- Toast -->
 <div id="toast"></div>
 
-<!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<!-- ZXing barcode scanner -->
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
+<!-- Scripts loaded lazily — see loadChartJS() and loadZXing() below -->
 
 <script>
 // ============================================================
@@ -1139,17 +1137,55 @@ function renderDemoFoodResults(query) {
 }
 
 // ============================================================
+//   LAZY LOADERS — ZXing and Chart.js load only when needed
+// ============================================================
+let zxingLoaded = false;
+let chartJsLoaded = false;
+
+function loadZXing() {
+  return new Promise((resolve, reject) => {
+    if (zxingLoaded) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js';
+    s.onload = () => { zxingLoaded = true; resolve(); };
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+function loadChartJS() {
+  return new Promise((resolve, reject) => {
+    if (chartJsLoaded || window.Chart) { chartJsLoaded = true; resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+    s.onload = () => { chartJsLoaded = true; resolve(); };
+    s.onerror = reject;
+    document.head.appendChild(s);
+  });
+}
+
+// ============================================================
 //   BARCODE SCANNER — Open Food Facts (free, no key needed)
 // ============================================================
 let barcodeReader = null;
 let barcodeStream = null;
 
+async function startBarcodeScan() {
+  const btn = document.getElementById('barcode-btn');
+  btn.classList.add('loading');
+  await openBarcodeScanner();
+  btn.classList.remove('loading');
+}
+
 async function openBarcodeScanner() {
   const overlay = document.getElementById('barcode-overlay');
   overlay.style.display = 'flex';
-  document.getElementById('barcode-status').textContent = 'Starting camera…';
+  document.getElementById('barcode-status').textContent = 'Loading scanner…';
 
   try {
+    await loadZXing();
+    document.getElementById('barcode-status').textContent = 'Starting camera…';
+
     const hints = new Map();
     const formats = [
       ZXing.BarcodeFormat.EAN_13,
@@ -1408,7 +1444,8 @@ async function saveDayToFirebase() {
 let charts = {};
 
 async function loadProgressData() {
-  // Build 7-day history
+  // Lazy load Chart.js only when Progress tab is opened
+  await loadChartJS();
   const history = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
