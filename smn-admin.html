@@ -4,445 +4,230 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SMN Admin — Coach Dashboard</title>
-
-<!-- ============================================================
-  CONFIGURATION — FILL IN BEFORE DEPLOYING
-  ============================================================ -->
 <script>
-  const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyCLUo020Q7A9S_PCM0mti7E-0-SflNIRy8",
-    authDomain: "see-me-now-fitness.firebaseapp.com",
-    projectId: "see-me-now-fitness",
-    storageBucket: "see-me-now-fitness.firebasestorage.app",
-    messagingSenderId: "505059193724",
-    appId: "1:505059193724:web:704a12cbd0a55592612af9"
-  };
-  // Simple admin password — change this
-  const ADMIN_PASSWORD = "seemenow2026";
+const FIREBASE_CONFIG = {
+apiKey: "AIzaSyCLUo020Q7A9S_PCM0mti7E-0-SflNIRy8",
+authDomain: "see-me-now-fitness.firebaseapp.com",
+projectId: "see-me-now-fitness",
+storageBucket: "see-me-now-fitness.firebasestorage.app",
+messagingSenderId: "505059193724",
+appId: "1:505059193724:web:704a12cbd0a55592612af9"
+};
+const ADMIN_PASSWORD = "seemenow2026";
 </script>
-
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
 <style>
-:root {
-  --black:  #0a0a0a;
-  --dark:   #111111;
-  --card:   #181818;
-  --border: #2a2a2a;
-  --gold:   #C9A84C;
-  --gold-d: #8a6f2e;
-  --white:  #f5f5f5;
-  --muted:  #888;
-  --green:  #4caf76;
-  --red:    #e05c5c;
-  --radius: 12px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--black); color: var(--white); font-family: 'Helvetica Neue', Arial, sans-serif; min-height: 100vh; }
-a { color: var(--gold); }
-
-/* LOGIN */
-#login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-.login-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; max-width: 360px; width: 100%; text-align: center; }
-.login-box h1 { font-size: 20px; font-weight: 800; color: var(--gold); margin-bottom: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
-.login-box p { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-.login-box input { background: var(--black); border: 1px solid var(--border); border-radius: 8px; color: var(--white); font-size: 15px; padding: 12px; width: 100%; outline: none; margin-bottom: 12px; letter-spacing: 0.1em; }
-.login-box input:focus { border-color: var(--gold); }
-.login-box button { background: var(--gold); color: var(--black); border: none; border-radius: 8px; padding: 12px; width: 100%; font-size: 14px; font-weight: 800; cursor: pointer; }
-.login-error { color: var(--red); font-size: 13px; margin-top: 10px; display: none; }
-
-/* MAIN */
-#admin-app { display: none; max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
-.admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28px; }
-.admin-header h1 { font-size: 18px; font-weight: 800; color: var(--gold); letter-spacing: 0.06em; text-transform: uppercase; }
-.admin-header span { font-size: 12px; color: var(--muted); }
-
-/* TABS */
-.admin-tabs { display: flex; gap: 4px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 4px; margin-bottom: 24px; }
-.admin-tab { flex: 1; padding: 9px; border: none; background: none; color: var(--muted); font-size: 13px; font-weight: 700; cursor: pointer; border-radius: 7px; transition: all 0.15s; }
-.admin-tab.active { background: var(--gold); color: var(--black); }
-
-/* PANELS */
-.admin-panel { display: none; }
-.admin-panel.active { display: block; }
-
-/* FORM */
-.form-section { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
-.form-section h3 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); margin-bottom: 16px; }
-.field { margin-bottom: 14px; }
-.field label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); display: block; margin-bottom: 6px; }
-.field input, .field select, .field textarea { background: var(--black); border: 1px solid var(--border); border-radius: 8px; color: var(--white); font-size: 14px; padding: 10px 12px; width: 100%; outline: none; font-family: inherit; }
-.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold); }
-.field select option { background: var(--dark); }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
-.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; }
-
-/* CLIENT LIST */
-.client-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; display: flex; justify-content: space-between; align-items: center; }
-.client-card:hover { border-color: var(--gold-d); }
-.client-card.selected { border-color: var(--gold); }
-.client-card .name { font-size: 15px; font-weight: 800; }
-.client-card .meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
-.tier-pill { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 10px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
-.tier-contest { background: rgba(201,168,76,0.15); color: var(--gold); }
-.tier-lifestyle { background: rgba(76,175,118,0.15); color: var(--green); }
-.tier-inperson { background: rgba(76,143,224,0.15); color: #4c8fe0; }
-.tier-tracker { background: rgba(136,136,136,0.15); color: var(--muted); }
-
-/* BUTTONS */
-.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 20px; border-radius: 8px; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; cursor: pointer; border: none; }
-.btn-gold { background: var(--gold); color: var(--black); }
-.btn-outline { background: none; border: 1px solid var(--border); color: var(--white); }
-.btn-red { background: rgba(224,92,92,0.15); color: var(--red); border: 1px solid rgba(224,92,92,0.3); }
-.btn-sm { padding: 7px 14px; font-size: 12px; }
-.btn-full { width: 100%; }
-.btn-row { display: flex; gap: 10px; margin-top: 16px; }
-
-/* MEAL CARDS */
-.meal-admin-card { background: var(--black); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; margin-bottom: 10px; }
-.meal-admin-card .meal-name { font-size: 14px; font-weight: 800; }
-.meal-admin-card .meal-macros { font-size: 12px; color: var(--muted); margin-top: 4px; }
-
-/* STATUS */
-.status-bar { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; font-size: 13px; }
-.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
-.status-dot.error { background: var(--red); }
-
-/* SAVE FEEDBACK */
-.save-feedback { display: none; font-size: 13px; font-weight: 700; color: var(--green); margin-left: 12px; }
-
-/* CLIENT TRACKER LINK */
-.tracker-link-box { background: var(--black); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; font-size: 12px; color: var(--gold); word-break: break-all; margin-top: 10px; }
+:root{--black:#0a0a0a;--dark:#111111;--card:#181818;--border:#2a2a2a;--gold:#C9A84C;--gold-d:#8a6f2e;--white:#f5f5f5;--muted:#888;--green:#4caf76;--red:#e05c5c;--radius:12px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Arial,sans-serif;min-height:100vh;}
+a{color:var(--gold);}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:40px;max-width:360px;width:100%;text-align:center;}
+.login-box h1{font-size:20px;font-weight:800;color:var(--gold);margin-bottom:6px;letter-spacing:0.06em;text-transform:uppercase;}
+.login-box p{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.login-box input{background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);font-size:15px;padding:12px;width:100%;outline:none;margin-bottom:12px;letter-spacing:0.1em;}
+.login-box input:focus{border-color:var(--gold);}
+.login-box button{background:var(--gold);color:var(--black);border:none;border-radius:8px;padding:12px;width:100%;font-size:14px;font-weight:800;cursor:pointer;}
+.login-error{color:var(--red);font-size:13px;margin-top:10px;display:none;}
+#admin-app{display:none;max-width:900px;margin:0 auto;padding:24px 16px 60px;}
+.admin-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+.admin-header h1{font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.06em;text-transform:uppercase;}
+.admin-header span{font-size:12px;color:var(--muted);}
+.admin-tabs{display:flex;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:4px;margin-bottom:24px;flex-wrap:wrap;}
+.admin-tab{flex:1;padding:9px;border:none;background:none;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;border-radius:7px;transition:all 0.15s;white-space:nowrap;}
+.admin-tab.active{background:var(--gold);color:var(--black);}
+.admin-panel{display:none;}
+.admin-panel.active{display:block;}
+.form-section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
+.form-section h3{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:16px;}
+.field{margin-bottom:14px;}
+.field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);display:block;margin-bottom:6px;}
+.field input,.field select,.field textarea{background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);font-size:14px;padding:10px 12px;width:100%;outline:none;font-family:inherit;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold);}
+.field select option{background:var(--dark);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;}
+.client-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;cursor:pointer;transition:border-color 0.15s;display:flex;justify-content:space-between;align-items:center;}
+.client-card:hover{border-color:var(--gold-d);}
+.client-card.selected{border-color:var(--gold);}
+.client-card .name{font-size:15px;font-weight:800;}
+.client-card .meta{font-size:12px;color:var(--muted);margin-top:3px;}
+.tier-pill{display:inline-block;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;}
+.tier-contest{background:rgba(201,168,76,0.15);color:var(--gold);}
+.tier-lifestyle{background:rgba(76,175,118,0.15);color:var(--green);}
+.tier-inperson{background:rgba(76,143,224,0.15);color:#4c8fe0;}
+.tier-tracker{background:rgba(136,136,136,0.15);color:var(--muted);}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:800;letter-spacing:0.04em;cursor:pointer;border:none;}
+.btn-gold{background:var(--gold);color:var(--black);}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--white);}
+.btn-red{background:rgba(224,92,92,0.15);color:var(--red);border:1px solid rgba(224,92,92,0.3);}
+.btn-green{background:rgba(76,175,118,0.15);color:var(--green);border:1px solid rgba(76,175,118,0.3);}
+.btn-blue{background:rgba(76,143,224,0.15);color:#4c8fe0;border:1px solid rgba(76,143,224,0.3);}
+.btn-sm{padding:7px 14px;font-size:12px;}
+.btn-full{width:100%;}
+.btn-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+.meal-admin-card{background:var(--black);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;}
+.meal-admin-card .meal-name{font-size:14px;font-weight:800;}
+.meal-admin-card .meal-macros{font-size:12px;color:var(--muted);margin-top:4px;}
+.save-feedback{display:none;font-size:13px;font-weight:700;color:var(--green);margin-left:12px;}
+.tracker-link-box{background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--gold);word-break:break-all;margin-top:10px;}
+/* Plan Builder Link Card */
+.builder-card{background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.04));border:1px solid var(--gold-d);border-radius:var(--radius);padding:20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;}
+.builder-card h4{font-size:15px;font-weight:800;color:var(--gold);margin-bottom:4px;}
+.builder-card p{font-size:12px;color:var(--muted);line-height:1.6;}
+.builder-card a{background:var(--gold);color:var(--black);border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:800;cursor:pointer;text-decoration:none;white-space:nowrap;}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
-  <div class="login-box">
-    <h1>SMN Admin</h1>
-    <p>Coach access only</p>
-    <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkLogin()">
-    <button onclick="checkLogin()">Enter</button>
-    <div class="login-error" id="login-error">Wrong password</div>
-  </div>
+<div class="login-box">
+<h1>SMN Admin</h1>
+<p>Coach access only</p>
+<input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkLogin()">
+<button onclick="checkLogin()">Enter</button>
+<div class="login-error" id="login-error">Wrong password</div>
+</div>
 </div>
 
-<!-- ADMIN APP -->
 <div id="admin-app">
-  <div class="admin-header">
-    <h1>See Me Now — Coach Dashboard</h1>
-    <span id="firebase-status">Connecting…</span>
-  </div>
+<div class="admin-header">
+<h1>See Me Now — Coach Dashboard</h1>
+<span id="firebase-status">Connecting…</span>
+</div>
 
-  <!-- TABS -->
-  <div class="admin-tabs">
-    <button class="admin-tab active" onclick="switchAdminTab('clients', this)">Clients</button>
-    <button class="admin-tab" onclick="switchAdminTab('edit', this)">Edit Client</button>
-    <button class="admin-tab" onclick="switchAdminTab('meals', this)">Blueprint Meals</button>
-    <button class="admin-tab" onclick="switchAdminTab('new', this)">+ New Client</button>
-  </div>
+<div class="admin-tabs">
+<button class="admin-tab active" onclick="switchAdminTab('clients',this)">Clients</button>
+<button class="admin-tab" onclick="switchAdminTab('edit',this)">Edit Client</button>
+<button class="admin-tab" onclick="switchAdminTab('meals',this)">Blueprint Meals</button>
+<button class="admin-tab" onclick="switchAdminTab('tools',this)">📋 Plan Builder</button>
+<button class="admin-tab" onclick="switchAdminTab('new',this)">+ New Client</button>
+</div>
 
-  <!-- ============ CLIENTS LIST ============ -->
-  <div class="admin-panel active" id="panel-clients">
-    <div id="clients-list">
-      <div style="color:var(--muted);font-size:14px;padding:20px;">Loading clients…</div>
-    </div>
-  </div>
+<!-- CLIENTS -->
+<div class="admin-panel active" id="panel-clients">
+<div id="clients-list"><div style="color:var(--muted);font-size:14px;padding:20px;">Loading clients…</div></div>
+</div>
 
-  <!-- ============ EDIT CLIENT ============ -->
-  <div class="admin-panel" id="panel-edit">
-    <div id="edit-client-header" style="margin-bottom:20px;">
-      <div style="font-size:13px;color:var(--muted);">Select a client from the Clients tab first.</div>
-    </div>
+<!-- EDIT CLIENT -->
+<div class="admin-panel" id="panel-edit">
+<div id="edit-client-header" style="margin-bottom:20px;"><div style="font-size:13px;color:var(--muted);">Select a client from the Clients tab first.</div></div>
+<div class="form-section" id="edit-form" style="display:none;">
+<h3>Client Info</h3>
+<div class="grid-2">
+<div class="field"><label>Full Name</label><input type="text" id="e-name"></div>
+<div class="field"><label>Email</label><input type="email" id="e-email"></div>
+</div>
+<div class="grid-2">
+<div class="field"><label>Tier</label><select id="e-tier" onchange="updateTierFields()"><option value="contest_prep">Contest Prep</option><option value="lifestyle">Online Lifestyle</option><option value="inperson">In-Person</option><option value="tracker">Standalone Tracker ($5)</option></select></div>
+<div class="field"><label>WhatsApp / Phone</label><input type="text" id="e-phone"></div>
+</div>
+</div>
+<div class="form-section" id="edit-macros" style="display:none;">
+<h3>Macro Targets</h3>
+<div class="field" style="margin-bottom:16px;"><label>Tracking Method</label><div style="display:flex;gap:8px;margin-top:6px;"><button id="method-standard" onclick="setTrackingMethod('standard')" class="btn btn-gold btn-sm" style="flex:1;">Standard</button><button id="method-zigzag" onclick="setTrackingMethod('zigzag')" class="btn btn-outline btn-sm" style="flex:1;">Zig Zag (High / Low)</button></div></div>
+<div id="macros-standard"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">Daily Targets</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein" oninput="autoCalcCalories('standard')"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs" oninput="autoCalcCalories('standard')"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat" oninput="autoCalcCalories('standard')"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories" style="color:var(--gold)"></div></div></div>
+<div id="macros-zigzag" style="display:none;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">🔥 High Day</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein-high" oninput="autoCalcCalories('high')"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-high" oninput="autoCalcCalories('high')"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat-high" oninput="autoCalcCalories('high')"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-high" style="color:var(--gold)"></div></div><div style="margin-bottom:16px;"></div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">❄️ Low Day</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein-low" oninput="autoCalcCalories('low')"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-low" oninput="autoCalcCalories('low')"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat-low" oninput="autoCalcCalories('low')"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-low" style="color:var(--gold)"></div></div></div>
+</div>
+<div class="form-section" id="edit-bmr" style="display:none;">
+<h3>BMR Inputs (Mifflin-St Jeor)</h3>
+<div class="grid-4"><div class="field"><label>Gender</label><select id="e-gender" onchange="calcBMRPreview()"><option value="male">Male</option><option value="female">Female</option></select></div><div class="field"><label>Age</label><input type="number" id="e-age" oninput="calcBMRPreview()" placeholder="e.g. 30"></div><div class="field"><label>Height (ft'in or cm)</label><input type="text" id="e-height-input" oninput="parseHeight()" placeholder="e.g. 6'1 or 185"><input type="hidden" id="e-height-cm"></div><div class="field"><label>Weight (lbs)</label><input type="number" id="e-weight-lbs" oninput="calcBMRPreview()" placeholder="e.g. 220"></div></div>
+<div id="bmr-preview" style="font-size:13px;color:var(--gold);margin-top:8px;"></div>
+</div>
+<div class="form-section" id="edit-contest" style="display:none;"><h3>Contest Prep Details</h3><div class="grid-3"><div class="field"><label>Show Name</label><input type="text" id="e-show-name"></div><div class="field"><label>Federation</label><input type="text" id="e-federation" placeholder="e.g. OCB, NGA, INBA"></div><div class="field"><label>Show Date</label><input type="date" id="e-show-date"></div></div></div>
+<div class="form-section" id="edit-inperson" style="display:none;"><h3>In-Person Sessions</h3><div class="grid-3"><div class="field"><label>Sessions Purchased</label><input type="number" id="e-sessions-purchased"></div><div class="field"><label>Sessions Used</label><input type="number" id="e-sessions-used"></div><div class="field"><label>Next Session Date</label><input type="date" id="e-next-session"></div></div></div>
+<div class="form-section" id="edit-online" style="display:none;"><h3>Check-In Settings</h3><div class="grid-2"><div class="field"><label>Check-in Streak (weeks)</label><input type="number" id="e-checkin-streak"></div><div class="field"><label>Check-in Schedule</label><select id="e-checkin-schedule"><option value="biweekly">Bi-weekly</option><option value="weekly">Weekly</option></select></div></div></div>
+<div class="form-section" id="edit-notes-sec" style="display:none;"><h3>Coach Notes</h3><div class="field"><label>Internal Notes (not visible to client)</label><textarea id="e-notes" rows="4" placeholder="Injury history, preferences, goals…"></textarea></div></div>
+<div class="btn-row" id="edit-save-row" style="display:none;">
+<button class="btn btn-gold" onclick="saveClient()">Save Client</button>
+<button class="btn btn-outline" onclick="switchAdminTab('clients',document.querySelectorAll('.admin-tab')[0])">Cancel</button>
+<span class="save-feedback" id="save-feedback">✓ Saved</span>
+</div>
+<div id="tracker-link-section" style="display:none;margin-top:20px;">
+<div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Share this link with client:</div>
+<div class="tracker-link-box" id="tracker-link-display"></div>
+<button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="copyTrackerLink()">Copy Link</button>
+</div>
+</div>
 
-    <!-- Basic Info -->
-    <div class="form-section" id="edit-form" style="display:none;">
-      <h3>Client Info</h3>
-      <div class="grid-2">
-        <div class="field">
-          <label>Full Name</label>
-          <input type="text" id="e-name">
-        </div>
-        <div class="field">
-          <label>Email</label>
-          <input type="email" id="e-email">
-        </div>
-      </div>
-      <div class="grid-2">
-        <div class="field">
-          <label>Tier</label>
-          <select id="e-tier" onchange="updateTierFields()">
-            <option value="contest_prep">Contest Prep</option>
-            <option value="lifestyle">Online Lifestyle</option>
-            <option value="inperson">In-Person</option>
-            <option value="tracker">Standalone Tracker ($5)</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>WhatsApp / Phone</label>
-          <input type="text" id="e-phone">
-        </div>
-      </div>
-    </div>
+<!-- BLUEPRINT MEALS -->
+<div class="admin-panel" id="panel-meals">
+<div class="form-section">
+<h3>Add Blueprint Approved Meal</h3>
+<div class="grid-2"><div class="field"><label>Meal Name</label><input type="text" id="m-name" placeholder="e.g. Contest Prep Chicken Bowl"></div><div class="field"><label>Emoji</label><input type="text" id="m-emoji" placeholder="🥗" maxlength="2"></div></div>
+<div class="grid-4"><div class="field"><label>Calories</label><input type="number" id="m-calories"></div><div class="field"><label>Protein (g)</label><input type="number" id="m-protein"></div><div class="field"><label>Carbs (g)</label><input type="number" id="m-carbs"></div><div class="field"><label>Fat (g)</label><input type="number" id="m-fat"></div></div>
+<div class="field"><label>Tags</label><input type="text" id="m-tags" placeholder="contest prep, high protein, chicken — comma separated"></div>
+<div class="field"><label>Prep Time (optional)</label><input type="text" id="m-preptime" placeholder="e.g. 20 min"></div>
+<div class="field"><label>Notes / Instructions (optional)</label><textarea id="m-notes" rows="3" placeholder="How to prep this meal…"></textarea></div>
+<div class="btn-row"><button class="btn btn-gold" onclick="saveBlueprintMeal()">Add Meal</button><span class="save-feedback" id="meal-feedback">✓ Meal added</span></div>
+</div>
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;">Existing Blueprint Meals <span id="meal-count-badge" style="color:var(--gold);"></span></div>
+<div id="blueprint-meals-list"><div style="color:var(--muted);font-size:14px;">Loading…</div></div>
+</div>
 
-    <!-- Macros -->
-    <div class="form-section" id="edit-macros" style="display:none;">
-      <h3>Macro Targets</h3>
+<!-- PLAN BUILDER TAB -->
+<div class="admin-panel" id="panel-tools">
+<div class="builder-card">
+<div>
+<h4>📋 Meal Plan Builder</h4>
+<p>Build personalized meal plans with USDA auto-fill macros.<br>Set supplements, blood type approved foods, and more.<br>Saves directly to client's tracker — live instantly.</p>
+</div>
+<a href="meal-plan-builder.html">Open Builder →</a>
+</div>
+<div class="builder-card" style="margin-top:4px;">
+<div>
+<h4>👟 Client Tracker</h4>
+<p>Open the client-facing tracker to preview what clients see.</p>
+</div>
+<a href="tracker.html">Open Tracker →</a>
+</div>
+</div>
 
-      <!-- Tracking method toggle -->
-      <div class="field" style="margin-bottom:16px;">
-        <label>Tracking Method</label>
-        <div style="display:flex;gap:8px;margin-top:6px;">
-          <button id="method-standard" onclick="setTrackingMethod('standard')" class="btn btn-gold btn-sm" style="flex:1;">Standard</button>
-          <button id="method-zigzag" onclick="setTrackingMethod('zigzag')" class="btn btn-outline btn-sm" style="flex:1;">Zig Zag (High / Low)</button>
-        </div>
-      </div>
+<!-- NEW CLIENT -->
+<div class="admin-panel" id="panel-new">
+<div class="form-section">
+<h3>New Client</h3>
+<div class="grid-2"><div class="field"><label>Full Name</label><input type="text" id="n-name"></div><div class="field"><label>Email</label><input type="email" id="n-email"></div></div>
+<div class="grid-2"><div class="field"><label>Tier</label><select id="n-tier"><option value="lifestyle">Online Lifestyle</option><option value="contest_prep">Contest Prep</option><option value="inperson">In-Person</option><option value="tracker">Standalone Tracker ($5)</option></select></div><div class="field"><label>Phone / WhatsApp</label><input type="text" id="n-phone"></div></div>
+<div class="btn-row"><button class="btn btn-gold" onclick="createNewClient()">Create Client</button><span class="save-feedback" id="new-feedback">✓ Client created</span></div>
+</div>
+</div>
 
-      <!-- Standard macros -->
-      <div id="macros-standard">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">Daily Targets</div>
-        <div class="grid-4">
-          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein" oninput="autoCalcCalories('standard')"></div>
-          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs" oninput="autoCalcCalories('standard')"></div>
-          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat" oninput="autoCalcCalories('standard')"></div>
-          <div class="field"><label>Calories (auto)</label><input type="number" id="e-calories" style="color:var(--gold)"></div>
-        </div>
-      </div>
-
-      <!-- Zig Zag macros -->
-      <div id="macros-zigzag" style="display:none;">
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">🔥 High Day</div>
-        <div class="grid-4">
-          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein-high" oninput="autoCalcCalories('high')"></div>
-          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-high" oninput="autoCalcCalories('high')"></div>
-          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat-high" oninput="autoCalcCalories('high')"></div>
-          <div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-high" style="color:var(--gold)"></div>
-        </div>
-        <div style="margin-bottom:16px;"></div>
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">❄️ Low Day</div>
-        <div class="grid-4">
-          <div class="field"><label>Protein (g)</label><input type="number" id="e-protein-low" oninput="autoCalcCalories('low')"></div>
-          <div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-low" oninput="autoCalcCalories('low')"></div>
-          <div class="field"><label>Fat (g)</label><input type="number" id="e-fat-low" oninput="autoCalcCalories('low')"></div>
-          <div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-low" style="color:var(--gold)"></div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- BMR Inputs -->
-    <div class="form-section" id="edit-bmr" style="display:none;">
-      <h3>BMR Inputs (Mifflin-St Jeor)</h3>
-      <div class="grid-4">
-        <div class="field">
-          <label>Gender</label>
-          <select id="e-gender" onchange="calcBMRPreview()">
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-          </select>
-        </div>
-        <div class="field"><label>Age</label><input type="number" id="e-age" oninput="calcBMRPreview()" placeholder="e.g. 30"></div>
-        <div class="field"><label>Height (ft'in or cm)</label><input type="text" id="e-height-input" oninput="parseHeight()" placeholder="e.g. 6'1 or 185"><input type="hidden" id="e-height-cm"></div>
-        <div class="field"><label>Weight (lbs)</label><input type="number" id="e-weight-lbs" oninput="calcBMRPreview()" placeholder="e.g. 220"></div>
-      </div>
-      <div id="bmr-preview" style="font-size:13px;color:var(--gold);margin-top:8px;"></div>
-    </div>
-
-    <!-- Contest Prep (conditional) -->
-    <div class="form-section" id="edit-contest" style="display:none;">
-      <h3>Contest Prep Details</h3>
-      <div class="grid-3">
-        <div class="field"><label>Show Name</label><input type="text" id="e-show-name"></div>
-        <div class="field"><label>Federation</label><input type="text" id="e-federation" placeholder="e.g. OCB, NGA, INBA"></div>
-        <div class="field"><label>Show Date</label><input type="date" id="e-show-date"></div>
-      </div>
-    </div>
-
-    <!-- In-Person (conditional) -->
-    <div class="form-section" id="edit-inperson" style="display:none;">
-      <h3>In-Person Sessions</h3>
-      <div class="grid-3">
-        <div class="field"><label>Sessions Purchased</label><input type="number" id="e-sessions-purchased"></div>
-        <div class="field"><label>Sessions Used</label><input type="number" id="e-sessions-used"></div>
-        <div class="field"><label>Next Session Date</label><input type="date" id="e-next-session"></div>
-      </div>
-    </div>
-
-    <!-- Online (check-in schedule) -->
-    <div class="form-section" id="edit-online" style="display:none;">
-      <h3>Check-In Settings</h3>
-      <div class="grid-2">
-        <div class="field"><label>Check-in Streak (weeks)</label><input type="number" id="e-checkin-streak"></div>
-        <div class="field"><label>Check-in Schedule</label>
-          <select id="e-checkin-schedule">
-            <option value="biweekly">Bi-weekly</option>
-            <option value="weekly">Weekly</option>
-          </select>
-        </div>
-      </div>
-    </div>
-
-    <!-- Notes -->
-    <div class="form-section" id="edit-notes-sec" style="display:none;">
-      <h3>Coach Notes</h3>
-      <div class="field">
-        <label>Internal Notes (not visible to client)</label>
-        <textarea id="e-notes" rows="4" placeholder="Injury history, preferences, goals…"></textarea>
-      </div>
-    </div>
-
-    <!-- Save -->
-    <div class="btn-row" id="edit-save-row" style="display:none;">
-      <button class="btn btn-gold" onclick="saveClient()">Save Client</button>
-      <button class="btn btn-outline" onclick="switchAdminTab('clients', document.querySelectorAll('.admin-tab')[0])">Cancel</button>
-      <span class="save-feedback" id="save-feedback">✓ Saved</span>
-    </div>
-
-    <!-- Tracker Link -->
-    <div id="tracker-link-section" style="display:none;margin-top:20px;">
-      <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Share this link with client:</div>
-      <div class="tracker-link-box" id="tracker-link-display"></div>
-      <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="copyTrackerLink()">Copy Link</button>
-    </div>
-
-  </div><!-- /panel-edit -->
-
-  <!-- ============ BLUEPRINT MEALS ============ -->
-  <div class="admin-panel" id="panel-meals">
-    <div class="form-section">
-      <h3>Add Blueprint Approved Meal</h3>
-      <div class="grid-2">
-        <div class="field"><label>Meal Name</label><input type="text" id="m-name" placeholder="e.g. Contest Prep Chicken Bowl"></div>
-        <div class="field"><label>Emoji</label><input type="text" id="m-emoji" placeholder="🥗" maxlength="2"></div>
-      </div>
-      <div class="grid-4">
-        <div class="field"><label>Calories</label><input type="number" id="m-calories"></div>
-        <div class="field"><label>Protein (g)</label><input type="number" id="m-protein"></div>
-        <div class="field"><label>Carbs (g)</label><input type="number" id="m-carbs"></div>
-        <div class="field"><label>Fat (g)</label><input type="number" id="m-fat"></div>
-      </div>
-      <div class="field"><label>Tags</label><input type="text" id="m-tags" placeholder="contest prep, high protein, chicken — comma separated"></div>
-      <div class="field"><label>Prep Time (optional)</label><input type="text" id="m-preptime" placeholder="e.g. 20 min"></div>
-      <div class="field"><label>Notes / Instructions (optional)</label><textarea id="m-notes" rows="3" placeholder="How to prep this meal…"></textarea></div>
-      <div class="btn-row">
-        <button class="btn btn-gold" onclick="saveBlueprintMeal()">Add Meal</button>
-        <span class="save-feedback" id="meal-feedback">✓ Meal added</span>
-      </div>
-    </div>
-
-    <!-- Existing meals -->
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;">
-      Existing Blueprint Meals <span id="meal-count-badge" style="color:var(--gold);"></span>
-    </div>
-    <div id="blueprint-meals-list">
-      <div style="color:var(--muted);font-size:14px;">Loading…</div>
-    </div>
-  </div>
-
-  <!-- ============ NEW CLIENT ============ -->
-  <div class="admin-panel" id="panel-new">
-    <div class="form-section">
-      <h3>New Client</h3>
-      <div class="grid-2">
-        <div class="field"><label>Full Name</label><input type="text" id="n-name"></div>
-        <div class="field"><label>Email</label><input type="email" id="n-email"></div>
-      </div>
-      <div class="grid-2">
-        <div class="field"><label>Tier</label>
-          <select id="n-tier">
-            <option value="lifestyle">Online Lifestyle</option>
-            <option value="contest_prep">Contest Prep</option>
-            <option value="inperson">In-Person</option>
-            <option value="tracker">Standalone Tracker ($5)</option>
-          </select>
-        </div>
-        <div class="field"><label>Phone / WhatsApp</label><input type="text" id="n-phone"></div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-gold" onclick="createNewClient()">Create Client</button>
-        <span class="save-feedback" id="new-feedback">✓ Client created</span>
-      </div>
-    </div>
-  </div>
-
-</div><!-- /admin-app -->
+</div>
 
 <script>
-// ============================================================
-//   AUTH
-// ============================================================
-function checkLogin() {
-  const pw = document.getElementById('pw-input').value;
-  if (pw === ADMIN_PASSWORD) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-app').style.display = 'block';
-    initAdmin();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
-  }
+function checkLogin(){const pw=document.getElementById('pw-input').value;if(pw===ADMIN_PASSWORD){document.getElementById('login-screen').style.display='none';document.getElementById('admin-app').style.display='block';initAdmin();}else{document.getElementById('login-error').style.display='block';}}
+
+let db=null,allClients=[],selectedClientId=null;
+
+async function initAdmin(){
+  try{firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();document.getElementById('firebase-status').textContent='🟢 Firebase connected';document.getElementById('firebase-status').style.color='#4caf76';}
+  catch(e){document.getElementById('firebase-status').textContent='🔴 Firebase not configured';document.getElementById('firebase-status').style.color='#e05c5c';}
+  loadClients();loadBlueprintMeals();
 }
 
-// ============================================================
-//   FIREBASE INIT
-// ============================================================
-let db = null;
-let allClients = [];
-let selectedClientId = null;
-
-async function initAdmin() {
-  try {
-    firebase.initializeApp(FIREBASE_CONFIG);
-    db = firebase.firestore();
-    document.getElementById('firebase-status').textContent = '🟢 Firebase connected';
-    document.getElementById('firebase-status').style.color = '#4caf76';
-  } catch (e) {
-    document.getElementById('firebase-status').textContent = '🔴 Firebase not configured';
-    document.getElementById('firebase-status').style.color = '#e05c5c';
-  }
-  loadClients();
-  loadBlueprintMeals();
+async function loadClients(){
+  if(!db){renderClientList([{id:'demo1',name:'Demo Client',tier:'lifestyle',email:'demo@example.com'},{id:'demo2',name:'Contest Athlete',tier:'contest_prep',email:'athlete@example.com'}]);return;}
+  try{const snap=await db.collection('clients').get();allClients=snap.docs.map(d=>({id:d.id,...d.data()}));renderClientList(allClients);}
+  catch(e){document.getElementById('clients-list').innerHTML='<div style="color:var(--red);">Could not load clients.</div>';}
 }
 
-// ============================================================
-//   CLIENTS
-// ============================================================
-async function loadClients() {
-  if (!db) {
-    renderClientList([
-      { id: 'demo1', name: 'Demo Client', tier: 'lifestyle', email: 'demo@example.com' },
-      { id: 'demo2', name: 'Contest Athlete', tier: 'contest_prep', email: 'athlete@example.com' }
-    ]);
-    return;
-  }
-  try {
-    const snap = await db.collection('clients').get();
-    allClients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    renderClientList(allClients);
-  } catch (e) {
-    document.getElementById('clients-list').innerHTML = '<div style="color:var(--red);">Could not load clients.</div>';
-  }
-}
-
-function renderClientList(clients) {
-  const el = document.getElementById('clients-list');
-  if (!clients.length) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:20px;">No clients yet. Use + New Client to add one.</div>';
-    return;
-  }
-  const tierColors = { contest_prep: 'tier-contest', lifestyle: 'tier-lifestyle', inperson: 'tier-inperson', tracker: 'tier-tracker' };
-  const tierNames = { contest_prep: 'Contest Prep', lifestyle: 'Lifestyle', inperson: 'In-Person', tracker: 'Tracker' };
-  el.innerHTML = clients.map(c => `
-    <div class="client-card ${selectedClientId === c.id ? 'selected' : ''}" onclick="selectClient('${c.id}')">
+function renderClientList(clients){
+  const el=document.getElementById('clients-list');
+  if(!clients.length){el.innerHTML='<div style="color:var(--muted);font-size:14px;padding:20px;">No clients yet. Use + New Client to add one.</div>';return;}
+  const tc={contest_prep:'tier-contest',lifestyle:'tier-lifestyle',inperson:'tier-inperson',tracker:'tier-tracker'};
+  const tn={contest_prep:'Contest Prep',lifestyle:'Lifestyle',inperson:'In-Person',tracker:'Tracker'};
+  el.innerHTML=clients.map(c=>`
+    <div class="client-card ${selectedClientId===c.id?'selected':''}" onclick="selectClient('${c.id}')">
       <div>
-        <div class="name">${c.name || 'Unnamed'}</div>
-        <div class="meta">${c.email || ''} ${c.phone ? '· ' + c.phone : ''}</div>
-        <div style="font-size:11px;color:var(--green);margin-top:4px;">🔥 ${c.checkin_streak || 0} week streak</div>
+        <div class="name">${c.name||'Unnamed'}</div>
+        <div class="meta">${c.email||''} ${c.phone?'· '+c.phone:''}</div>
+        <div style="font-size:11px;color:var(--green);margin-top:4px;">🔥 ${c.checkin_streak||0} week streak ${c.meal_plan?'· <span style="color:var(--gold);">📋 Plan assigned</span>':''}</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-        <span class="tier-pill ${tierColors[c.tier] || 'tier-tracker'}">${tierNames[c.tier] || c.tier}</span>
+        <span class="tier-pill ${tc[c.tier]||'tier-tracker'}">${tn[c.tier]||c.tier}</span>
         <div style="display:flex;gap:6px;">
           <button class="btn btn-sm" style="background:rgba(76,175,118,0.15);color:var(--green);border:1px solid rgba(76,175,118,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();incrementCheckin('${c.id}','${c.name}')">✓ Check In</button>
           <button class="btn btn-sm" style="background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();resetCheckin('${c.id}','${c.name}')">↺ Reset</button>
@@ -452,386 +237,85 @@ function renderClientList(clients) {
   `).join('');
 }
 
-function selectClient(id) {
-  selectedClientId = id;
-  // Re-render to show selection
-  renderClientList(allClients);
-  loadClientIntoForm(id);
-  switchAdminTab('edit', document.querySelectorAll('.admin-tab')[1]);
-}
+function selectClient(id){selectedClientId=id;renderClientList(allClients);loadClientIntoForm(id);switchAdminTab('edit',document.querySelectorAll('.admin-tab')[1]);}
 
-async function loadClientIntoForm(id) {
+async function loadClientIntoForm(id){
   let client;
-  if (!db) {
-    client = allClients.find(c => c.id === id) || {};
-  } else {
-    try {
-      const snap = await db.collection('clients').doc(id).get();
-      client = snap.exists ? { id: snap.id, ...snap.data() } : {};
-    } catch (e) { client = {}; }
-  }
-
-  document.getElementById('edit-client-header').innerHTML = `<div style="font-size:18px;font-weight:800;">${client.name || 'Client'}</div><div style="font-size:12px;color:var(--muted);margin-top:3px;">${client.email || ''}</div>`;
-
-  document.getElementById('e-name').value = client.name || '';
-  document.getElementById('e-email').value = client.email || '';
-  document.getElementById('e-tier').value = client.tier || 'lifestyle';
-  document.getElementById('e-phone').value = client.phone || '';
-
-  const m = client.macros || {};
-  const method = client.tracking_method || 'standard';
-  setTrackingMethod(method);
-
-  // Standard macros
-  document.getElementById('e-protein').value = m.protein || '';
-  document.getElementById('e-carbs').value = m.carbs || '';
-  document.getElementById('e-fat').value = m.fat || '';
-  document.getElementById('e-calories').value = m.calories || '';
-
-  // Zig zag macros
-  const mh = client.macros_high || {};
-  const ml = client.macros_low || {};
-  document.getElementById('e-protein-high').value = mh.protein || '';
-  document.getElementById('e-carbs-high').value = mh.carbs || '';
-  document.getElementById('e-fat-high').value = mh.fat || '';
-  document.getElementById('e-calories-high').value = mh.calories || '';
-  document.getElementById('e-protein-low').value = ml.protein || '';
-  document.getElementById('e-carbs-low').value = ml.carbs || '';
-  document.getElementById('e-fat-low').value = ml.fat || '';
-  document.getElementById('e-calories-low').value = ml.calories || '';
-
-  const b = client.bmr_inputs || {};
-  document.getElementById('e-weight-lbs').value = b.weight_lbs || '';
-  document.getElementById('e-height-cm').value = b.height_cm || '';
-  document.getElementById('e-height-input').value = b.height_cm ? b.height_cm + 'cm' : '';
-  document.getElementById('e-age').value = b.age || '';
-  document.getElementById('e-gender').value = b.gender || 'male';
-
-  document.getElementById('e-show-name').value = client.show_name || '';
-  document.getElementById('e-federation').value = client.federation || '';
-  document.getElementById('e-show-date').value = client.show_date || '';
-
-  document.getElementById('e-sessions-purchased').value = client.sessions_purchased || '';
-  document.getElementById('e-sessions-used').value = client.sessions_used || '';
-  document.getElementById('e-next-session').value = client.next_session || '';
-
-  document.getElementById('e-checkin-streak').value = client.checkin_streak || 0;
-  document.getElementById('e-checkin-schedule').value = client.checkin_schedule || 'biweekly';
-
-  document.getElementById('e-notes').value = client.notes || '';
-
-  // Show all form sections
-  ['edit-form', 'edit-macros', 'edit-bmr', 'edit-notes-sec', 'edit-save-row'].forEach(id => {
-    document.getElementById(id).style.display = '';
-  });
-
-  updateTierFields();
-  calcBMRPreview();
-
-  // Tracker link
-  const baseUrl = 'https://seemenowfitness.github.io/see-me-now-fitness/food-tracker.html';
-  const link = `${baseUrl}?client=${id}`;
-  document.getElementById('tracker-link-display').textContent = link;
-  document.getElementById('tracker-link-section').style.display = '';
+  if(!db){client=allClients.find(c=>c.id===id)||{};}
+  else{try{const snap=await db.collection('clients').doc(id).get();client=snap.exists?{id:snap.id,...snap.data()}:{};}catch(e){client={};}}
+  document.getElementById('edit-client-header').innerHTML=`<div style="font-size:18px;font-weight:800;">${client.name||'Client'}</div><div style="font-size:12px;color:var(--muted);margin-top:3px;">${client.email||''}</div>`;
+  document.getElementById('e-name').value=client.name||'';
+  document.getElementById('e-email').value=client.email||'';
+  document.getElementById('e-tier').value=client.tier||'lifestyle';
+  document.getElementById('e-phone').value=client.phone||'';
+  const m=client.macros||{};const method=client.tracking_method||'standard';setTrackingMethod(method);
+  document.getElementById('e-protein').value=m.protein||'';document.getElementById('e-carbs').value=m.carbs||'';document.getElementById('e-fat').value=m.fat||'';document.getElementById('e-calories').value=m.calories||'';
+  const mh=client.macros_high||{};const ml=client.macros_low||{};
+  document.getElementById('e-protein-high').value=mh.protein||'';document.getElementById('e-carbs-high').value=mh.carbs||'';document.getElementById('e-fat-high').value=mh.fat||'';document.getElementById('e-calories-high').value=mh.calories||'';
+  document.getElementById('e-protein-low').value=ml.protein||'';document.getElementById('e-carbs-low').value=ml.carbs||'';document.getElementById('e-fat-low').value=ml.fat||'';document.getElementById('e-calories-low').value=ml.calories||'';
+  const b=client.bmr_inputs||{};
+  document.getElementById('e-weight-lbs').value=b.weight_lbs||'';document.getElementById('e-height-cm').value=b.height_cm||'';document.getElementById('e-height-input').value=b.height_cm?b.height_cm+'cm':'';document.getElementById('e-age').value=b.age||'';document.getElementById('e-gender').value=b.gender||'male';
+  document.getElementById('e-show-name').value=client.show_name||'';document.getElementById('e-federation').value=client.federation||'';document.getElementById('e-show-date').value=client.show_date||'';
+  document.getElementById('e-sessions-purchased').value=client.sessions_purchased||'';document.getElementById('e-sessions-used').value=client.sessions_used||'';document.getElementById('e-next-session').value=client.next_session||'';
+  document.getElementById('e-checkin-streak').value=client.checkin_streak||0;document.getElementById('e-checkin-schedule').value=client.checkin_schedule||'biweekly';
+  document.getElementById('e-notes').value=client.notes||'';
+  ['edit-form','edit-macros','edit-bmr','edit-notes-sec','edit-save-row'].forEach(id=>document.getElementById(id).style.display='');
+  updateTierFields();calcBMRPreview();
+  const link=`https://seemenowfitness.github.io/see-me-now-fitness/tracker.html?client=${id}`;
+  document.getElementById('tracker-link-display').textContent=link;document.getElementById('tracker-link-section').style.display='';
 }
 
-function updateTierFields() {
-  const tier = document.getElementById('e-tier').value;
-  document.getElementById('edit-contest').style.display = tier === 'contest_prep' ? '' : 'none';
-  document.getElementById('edit-inperson').style.display = tier === 'inperson' ? '' : 'none';
-  document.getElementById('edit-online').style.display = '';  // show for all tiers
+function updateTierFields(){const tier=document.getElementById('e-tier').value;document.getElementById('edit-contest').style.display=tier==='contest_prep'?'':'none';document.getElementById('edit-inperson').style.display=tier==='inperson'?'':'none';document.getElementById('edit-online').style.display='';}
+
+let currentTrackingMethod='standard';
+function setTrackingMethod(method){currentTrackingMethod=method;document.getElementById('macros-standard').style.display=method==='standard'?'':'none';document.getElementById('macros-zigzag').style.display=method==='zigzag'?'':'none';document.getElementById('method-standard').className='btn btn-sm '+(method==='standard'?'btn-gold':'btn-outline');document.getElementById('method-zigzag').className='btn btn-sm '+(method==='zigzag'?'btn-gold':'btn-outline');document.getElementById('method-standard').style.flex='1';document.getElementById('method-zigzag').style.flex='1';}
+
+function autoCalcCalories(type){if(type==='standard'){const p=parseFloat(document.getElementById('e-protein').value)||0,c=parseFloat(document.getElementById('e-carbs').value)||0,f=parseFloat(document.getElementById('e-fat').value)||0;document.getElementById('e-calories').value=Math.round(p*4+c*4+f*9);}else if(type==='high'){const p=parseFloat(document.getElementById('e-protein-high').value)||0,c=parseFloat(document.getElementById('e-carbs-high').value)||0,f=parseFloat(document.getElementById('e-fat-high').value)||0;document.getElementById('e-calories-high').value=Math.round(p*4+c*4+f*9);}else if(type==='low'){const p=parseFloat(document.getElementById('e-protein-low').value)||0,c=parseFloat(document.getElementById('e-carbs-low').value)||0,f=parseFloat(document.getElementById('e-fat-low').value)||0;document.getElementById('e-calories-low').value=Math.round(p*4+c*4+f*9);}}
+
+function parseHeight(){const input=document.getElementById('e-height-input').value.trim();let cm=0;const fi=input.match(/^(\d+)['\s](\d+)/),fo=input.match(/^(\d+)'?\s*"?$/),co=input.match(/^(\d+\.?\d*)\s*cm?$/i),no=input.match(/^(\d+\.?\d*)$/);if(fi){cm=Math.round(parseInt(fi[1])*30.48+parseInt(fi[2])*2.54);}else if(co){cm=parseFloat(co[1]);}else if(no){const v=parseFloat(no[1]);cm=v>100?v:Math.round(v*30.48);}else if(fo){cm=Math.round(parseInt(fo[1])*30.48);}document.getElementById('e-height-cm').value=cm||'';calcBMRPreview();}
+
+function calcBMRPreview(){const w=parseFloat(document.getElementById('e-weight-lbs').value),h=parseFloat(document.getElementById('e-height-cm').value),age=parseFloat(document.getElementById('e-age').value),gender=document.getElementById('e-gender').value,preview=document.getElementById('bmr-preview');if(!w||!h||!age){preview.textContent=h>0?`Height: ${h}cm`:'';return;}const kg=w*0.453592;let bmr=(10*kg)+(6.25*h)-(5*age);bmr+=gender==='male'?5:-161;preview.textContent=`BMR: ${Math.round(bmr)} kcal/day · Height: ${h}cm`;}
+
+async function saveClient(){
+  if(!selectedClientId)return;
+  const tier=document.getElementById('e-tier').value;
+  const data={name:document.getElementById('e-name').value,email:document.getElementById('e-email').value,email_lower:document.getElementById('e-email').value.trim().toLowerCase(),tier,phone:document.getElementById('e-phone').value,tracking_method:currentTrackingMethod,macros:{protein:parseInt(document.getElementById('e-protein').value)||0,carbs:parseInt(document.getElementById('e-carbs').value)||0,fat:parseInt(document.getElementById('e-fat').value)||0,calories:parseInt(document.getElementById('e-calories').value)||0},macros_high:{protein:parseInt(document.getElementById('e-protein-high').value)||0,carbs:parseInt(document.getElementById('e-carbs-high').value)||0,fat:parseInt(document.getElementById('e-fat-high').value)||0,calories:parseInt(document.getElementById('e-calories-high').value)||0},macros_low:{protein:parseInt(document.getElementById('e-protein-low').value)||0,carbs:parseInt(document.getElementById('e-carbs-low').value)||0,fat:parseInt(document.getElementById('e-fat-low').value)||0,calories:parseInt(document.getElementById('e-calories-low').value)||0},bmr_inputs:{weight_lbs:parseFloat(document.getElementById('e-weight-lbs').value)||0,height_cm:parseFloat(document.getElementById('e-height-cm').value)||0,age:parseInt(document.getElementById('e-age').value)||0,gender:document.getElementById('e-gender').value},notes:document.getElementById('e-notes').value,updated_at:new Date().toISOString()};
+  if(tier==='contest_prep'){data.show_name=document.getElementById('e-show-name').value;data.federation=document.getElementById('e-federation').value;data.show_date=document.getElementById('e-show-date').value;}
+  if(tier==='inperson'){data.sessions_purchased=parseInt(document.getElementById('e-sessions-purchased').value)||0;data.sessions_used=parseInt(document.getElementById('e-sessions-used').value)||0;data.next_session=document.getElementById('e-next-session').value;}
+  data.checkin_streak=parseInt(document.getElementById('e-checkin-streak').value)||0;data.checkin_schedule=document.getElementById('e-checkin-schedule').value;
+  if(db)await db.collection('clients').doc(selectedClientId).set(data,{merge:true});
+  const idx=allClients.findIndex(c=>c.id===selectedClientId);if(idx>=0)allClients[idx]={id:selectedClientId,...data};else allClients.push({id:selectedClientId,...data});
+  const fb=document.getElementById('save-feedback');fb.style.display='inline';setTimeout(()=>fb.style.display='none',2500);
 }
 
-let currentTrackingMethod = 'standard';
-
-function setTrackingMethod(method) {
-  currentTrackingMethod = method;
-  document.getElementById('macros-standard').style.display = method === 'standard' ? '' : 'none';
-  document.getElementById('macros-zigzag').style.display = method === 'zigzag' ? '' : 'none';
-  document.getElementById('method-standard').className = 'btn btn-sm ' + (method === 'standard' ? 'btn-gold' : 'btn-outline');
-  document.getElementById('method-zigzag').className = 'btn btn-sm ' + (method === 'zigzag' ? 'btn-gold' : 'btn-outline');
-  document.getElementById('method-standard').style.flex = '1';
-  document.getElementById('method-zigzag').style.flex = '1';
-}
-
-function autoCalcCalories(type) {
-  if (type === 'standard') {
-    const p = parseFloat(document.getElementById('e-protein').value) || 0;
-    const c = parseFloat(document.getElementById('e-carbs').value) || 0;
-    const f = parseFloat(document.getElementById('e-fat').value) || 0;
-    document.getElementById('e-calories').value = Math.round((p * 4) + (c * 4) + (f * 9));
-  } else if (type === 'high') {
-    const p = parseFloat(document.getElementById('e-protein-high').value) || 0;
-    const c = parseFloat(document.getElementById('e-carbs-high').value) || 0;
-    const f = parseFloat(document.getElementById('e-fat-high').value) || 0;
-    document.getElementById('e-calories-high').value = Math.round((p * 4) + (c * 4) + (f * 9));
-  } else if (type === 'low') {
-    const p = parseFloat(document.getElementById('e-protein-low').value) || 0;
-    const c = parseFloat(document.getElementById('e-carbs-low').value) || 0;
-    const f = parseFloat(document.getElementById('e-fat-low').value) || 0;
-    document.getElementById('e-calories-low').value = Math.round((p * 4) + (c * 4) + (f * 9));
-  }
-}
-
-function parseHeight() {
-  const input = document.getElementById('e-height-input').value.trim();
-  let cm = 0;
-  // Handles: 6'1, 6'1", 6 1, 185, 185cm
-  const feetInches = input.match(/^(\d+)['\s](\d+)/);
-  const feetOnly = input.match(/^(\d+)'?\s*"?$/);
-  const cmOnly = input.match(/^(\d+\.?\d*)\s*cm?$/i);
-  const numberOnly = input.match(/^(\d+\.?\d*)$/);
-
-  if (feetInches) {
-    const ft = parseInt(feetInches[1]);
-    const inch = parseInt(feetInches[2]);
-    cm = Math.round((ft * 30.48) + (inch * 2.54));
-  } else if (cmOnly) {
-    cm = parseFloat(cmOnly[1]);
-  } else if (numberOnly) {
-    const val = parseFloat(numberOnly[1]);
-    // If value < 10 treat as feet, if > 100 treat as cm
-    cm = val > 100 ? val : Math.round(val * 30.48);
-  } else if (feetOnly) {
-    cm = Math.round(parseInt(feetOnly[1]) * 30.48);
-  }
-
-  document.getElementById('e-height-cm').value = cm || '';
-  if (cm > 0) {
-    document.getElementById('bmr-preview').style.display = '';
-  }
-  calcBMRPreview();
-}
-
-function calcBMRPreview() {
-  const w = parseFloat(document.getElementById('e-weight-lbs').value);
-  const h = parseFloat(document.getElementById('e-height-cm').value);
-  const age = parseFloat(document.getElementById('e-age').value);
-  const gender = document.getElementById('e-gender').value;
-  const preview = document.getElementById('bmr-preview');
-  if (!w || !h || !age) { preview.textContent = h > 0 ? `Height: ${h}cm` : ''; return; }
-  const kg = w * 0.453592;
-  let bmr = (10 * kg) + (6.25 * h) - (5 * age);
-  bmr += gender === 'male' ? 5 : -161;
-  const heightInput = document.getElementById('e-height-input').value;
-  preview.textContent = `BMR: ${Math.round(bmr)} kcal/day · Height: ${h}cm`;
-}
-
-async function saveClient() {
-  if (!selectedClientId) return;
-  const tier = document.getElementById('e-tier').value;
-  const data = {
-    name: document.getElementById('e-name').value,
-    email: document.getElementById('e-email').value,
-    email_lower: document.getElementById('e-email').value.trim().toLowerCase(),
-    tier,
-    phone: document.getElementById('e-phone').value,
-    tracking_method: currentTrackingMethod,
-    macros: {
-      protein: parseInt(document.getElementById('e-protein').value) || 0,
-      carbs: parseInt(document.getElementById('e-carbs').value) || 0,
-      fat: parseInt(document.getElementById('e-fat').value) || 0,
-      calories: parseInt(document.getElementById('e-calories').value) || 0
-    },
-    macros_high: {
-      protein: parseInt(document.getElementById('e-protein-high').value) || 0,
-      carbs: parseInt(document.getElementById('e-carbs-high').value) || 0,
-      fat: parseInt(document.getElementById('e-fat-high').value) || 0,
-      calories: parseInt(document.getElementById('e-calories-high').value) || 0
-    },
-    macros_low: {
-      protein: parseInt(document.getElementById('e-protein-low').value) || 0,
-      carbs: parseInt(document.getElementById('e-carbs-low').value) || 0,
-      fat: parseInt(document.getElementById('e-fat-low').value) || 0,
-      calories: parseInt(document.getElementById('e-calories-low').value) || 0
-    },
-    bmr_inputs: {
-      weight_lbs: parseFloat(document.getElementById('e-weight-lbs').value) || 0,
-      height_cm: parseFloat(document.getElementById('e-height-cm').value) || 0,
-      age: parseInt(document.getElementById('e-age').value) || 0,
-      gender: document.getElementById('e-gender').value
-    },
-    notes: document.getElementById('e-notes').value,
-    updated_at: new Date().toISOString()
-  };
-
-  if (tier === 'contest_prep') {
-    data.show_name = document.getElementById('e-show-name').value;
-    data.federation = document.getElementById('e-federation').value;
-    data.show_date = document.getElementById('e-show-date').value;
-  }
-  if (tier === 'inperson') {
-    data.sessions_purchased = parseInt(document.getElementById('e-sessions-purchased').value) || 0;
-    data.sessions_used = parseInt(document.getElementById('e-sessions-used').value) || 0;
-    data.next_session = document.getElementById('e-next-session').value;
-  }
-  // Save check-in for all tiers
-  if (true) {
-    data.checkin_streak = parseInt(document.getElementById('e-checkin-streak').value) || 0;
-    data.checkin_schedule = document.getElementById('e-checkin-schedule').value;
-  }
-
-  if (db) {
-    await db.collection('clients').doc(selectedClientId).set(data, { merge: true });
-  }
-
-  // Update local cache
-  const idx = allClients.findIndex(c => c.id === selectedClientId);
-  if (idx >= 0) allClients[idx] = { id: selectedClientId, ...data };
-  else allClients.push({ id: selectedClientId, ...data });
-
-  const fb = document.getElementById('save-feedback');
-  fb.style.display = 'inline';
-  setTimeout(() => fb.style.display = 'none', 2500);
-}
-
-async function createNewClient() {
-  const name = document.getElementById('n-name').value.trim();
-  if (!name) return;
-  const id = name.toLowerCase().replace(/\s+/g, '-') + '-' + Date.now().toString().slice(-4);
-  const data = {
-    name,
-    email: document.getElementById('n-email').value,
-    tier: document.getElementById('n-tier').value,
-    phone: document.getElementById('n-phone').value,
-    macros: { protein: 150, carbs: 175, fat: 55, calories: 1795 },
-    bmr_inputs: { weight_lbs: 160, height_cm: 170, age: 30, gender: 'male' },
-    created_at: new Date().toISOString()
-  };
-  if (db) {
-    await db.collection('clients').doc(id).set(data);
-  }
-  allClients.push({ id, ...data });
-  renderClientList(allClients);
-  document.getElementById('n-name').value = '';
-  document.getElementById('n-email').value = '';
-  document.getElementById('n-phone').value = '';
-  const fb = document.getElementById('new-feedback');
-  fb.style.display = 'inline';
-  setTimeout(() => fb.style.display = 'none', 2000);
-  // Auto-select new client
+async function createNewClient(){
+  const name=document.getElementById('n-name').value.trim();if(!name)return;
+  const id=name.toLowerCase().replace(/\s+/g,'-')+'-'+Date.now().toString().slice(-4);
+  const data={name,email:document.getElementById('n-email').value,tier:document.getElementById('n-tier').value,phone:document.getElementById('n-phone').value,macros:{protein:150,carbs:175,fat:55,calories:1795},bmr_inputs:{weight_lbs:160,height_cm:170,age:30,gender:'male'},created_at:new Date().toISOString()};
+  if(db)await db.collection('clients').doc(id).set(data);
+  allClients.push({id,...data});renderClientList(allClients);
+  document.getElementById('n-name').value='';document.getElementById('n-email').value='';document.getElementById('n-phone').value='';
+  const fb=document.getElementById('new-feedback');fb.style.display='inline';setTimeout(()=>fb.style.display='none',2000);
   selectClient(id);
 }
 
-function copyTrackerLink() {
-  const link = document.getElementById('tracker-link-display').textContent;
-  navigator.clipboard.writeText(link).then(() => alert('Link copied!'));
+function copyTrackerLink(){const link=document.getElementById('tracker-link-display').textContent;navigator.clipboard.writeText(link).then(()=>alert('Link copied!'));}
+
+async function loadBlueprintMeals(){
+  const el=document.getElementById('blueprint-meals-list');
+  if(!db){el.innerHTML='<div style="color:var(--muted);">Connect Firebase to manage Blueprint meals.</div>';return;}
+  try{const snap=await db.collection('blueprint_meals').get();const meals=snap.docs.map(d=>({id:d.id,...d.data()}));document.getElementById('meal-count-badge').textContent=`(${meals.length}/5+ to unlock)`;if(!meals.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0;">No meals yet.</div>';return;}el.innerHTML=meals.map(m=>`<div class="meal-admin-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div class="meal-name">${m.emoji||'🥗'} ${m.name}</div><div class="meal-macros">${m.calories} kcal · P: ${m.protein}g · C: ${m.carbs}g · F: ${m.fat}g</div>${m.tags?`<div style="font-size:11px;color:var(--gold-d);margin-top:4px;">${m.tags}</div>`:''}</div><button class="btn btn-red btn-sm" onclick="deleteBlueprintMeal('${m.id}')">Delete</button></div></div>`).join('');}catch(e){el.innerHTML='<div style="color:var(--red);">Could not load meals.</div>';}
 }
 
-// ============================================================
-//   BLUEPRINT MEALS
-// ============================================================
-async function loadBlueprintMeals() {
-  const el = document.getElementById('blueprint-meals-list');
-  if (!db) {
-    el.innerHTML = '<div style="color:var(--muted);">Connect Firebase to manage Blueprint meals.</div>';
-    return;
-  }
-  try {
-    const snap = await db.collection('blueprint_meals').get();
-    const meals = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    document.getElementById('meal-count-badge').textContent = `(${meals.length}/5+ to unlock)`;
-    if (!meals.length) {
-      el.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:10px 0;">No meals yet. Add 5 to unlock for clients.</div>';
-      return;
-    }
-    el.innerHTML = meals.map(m => `
-      <div class="meal-admin-card">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div>
-            <div class="meal-name">${m.emoji || '🥗'} ${m.name}</div>
-            <div class="meal-macros">${m.calories} kcal · P: ${m.protein}g · C: ${m.carbs}g · F: ${m.fat}g</div>
-            ${m.tags ? `<div style="font-size:11px;color:var(--gold-d);margin-top:4px;">${m.tags}</div>` : ''}
-          </div>
-          <button class="btn btn-red btn-sm" onclick="deleteBlueprintMeal('${m.id}')">Delete</button>
-        </div>
-      </div>
-    `).join('');
-  } catch (e) {
-    el.innerHTML = '<div style="color:var(--red);">Could not load meals.</div>';
-  }
-}
+async function saveBlueprintMeal(){const name=document.getElementById('m-name').value.trim();if(!name)return;const data={name,emoji:document.getElementById('m-emoji').value||'🥗',calories:parseInt(document.getElementById('m-calories').value)||0,protein:parseInt(document.getElementById('m-protein').value)||0,carbs:parseInt(document.getElementById('m-carbs').value)||0,fat:parseInt(document.getElementById('m-fat').value)||0,tags:document.getElementById('m-tags').value,prep_time:document.getElementById('m-preptime').value,notes:document.getElementById('m-notes').value,created_at:new Date().toISOString()};if(db)await db.collection('blueprint_meals').add(data);['m-name','m-emoji','m-calories','m-protein','m-carbs','m-fat','m-tags','m-preptime'].forEach(id=>document.getElementById(id).value='');document.getElementById('m-notes').value='';const fb=document.getElementById('meal-feedback');fb.style.display='inline';setTimeout(()=>fb.style.display='none',2000);loadBlueprintMeals();}
 
-async function saveBlueprintMeal() {
-  const name = document.getElementById('m-name').value.trim();
-  if (!name) return;
-  const data = {
-    name,
-    emoji: document.getElementById('m-emoji').value || '🥗',
-    calories: parseInt(document.getElementById('m-calories').value) || 0,
-    protein: parseInt(document.getElementById('m-protein').value) || 0,
-    carbs: parseInt(document.getElementById('m-carbs').value) || 0,
-    fat: parseInt(document.getElementById('m-fat').value) || 0,
-    tags: document.getElementById('m-tags').value,
-    prep_time: document.getElementById('m-preptime').value,
-    notes: document.getElementById('m-notes').value,
-    created_at: new Date().toISOString()
-  };
-  if (db) {
-    await db.collection('blueprint_meals').add(data);
-  }
-  ['m-name','m-emoji','m-calories','m-protein','m-carbs','m-fat','m-tags','m-preptime'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('m-notes').value = '';
-  const fb = document.getElementById('meal-feedback');
-  fb.style.display = 'inline';
-  setTimeout(() => fb.style.display = 'none', 2000);
-  loadBlueprintMeals();
-}
+async function deleteBlueprintMeal(id){if(!confirm('Delete this meal?'))return;if(db)await db.collection('blueprint_meals').doc(id).delete();loadBlueprintMeals();}
 
-async function deleteBlueprintMeal(id) {
-  if (!confirm('Delete this meal?')) return;
-  if (db) await db.collection('blueprint_meals').doc(id).delete();
-  loadBlueprintMeals();
-}
+function switchAdminTab(name,el){document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+name).classList.add('active');el.classList.add('active');}
 
-// ============================================================
-//   UI
-// ============================================================
-function switchAdminTab(name, el) {
-  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-  document.getElementById('panel-' + name).classList.add('active');
-  el.classList.add('active');
-}
+async function incrementCheckin(clientId,clientName){if(!db)return alert('Firebase not connected.');try{const ref=db.collection('clients').doc(clientId);const snap=await ref.get();const current=(snap.data()&&snap.data().checkin_streak)||0;const newStreak=current+1;await ref.update({checkin_streak:newStreak,last_checkin_date:new Date().toISOString()});const idx=allClients.findIndex(c=>c.id===clientId);if(idx>=0)allClients[idx].checkin_streak=newStreak;renderClientList(allClients);const msg=document.createElement('div');msg.textContent=`✓ ${clientName} — streak now ${newStreak} week${newStreak!==1?'s':''}`;msg.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #4caf76;color:#4caf76;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';document.body.appendChild(msg);setTimeout(()=>msg.remove(),2500);}catch(e){alert('Could not update streak.');}}
 
-async function incrementCheckin(clientId, clientName) {
-  if (!db) return alert('Firebase not connected.');
-  try {
-    const ref = db.collection('clients').doc(clientId);
-    const snap = await ref.get();
-    const current = (snap.data() && snap.data().checkin_streak) || 0;
-    const newStreak = current + 1;
-    await ref.update({ checkin_streak: newStreak, last_checkin_date: new Date().toISOString() });
-    const idx = allClients.findIndex(c => c.id === clientId);
-    if (idx >= 0) allClients[idx].checkin_streak = newStreak;
-    renderClientList(allClients);
-    const msg = document.createElement('div');
-    msg.textContent = `✓ ${clientName} — streak now ${newStreak} week${newStreak !== 1 ? 's' : ''}`;
-    msg.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #4caf76;color:#4caf76;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';
-    document.body.appendChild(msg);
-    setTimeout(() => msg.remove(), 2500);
-  } catch (e) {
-    alert('Could not update streak. Try again.');
-  }
-}
-
-async function resetCheckin(clientId, clientName) {
-  if (!db) return alert('Firebase not connected.');
-  if (!confirm(`Reset ${clientName}'s streak to 0?`)) return;
-  try {
-    await db.collection('clients').doc(clientId).update({ checkin_streak: 0, last_checkin_date: null });
-    const idx = allClients.findIndex(c => c.id === clientId);
-    if (idx >= 0) { allClients[idx].checkin_streak = 0; allClients[idx].last_checkin_date = null; }
-    renderClientList(allClients);
-    const msg = document.createElement('div');
-    msg.textContent = `↺ ${clientName} — streak reset to 0`;
-    msg.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #e05c5c;color:#e05c5c;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';
-    document.body.appendChild(msg);
-    setTimeout(() => msg.remove(), 2500);
-  } catch(e) { alert('Could not reset streak.'); }
-}
+async function resetCheckin(clientId,clientName){if(!db)return alert('Firebase not connected.');if(!confirm(`Reset ${clientName}'s streak to 0?`))return;try{await db.collection('clients').doc(clientId).update({checkin_streak:0,last_checkin_date:null});const idx=allClients.findIndex(c=>c.id===clientId);if(idx>=0){allClients[idx].checkin_streak=0;allClients[idx].last_checkin_date=null;}renderClientList(allClients);const msg=document.createElement('div');msg.textContent=`↺ ${clientName} — streak reset to 0`;msg.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #e05c5c;color:#e05c5c;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';document.body.appendChild(msg);setTimeout(()=>msg.remove(),2500);}catch(e){alert('Could not reset streak.');}}
 </script>
 </body>
 </html>
