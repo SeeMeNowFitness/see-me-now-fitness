@@ -439,9 +439,14 @@ function renderClientList(clients) {
       <div>
         <div class="name">${c.name || 'Unnamed'}</div>
         <div class="meta">${c.email || ''} ${c.phone ? '· ' + c.phone : ''}</div>
+        <div style="font-size:11px;color:var(--green);margin-top:4px;">🔥 ${c.checkin_streak || 0} week streak</div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
         <span class="tier-pill ${tierColors[c.tier] || 'tier-tracker'}">${tierNames[c.tier] || c.tier}</span>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm" style="background:rgba(76,175,118,0.15);color:var(--green);border:1px solid rgba(76,175,118,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();incrementCheckin('${c.id}','${c.name}')">✓ Check In</button>
+          <button class="btn btn-sm" style="background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();resetCheckin('${c.id}','${c.name}')">↺ Reset</button>
+        </div>
       </div>
     </div>
   `).join('');
@@ -534,7 +539,7 @@ function updateTierFields() {
   const tier = document.getElementById('e-tier').value;
   document.getElementById('edit-contest').style.display = tier === 'contest_prep' ? '' : 'none';
   document.getElementById('edit-inperson').style.display = tier === 'inperson' ? '' : 'none';
-  document.getElementById('edit-online').style.display = (tier === 'lifestyle') ? '' : 'none';
+  document.getElementById('edit-online').style.display = '';  // show for all tiers
 }
 
 let currentTrackingMethod = 'standard';
@@ -660,7 +665,8 @@ async function saveClient() {
     data.sessions_used = parseInt(document.getElementById('e-sessions-used').value) || 0;
     data.next_session = document.getElementById('e-next-session').value;
   }
-  if (tier === 'lifestyle') {
+  // Save check-in for all tiers
+  if (true) {
     data.checkin_streak = parseInt(document.getElementById('e-checkin-streak').value) || 0;
     data.checkin_schedule = document.getElementById('e-checkin-schedule').value;
   }
@@ -788,6 +794,43 @@ function switchAdminTab(name, el) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   el.classList.add('active');
+}
+
+async function incrementCheckin(clientId, clientName) {
+  if (!db) return alert('Firebase not connected.');
+  try {
+    const ref = db.collection('clients').doc(clientId);
+    const snap = await ref.get();
+    const current = (snap.data() && snap.data().checkin_streak) || 0;
+    const newStreak = current + 1;
+    await ref.update({ checkin_streak: newStreak, last_checkin_date: new Date().toISOString() });
+    const idx = allClients.findIndex(c => c.id === clientId);
+    if (idx >= 0) allClients[idx].checkin_streak = newStreak;
+    renderClientList(allClients);
+    const msg = document.createElement('div');
+    msg.textContent = `✓ ${clientName} — streak now ${newStreak} week${newStreak !== 1 ? 's' : ''}`;
+    msg.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #4caf76;color:#4caf76;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';
+    document.body.appendChild(msg);
+    setTimeout(() => msg.remove(), 2500);
+  } catch (e) {
+    alert('Could not update streak. Try again.');
+  }
+}
+
+async function resetCheckin(clientId, clientName) {
+  if (!db) return alert('Firebase not connected.');
+  if (!confirm(`Reset ${clientName}'s streak to 0?`)) return;
+  try {
+    await db.collection('clients').doc(clientId).update({ checkin_streak: 0, last_checkin_date: null });
+    const idx = allClients.findIndex(c => c.id === clientId);
+    if (idx >= 0) { allClients[idx].checkin_streak = 0; allClients[idx].last_checkin_date = null; }
+    renderClientList(allClients);
+    const msg = document.createElement('div');
+    msg.textContent = `↺ ${clientName} — streak reset to 0`;
+    msg.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #e05c5c;color:#e05c5c;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';
+    document.body.appendChild(msg);
+    setTimeout(() => msg.remove(), 2500);
+  } catch(e) { alert('Could not reset streak.'); }
 }
 </script>
 </body>

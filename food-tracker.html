@@ -998,7 +998,15 @@ function applyTierUI() {
   }
 
   if (tier === 'lifestyle') {
-    document.getElementById('streak-count').textContent = clientProfile.checkin_streak || 0;
+    // Auto-reset streak if no check-in in 7+ days
+  const lastCheckin = clientProfile.last_checkin_date ? new Date(clientProfile.last_checkin_date) : null;
+  const daysSince = lastCheckin ? Math.floor((new Date() - lastCheckin) / (1000 * 60 * 60 * 24)) : 999;
+  if (clientProfile.checkin_streak > 0 && daysSince >= 7) {
+    // Reset streak in Firebase silently
+    firestoreSet('clients/' + CLIENT_ID, { checkin_streak: 0, last_checkin_date: null });
+    clientProfile.checkin_streak = 0;
+  }
+  document.getElementById('streak-count').textContent = clientProfile.checkin_streak || 0;
   }
 
   // Recipes tier banner
