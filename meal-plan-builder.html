@@ -5,16 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SMN — Meal Plan Builder</title>
 <script>
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyCLUo020Q7A9S_PCM0mti7E-0-SflNIRy8",
-  authDomain: "see-me-now-fitness.firebaseapp.com",
-  projectId: "see-me-now-fitness",
-  storageBucket: "see-me-now-fitness.firebasestorage.app",
-  messagingSenderId: "505059193724",
-  appId: "1:505059193724:web:704a12cbd0a55592612af9"
-};
-const ADMIN_PASSWORD = "seemenow2026";
-const USDA_KEY = "aLAQ0gLcU06f7ZeHlpt28KzKnK6TxsQ3DWFFzJve";
+const FIREBASE_CONFIG={apiKey:"AIzaSyCLUo020Q7A9S_PCM0mti7E-0-SflNIRy8",authDomain:"see-me-now-fitness.firebaseapp.com",projectId:"see-me-now-fitness",storageBucket:"see-me-now-fitness.firebasestorage.app",messagingSenderId:"505059193724",appId:"1:505059193724:web:704a12cbd0a55592612af9"};
+const ADMIN_PASSWORD="seemenow2026";
+const USDA_KEY="aLAQ0gLcU06f7ZeHlpt28KzKnK6TxsQ3DWFFzJve";
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -30,7 +23,7 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 .login-box input:focus{border-color:var(--gold);}
 .login-box button{background:var(--gold);color:var(--black);border:none;border-radius:8px;padding:12px;width:100%;font-size:14px;font-weight:800;cursor:pointer;}
 .login-error{color:var(--red);font-size:13px;margin-top:10px;display:none;}
-#app{display:none;max-width:860px;margin:0 auto;padding:24px 16px;}
+#app{display:none;max-width:960px;margin:0 auto;padding:24px 16px;}
 .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
 .page-header h1{font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.06em;text-transform:uppercase;}
 .section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
@@ -46,17 +39,13 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 .btn:active{opacity:0.75;}
 .btn-gold{background:var(--gold);color:var(--black);}
 .btn-outline{background:none;border:1px solid var(--border);color:var(--white);}
-.btn-red{background:rgba(224,92,92,0.12);color:var(--red);border:1px solid rgba(224,92,92,0.3);}
-.btn-green{background:rgba(76,175,118,0.12);color:var(--green);border:1px solid rgba(76,175,118,0.3);}
 .btn-sm{padding:7px 12px;font-size:12px;}
 .btn-full{width:100%;}
-.btn-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
-/* Meal card */
+.btn-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;align-items:center;}
 .meal-builder-card{background:var(--black);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;}
 .meal-card-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;background:var(--dark);}
 .meal-card-header h4{font-size:14px;font-weight:800;color:var(--white);}
 .meal-card-body{padding:16px;}
-/* Food search */
 .food-search-wrap{position:relative;margin-bottom:10px;}
 .food-search-wrap input{padding-right:90px;}
 .food-search-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;cursor:pointer;}
@@ -65,37 +54,37 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 .food-result-row .fr-name{font-size:13px;font-weight:700;color:var(--white);flex:1;margin-right:10px;}
 .food-result-row .fr-macros{font-size:11px;color:var(--muted);margin-right:10px;}
 .food-result-row .fr-add{background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;}
-/* Food in meal */
 .food-in-meal{display:grid;grid-template-columns:1fr 80px 50px 50px 50px 60px 36px;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;}
 .food-in-meal:last-child{border-bottom:none;}
 .food-in-meal .fim-name{font-weight:700;color:var(--white);}
 .food-in-meal input{padding:6px 8px;font-size:12px;background:var(--dark);}
-.food-in-meal .fim-label{font-size:10px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:0.04em;}
 .food-in-meal .fim-val{text-align:center;color:var(--muted);}
 .food-in-meal .fim-delete{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;text-align:center;}
 .meal-totals{background:rgba(201,168,76,0.06);border:1px solid var(--gold-d);border-radius:8px;padding:10px 14px;margin-top:10px;display:flex;gap:20px;flex-wrap:wrap;font-size:13px;}
 .meal-totals span{color:var(--muted);}
 .meal-totals strong{color:var(--white);}
-/* Plan totals */
 .plan-totals{background:var(--card);border:1px solid var(--gold-d);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
 .plan-totals h3{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:12px;}
 .totals-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
 .total-tile{text-align:center;background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px;}
 .total-tile .tv{font-size:22px;font-weight:900;color:var(--white);}
 .total-tile .tl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
-/* Status */
-.save-status{display:none;font-size:13px;font-weight:700;margin-left:12px;}
+.save-status{font-size:13px;font-weight:700;}
 .save-status.success{color:var(--green);}
 .save-status.error{color:var(--red);}
 .loading-inline{font-size:12px;color:var(--muted);padding:8px 0;}
+.del-btn{background:none;border:none;color:var(--red);cursor:pointer;font-size:18px;}
+.approved-food-row{display:grid;grid-template-columns:1fr 1fr 36px;gap:8px;align-items:center;margin-bottom:8px;}
+.approved-food-row input{padding:8px 10px;font-size:12px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);}
+.tab-btn-active{flex:1;padding:9px;border-radius:8px;background:var(--gold);color:var(--black);border:none;font-size:12px;font-weight:800;cursor:pointer;}
+.tab-btn-inactive{flex:1;padding:9px;border-radius:8px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-size:12px;font-weight:800;cursor:pointer;}
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
 <div id="login-screen">
 <div class="login-box">
-<h1>SMN Meal Builder</h1>
+<h1>SMN Plan Builder</h1>
 <p>Coach access only</p>
 <input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkLogin()">
 <button onclick="checkLogin()">Enter</button>
@@ -103,14 +92,13 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 </div>
 </div>
 
-<!-- APP -->
 <div id="app">
 <div class="page-header">
 <h1>📋 Meal Plan Builder</h1>
 <a href="smn-admin.html" style="color:var(--muted);font-size:13px;font-weight:700;">← Back to Admin</a>
 </div>
 
-<!-- Step 1: Select Client -->
+<!-- 1. Select Client -->
 <div class="section">
 <h3>1. Select Client</h3>
 <div class="field">
@@ -119,11 +107,10 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <option value="">— Choose a client —</option>
 </select>
 </div>
-<div id="client-info" style="display:none;font-size:12px;color:var(--muted);margin-top:-6px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-d);border-radius:8px;">
-</div>
+<div id="client-info" style="display:none;font-size:12px;color:var(--muted);margin-top:-6px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-d);border-radius:8px;"></div>
 </div>
 
-<!-- Step 2: Plan Settings -->
+<!-- 2. Plan Settings -->
 <div class="section">
 <h3>2. Plan Settings</h3>
 <div class="grid-3">
@@ -163,134 +150,151 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <div id="target-compare" style="font-size:12px;color:var(--muted);margin-top:10px;"></div>
 </div>
 
-<!-- Step 3: Build Meals -->
+<!-- 3. Build Meals -->
 <div class="section">
 <h3>3. Build Meals</h3>
 <div id="meals-container"></div>
 </div>
 
-<!-- Save -->
-<div class="btn-row">
-<button class="btn btn-gold" onclick="saveMealPlan()">💾 Save Plan to Client</button>
-<button class="btn btn-outline" onclick="clearPlan()">Clear All</button>
-<span class="save-status" id="save-status"></span>
+<!-- 4. Supplements -->
+<div class="section">
+<h3>4. Supplements</h3>
+<div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Add supplements with timing and benefits. Shows in client's My Plan tab.</div>
+<div id="supplements-container"></div>
+<div style="margin-top:10px;display:flex;gap:8px;">
+<button class="btn btn-outline btn-sm" onclick="addSuppRow()">+ Add Supplement</button>
+<button class="btn btn-outline btn-sm" onclick="loadDefaultSupps()">Load Defaults</button>
+</div>
 </div>
 
-</div><!-- /app -->
+<!-- 5. Blueprint Approved Foods -->
+<div class="section">
+<h3>5. Blueprint Approved Foods</h3>
+<div class="grid-2" style="margin-bottom:16px;">
+<div class="field" style="margin-bottom:0;">
+<label>Blood Type</label>
+<select id="blood-type-select" onchange="onBloodTypeChange()">
+<option value="unknown">Unknown / General</option>
+<option value="O">Type O</option>
+<option value="A">Type A</option>
+<option value="B">Type B</option>
+<option value="AB">Type AB</option>
+</select>
+</div>
+<div style="display:flex;align-items:flex-end;padding-bottom:2px;">
+<div style="font-size:12px;color:var(--muted);" id="blood-type-desc">Showing general Blueprint approved foods.</div>
+</div>
+</div>
+<div style="display:flex;gap:6px;margin-bottom:14px;">
+<button id="af-tab-protein" class="tab-btn-active" onclick="setAFTab('protein')">💪 Protein</button>
+<button id="af-tab-carbs" class="tab-btn-inactive" onclick="setAFTab('carbs')">🌾 Carbs</button>
+<button id="af-tab-fats" class="tab-btn-inactive" onclick="setAFTab('fats')">🥑 Fats</button>
+</div>
+<div id="approved-foods-container"></div>
+<div style="margin-top:10px;">
+<button class="btn btn-outline btn-sm" onclick="addApprovedFoodRow()">+ Add Custom Food</button>
+</div>
+</div>
+
+<!-- Save -->
+<div class="btn-row">
+<button class="btn btn-gold" onclick="savePlan()">💾 Save Plan to Client</button>
+<button class="btn btn-outline" onclick="clearPlan()">Clear All</button>
+<span class="save-status" id="save-status" style="display:none;"></span>
+</div>
+
+</div>
 
 <script>
-let db = null;
-let allClients = [];
-let selectedClient = null;
-let meals = [];
-let searchTimers = {};
+let db=null,allClients=[],selectedClient=null,meals=[],supplements=[],approvedFoods={protein:[],carbs:[],fats:[]},currentAFTab='protein',searchTimers={};
 
-// Default meal names by count
-const MEAL_NAMES = {
-  3: ['Meal 1 — Breakfast', 'Meal 2 — Lunch', 'Meal 3 — Dinner'],
-  4: ['Meal 1 — Breakfast', 'Meal 2 — Lunch', 'Meal 3 — Pre Workout', 'Meal 4 — Dinner'],
-  5: ['Meal 1 — Breakfast', 'Meal 2 — Mid Morning', 'Meal 3 — Lunch', 'Meal 4 — Pre Workout', 'Meal 5 — Dinner'],
-  6: ['Meal 1 — Breakfast', 'Meal 2 — Mid Morning', 'Meal 3 — Lunch', 'Meal 4 — Pre Workout', 'Meal 5 — Post Workout', 'Meal 6 — Dinner'],
-};
-const MEAL_TIMES = {
-  3: ['7:00 AM', '12:00 PM', '7:00 PM'],
-  4: ['7:00 AM', '12:00 PM', '4:00 PM', '7:00 PM'],
-  5: ['7:00 AM', '10:00 AM', '1:00 PM', '4:00 PM', '7:00 PM'],
-  6: ['7:00 AM', '10:00 AM', '1:00 PM', '4:00 PM', '6:30 PM', '9:00 PM'],
-};
+// ── MEAL DEFAULTS ──
+const MEAL_NAMES={3:['Meal 1 — Breakfast','Meal 2 — Lunch','Meal 3 — Dinner'],4:['Meal 1 — Breakfast','Meal 2 — Lunch','Meal 3 — Pre Workout','Meal 4 — Dinner'],5:['Meal 1 — Breakfast','Meal 2 — Mid Morning','Meal 3 — Lunch','Meal 4 — Pre Workout','Meal 5 — Dinner'],6:['Meal 1 — Breakfast','Meal 2 — Mid Morning','Meal 3 — Lunch','Meal 4 — Pre Workout','Meal 5 — Post Workout','Meal 6 — Dinner']};
+const MEAL_TIMES={3:['7:00 AM','12:00 PM','7:00 PM'],4:['7:00 AM','12:00 PM','4:00 PM','7:00 PM'],5:['7:00 AM','10:00 AM','1:00 PM','4:00 PM','7:00 PM'],6:['7:00 AM','10:00 AM','1:00 PM','4:00 PM','6:30 PM','9:00 PM']};
 
-// LOGIN
-function checkLogin() {
-  const pw = document.getElementById('pw-input').value;
-  if (pw === ADMIN_PASSWORD) {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app').style.display = 'block';
-    initApp();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
+// ── SUPPLEMENT DATA ──
+const SUPP_BENEFITS={'Whey Protein':'Supports muscle repair and growth after training','Casein Protein':'Slow-digesting protein ideal for overnight recovery','Creatine Monohydrate':'Increases strength, power output, and muscle volume','Pre-Workout':'Boosts energy, focus, and workout performance','BCAAs':'Reduces muscle breakdown during training','Glutamine':'Supports gut health and muscle recovery','Multivitamin':'Fills micronutrient gaps to support overall health','Fish Oil':'Reduces inflammation, supports joints and heart health','Vitamin D3':'Supports immune function, bone health, and testosterone','Magnesium':'Improves sleep quality and reduces muscle cramps','Zinc':'Supports testosterone production and immune health','Vitamin C':'Antioxidant supporting immune function and collagen','Iron':'Essential for oxygen transport and energy production','Probiotics':'Supports gut health and nutrient absorption','Collagen':'Supports joint health and connective tissue','Ashwagandha':'Reduces cortisol and supports stress management','Melatonin':'Improves sleep quality and overnight recovery','CLA':'May support fat loss and lean muscle preservation','L-Carnitine':'Supports fat metabolism and energy production','Beta-Alanine':'Buffers lactic acid, delays fatigue during intense training'};
+const DEFAULT_SUPPLEMENTS=[{name:'Whey Protein',dose:'1 scoop (25g protein)',timing:'Post Workout',benefit:'Supports muscle repair and growth after training'},{name:'Creatine Monohydrate',dose:'5g',timing:'Daily — any time',benefit:'Increases strength, power output, and muscle volume'},{name:'Multivitamin',dose:'1 tablet',timing:'With breakfast',benefit:'Fills micronutrient gaps to support overall health'},{name:'Fish Oil',dose:'2 capsules',timing:'With meals',benefit:'Reduces inflammation, supports joints and heart health'},{name:'Vitamin D3',dose:'2000 IU',timing:'With breakfast',benefit:'Supports immune function, bone health, and testosterone'}];
+const TIMING_OPTIONS=['Pre Workout','Post Workout','With breakfast','With meals','Before bed','Daily — any time','Morning','Evening'];
+
+// ── BLOOD TYPE FOODS ──
+const BT_FOODS={
+  unknown:{
+    protein:[{name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},{name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},{name:'Egg Whites',macro:'11g P / 0g C / 0g F per 100g'},{name:'Greek Yogurt (nonfat)',macro:'10g P / 4g C / 0g F per 100g'},{name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},{name:'Tuna (canned)',macro:'30g P / 0g C / 1g F per 100g'}],
+    carbs:[{name:'White Rice (cooked)',macro:'3g P / 28g C / 0g F per 100g'},{name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},{name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},{name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},{name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},{name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'}],
+    fats:[{name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},{name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Almonds',macro:'21g P / 22g C / 50g F per 100g'},{name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},{name:'Whole Eggs',macro:'13g P / 1g C / 11g F per 100g'},{name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'}]
+  },
+  O:{
+    protein:[{name:'Beef (lean)',macro:'26g P / 0g C / 7g F per 100g'},{name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},{name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},{name:'Sardines',macro:'25g P / 0g C / 11g F per 100g'},{name:'Venison',macro:'30g P / 0g C / 3g F per 100g'},{name:'Cod',macro:'18g P / 0g C / 1g F per 100g'}],
+    carbs:[{name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},{name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},{name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},{name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},{name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},{name:'Plums',macro:'1g P / 11g C / 0g F per 100g'}],
+    fats:[{name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},{name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},{name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},{name:'Macadamia Nuts',macro:'8g P / 14g C / 76g F per 100g'}]
+  },
+  A:{
+    protein:[{name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},{name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},{name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},{name:'Sardines',macro:'25g P / 0g C / 11g F per 100g'},{name:'Tofu',macro:'8g P / 2g C / 4g F per 100g'},{name:'Tempeh',macro:'19g P / 9g C / 11g F per 100g'}],
+    carbs:[{name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},{name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},{name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},{name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},{name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},{name:'Berries (mixed)',macro:'1g P / 14g C / 0g F per 100g'}],
+    fats:[{name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},{name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},{name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},{name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'}]
+  },
+  B:{
+    protein:[{name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},{name:'Rabbit',macro:'29g P / 0g C / 5g F per 100g'},{name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},{name:'Cod',macro:'18g P / 0g C / 1g F per 100g'},{name:'Eggs',macro:'13g P / 1g C / 11g F per 100g'},{name:'Greek Yogurt',macro:'10g P / 4g C / 0g F per 100g'}],
+    carbs:[{name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},{name:'Millet',macro:'11g P / 73g C / 4g F per 100g'},{name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},{name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},{name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},{name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'}],
+    fats:[{name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},{name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},{name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Macadamia Nuts',macro:'8g P / 14g C / 76g F per 100g'},{name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'}]
+  },
+  AB:{
+    protein:[{name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},{name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},{name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},{name:'Tuna',macro:'30g P / 0g C / 1g F per 100g'},{name:'Eggs',macro:'13g P / 1g C / 11g F per 100g'},{name:'Tofu',macro:'8g P / 2g C / 4g F per 100g'}],
+    carbs:[{name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},{name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},{name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},{name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},{name:'Cherries',macro:'1g P / 16g C / 0g F per 100g'},{name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'}],
+    fats:[{name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},{name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},{name:'Peanut Butter',macro:'25g P / 20g C / 50g F per 100g'},{name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'}]
   }
-}
+};
 
-async function initApp() {
-  try {
-    firebase.initializeApp(FIREBASE_CONFIG);
-    db = firebase.firestore();
-  } catch(e) {}
+const BT_DESCS={unknown:'Showing general Blueprint approved foods.',O:'🔴 Type O — High protein, lean meats, fish, vegetables. Limit grains and dairy.',A:'🟢 Type A — Plant-based proteins, poultry, and fish. Structured diet.',B:'🔵 Type B — Balanced omnivore. Lamb, fish, dairy, and most vegetables.',AB:'🟡 Type AB — Mix of A and B. Tofu, seafood, dairy, and greens.'};
+
+// ── LOGIN ──
+function checkLogin(){const pw=document.getElementById('pw-input').value;if(pw===ADMIN_PASSWORD){document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='block';initApp();}else{document.getElementById('login-error').style.display='block';}}
+
+async function initApp(){
+  try{firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();}catch(e){}
   await loadClients();
   initMeals(5);
+  initApprovedFoods('unknown');
+  renderSupplements();
 }
 
-async function loadClients() {
-  const sel = document.getElementById('client-select');
-  if (!db) return;
-  try {
-    const snap = await db.collection('clients').get();
-    allClients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    allClients.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    allClients.forEach(c => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = c.name + (c.tier ? ` (${c.tier})` : '');
-      sel.appendChild(opt);
-    });
-  } catch(e) {}
+async function loadClients(){
+  const sel=document.getElementById('client-select');
+  if(!db)return;
+  try{const snap=await db.collection('clients').get();allClients=snap.docs.map(d=>({id:d.id,...d.data()}));allClients.sort((a,b)=>(a.name||'').localeCompare(b.name||''));allClients.forEach(c=>{const opt=document.createElement('option');opt.value=c.id;opt.textContent=c.name+(c.tier?` (${c.tier})`:'');sel.appendChild(opt);});}catch(e){}
 }
 
-function onClientSelect() {
-  const id = document.getElementById('client-select').value;
-  selectedClient = allClients.find(c => c.id === id) || null;
-  const info = document.getElementById('client-info');
-  if (!selectedClient) { info.style.display = 'none'; return; }
-  const m = selectedClient.macros || {};
-  info.style.display = 'block';
-  info.innerHTML = `<strong style="color:var(--white);">${selectedClient.name}</strong> &nbsp;·&nbsp; Target: <strong style="color:var(--gold);">${m.calories || '—'} kcal</strong> &nbsp;·&nbsp; P: ${m.protein || '—'}g &nbsp; C: ${m.carbs || '—'}g &nbsp; F: ${m.fat || '—'}g`;
+function onClientSelect(){
+  const id=document.getElementById('client-select').value;
+  selectedClient=allClients.find(c=>c.id===id)||null;
+  const info=document.getElementById('client-info');
+  if(!selectedClient){info.style.display='none';return;}
+  const m=selectedClient.macros||{};
+  info.style.display='block';
+  info.innerHTML=`<strong style="color:var(--white);">${selectedClient.name}</strong> &nbsp;·&nbsp; Target: <strong style="color:var(--gold);">${m.calories||'—'} kcal</strong> &nbsp;·&nbsp; P: ${m.protein||'—'}g &nbsp; C: ${m.carbs||'—'}g &nbsp; F: ${m.fat||'—'}g`;
   updateTargetCompare();
-
-  // Load existing plan if any
-  if (selectedClient.meal_plan) {
-    if (confirm('This client already has a meal plan. Load it for editing?')) {
-      loadExistingPlan(selectedClient.meal_plan);
-    }
-  }
+  if(selectedClient.blood_type){document.getElementById('blood-type-select').value=selectedClient.blood_type;onBloodTypeChange();}
+  if(selectedClient.supplements?.length){supplements=selectedClient.supplements.map(s=>({...s}));renderSupplements();}
+  if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
+  if(selectedClient.meal_plan){if(confirm('This client already has a meal plan. Load it for editing?')){loadExistingPlan(selectedClient.meal_plan);}}
 }
 
-function loadExistingPlan(plan) {
-  const count = plan.length;
-  document.getElementById('meal-count').value = count;
-  meals = plan.map((m, i) => ({
-    name: m.name,
-    time: m.time,
-    foods: m.foods.map(f => ({ ...f, id: Date.now() + Math.random() }))
-  }));
-  renderMeals();
-  updateTotals();
+function loadExistingPlan(plan){
+  const count=plan.length;
+  document.getElementById('meal-count').value=Math.min(6,Math.max(3,count));
+  meals=plan.map(m=>({name:m.name,time:m.time,foods:m.foods.map(f=>({...f}))}));
+  renderMeals();updateTotals();
 }
 
-function onMealCountChange() {
-  const count = parseInt(document.getElementById('meal-count').value);
-  initMeals(count);
-}
+// ── MEALS ──
+function initMeals(count){const names=MEAL_NAMES[count]||MEAL_NAMES[5];const times=MEAL_TIMES[count]||MEAL_TIMES[5];meals=Array.from({length:count},(_,i)=>({name:names[i],time:times[i],foods:[]}));renderMeals();updateTotals();}
+function onMealCountChange(){initMeals(parseInt(document.getElementById('meal-count').value));}
+function clearPlan(){if(!confirm('Clear all meals?'))return;initMeals(parseInt(document.getElementById('meal-count').value));}
 
-function initMeals(count) {
-  const names = MEAL_NAMES[count] || MEAL_NAMES[5];
-  const times = MEAL_TIMES[count] || MEAL_TIMES[5];
-  meals = Array.from({ length: count }, (_, i) => ({
-    name: names[i],
-    time: times[i],
-    foods: []
-  }));
-  renderMeals();
-  updateTotals();
-}
-
-function clearPlan() {
-  if (!confirm('Clear all meals?')) return;
-  initMeals(parseInt(document.getElementById('meal-count').value));
-}
-
-function renderMeals() {
-  const container = document.getElementById('meals-container');
-  container.innerHTML = meals.map((meal, mi) => `
+function renderMeals(){
+  const container=document.getElementById('meals-container');
+  container.innerHTML=meals.map((meal,mi)=>`
     <div class="meal-builder-card">
       <div class="meal-card-header" onclick="toggleMealCard(${mi})">
         <h4>🍽 ${meal.name}</h4>
@@ -300,45 +304,34 @@ function renderMeals() {
         </div>
       </div>
       <div class="meal-card-body" id="meal-body-${mi}" style="display:none;">
-        <!-- Meal name & time -->
         <div class="grid-2" style="margin-bottom:12px;">
-          <div class="field" style="margin-bottom:0;">
-            <label>Meal Name</label>
-            <input type="text" value="${meal.name}" oninput="meals[${mi}].name=this.value;document.querySelector('#meal-body-${mi}').closest('.meal-builder-card').querySelector('h4').textContent='🍽 '+this.value;">
-          </div>
-          <div class="field" style="margin-bottom:0;">
-            <label>Time</label>
-            <input type="text" value="${meal.time}" oninput="meals[${mi}].time=this.value;">
-          </div>
+          <div class="field" style="margin-bottom:0;"><label>Meal Name</label><input type="text" value="${meal.name}" oninput="meals[${mi}].name=this.value;this.closest('.meal-builder-card').querySelector('h4').textContent='🍽 '+this.value;"></div>
+          <div class="field" style="margin-bottom:0;"><label>Time</label><input type="text" value="${meal.time}" oninput="meals[${mi}].time=this.value;"></div>
         </div>
-
-        <!-- Food search -->
-        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">Search & Add Food (USDA)</div>
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">Search & Add Food (USDA Auto-fill)</div>
         <div class="food-search-wrap">
           <input type="text" id="fsearch-${mi}" placeholder="Search foods e.g. chicken breast…" oninput="debounceSearch(${mi})">
           <button class="food-search-btn" onclick="searchFood(${mi})">Search</button>
         </div>
         <div id="fresults-${mi}" class="food-results"></div>
-
-        <!-- Foods in this meal -->
-        ${meal.foods.length ? `
+        ${meal.foods.length?`
           <div style="margin-top:8px;">
             <div class="food-in-meal" style="padding-bottom:4px;">
-              <div class="fim-label">Food</div>
-              <div class="fim-label">Amount</div>
-              <div class="fim-label">P(g)</div>
-              <div class="fim-label">C(g)</div>
-              <div class="fim-label">F(g)</div>
-              <div class="fim-label">kcal</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Food</div>
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Amount</div>
+              <div style="font-size:10px;color:var(--muted);text-align:center;">P(g)</div>
+              <div style="font-size:10px;color:var(--muted);text-align:center;">C(g)</div>
+              <div style="font-size:10px;color:var(--muted);text-align:center;">F(g)</div>
+              <div style="font-size:10px;color:var(--muted);text-align:center;">kcal</div>
               <div></div>
             </div>
-            ${meal.foods.map((food, fi) => `
-              <div class="food-in-meal" id="food-row-${mi}-${fi}">
+            ${meal.foods.map((food,fi)=>`
+              <div class="food-in-meal">
                 <div class="fim-name">${food.name}</div>
-                <input type="text" value="${food.amount || '100g'}" onchange="meals[${mi}].foods[${fi}].amount=this.value;updateTotals();" style="width:100%;">
-                <input type="number" value="${food.protein}" onchange="meals[${mi}].foods[${fi}].protein=parseFloat(this.value)||0;updateTotals();" style="width:100%;">
-                <input type="number" value="${food.carbs}" onchange="meals[${mi}].foods[${fi}].carbs=parseFloat(this.value)||0;updateTotals();" style="width:100%;">
-                <input type="number" value="${food.fat}" onchange="meals[${mi}].foods[${fi}].fat=parseFloat(this.value)||0;updateTotals();" style="width:100%;">
+                <input type="text" value="${food.amount||'100g'}" onchange="meals[${mi}].foods[${fi}].amount=this.value;updateTotals();">
+                <input type="number" value="${food.protein}" onchange="meals[${mi}].foods[${fi}].protein=parseFloat(this.value)||0;recalcFoodCals(${mi},${fi});updateTotals();">
+                <input type="number" value="${food.carbs}" onchange="meals[${mi}].foods[${fi}].carbs=parseFloat(this.value)||0;recalcFoodCals(${mi},${fi});updateTotals();">
+                <input type="number" value="${food.fat}" onchange="meals[${mi}].foods[${fi}].fat=parseFloat(this.value)||0;recalcFoodCals(${mi},${fi});updateTotals();">
                 <div class="fim-val">${food.cals}</div>
                 <button class="fim-delete" onclick="removeFood(${mi},${fi})">✕</button>
               </div>
@@ -350,152 +343,163 @@ function renderMeals() {
               <span>F: <strong>${getMealMacro(mi,'fat')}g</strong></span>
             </div>
           </div>
-        ` : `<div style="font-size:13px;color:var(--muted);padding:8px 0;">No foods added yet. Search above to add.</div>`}
+        `:`<div style="font-size:13px;color:var(--muted);padding:8px 0;">No foods added yet. Search above to add.</div>`}
       </div>
     </div>
   `).join('');
 }
 
-function toggleMealCard(mi) {
-  const body = document.getElementById(`meal-body-${mi}`);
-  const chev = document.getElementById(`chev-meal-${mi}`);
-  const open = body.style.display === 'block';
-  body.style.display = open ? 'none' : 'block';
-  chev.textContent = open ? '▼' : '▲';
-}
+function toggleMealCard(mi){const body=document.getElementById(`meal-body-${mi}`);const chev=document.getElementById(`chev-meal-${mi}`);const open=body.style.display==='block';body.style.display=open?'none':'block';chev.textContent=open?'▼':'▲';}
+function getMealCals(mi){return meals[mi].foods.reduce((s,f)=>s+(f.cals||0),0);}
+function getMealMacro(mi,key){return Math.round(meals[mi].foods.reduce((s,f)=>s+(f[key]||0),0));}
+function recalcFoodCals(mi,fi){const f=meals[mi].foods[fi];f.cals=Math.round((f.protein||0)*4+(f.carbs||0)*4+(f.fat||0)*9);}
+function removeFood(mi,fi){meals[mi].foods.splice(fi,1);renderMeals();updateTotals();const body=document.getElementById(`meal-body-${mi}`);if(body){body.style.display='block';document.getElementById(`chev-meal-${mi}`).textContent='▲';}}
 
-function getMealCals(mi) {
-  return meals[mi].foods.reduce((s, f) => s + (f.cals || 0), 0);
-}
-function getMealMacro(mi, key) {
-  return Math.round(meals[mi].foods.reduce((s, f) => s + (f[key] || 0), 0));
-}
+// ── USDA SEARCH ──
+function debounceSearch(mi){clearTimeout(searchTimers[mi]);const q=document.getElementById(`fsearch-${mi}`)?.value?.trim();if(!q||q.length<2){document.getElementById(`fresults-${mi}`).innerHTML='';return;}searchTimers[mi]=setTimeout(()=>searchFood(mi),500);}
 
-function removeFood(mi, fi) {
-  meals[mi].foods.splice(fi, 1);
-  renderMeals();
-  updateTotals();
-  // Re-open the card
-  const body = document.getElementById(`meal-body-${mi}`);
-  if (body) { body.style.display = 'block'; document.getElementById(`chev-meal-${mi}`).textContent = '▲'; }
-}
-
-// USDA FOOD SEARCH
-function debounceSearch(mi) {
-  clearTimeout(searchTimers[mi]);
-  const q = document.getElementById(`fsearch-${mi}`)?.value?.trim();
-  if (!q || q.length < 2) { document.getElementById(`fresults-${mi}`).innerHTML = ''; return; }
-  searchTimers[mi] = setTimeout(() => searchFood(mi), 500);
-}
-
-async function searchFood(mi) {
-  const q = document.getElementById(`fsearch-${mi}`)?.value?.trim();
-  if (!q) return;
-  const el = document.getElementById(`fresults-${mi}`);
-  el.innerHTML = '<div class="loading-inline">Searching USDA database…</div>';
-  try {
-    const r = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=5&api_key=${USDA_KEY}`);
-    const d = await r.json();
-    if (!d.foods?.length) { el.innerHTML = '<div class="loading-inline">No results found.</div>'; return; }
-    el.innerHTML = d.foods.map(f => {
-      const n = {};
-      (f.foodNutrients || []).forEach(x => {
-        if (x.nutrientName === 'Energy') n.calories = Math.round(x.value || 0);
-        if (x.nutrientName === 'Protein') n.protein = Math.round(x.value || 0);
-        if (x.nutrientName === 'Carbohydrate, by difference') n.carbs = Math.round(x.value || 0);
-        if (x.nutrientName === 'Total lipid (fat)') n.fat = Math.round(x.value || 0);
-      });
-      const nm = f.description.length > 45 ? f.description.slice(0, 45) + '…' : f.description;
-      return `<div class="food-result-row">
-        <div class="fr-name">${nm}</div>
-        <div class="fr-macros">${n.calories || 0} kcal/100g · P:${n.protein || 0}g C:${n.carbs || 0}g F:${n.fat || 0}g</div>
-        <button class="fr-add" onclick="addFoodToMeal(${mi},'${f.description.replace(/'/g, "\\'")}',${n.calories || 0},${n.protein || 0},${n.carbs || 0},${n.fat || 0})">+ Add</button>
-      </div>`;
+async function searchFood(mi){
+  const q=document.getElementById(`fsearch-${mi}`)?.value?.trim();if(!q)return;
+  const el=document.getElementById(`fresults-${mi}`);
+  el.innerHTML='<div class="loading-inline">Searching USDA database…</div>';
+  try{
+    const r=await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=5&api_key=${USDA_KEY}`);
+    const d=await r.json();
+    if(!d.foods?.length){el.innerHTML='<div class="loading-inline">No results found.</div>';return;}
+    el.innerHTML=d.foods.map(f=>{
+      const n={};
+      (f.foodNutrients||[]).forEach(x=>{if(x.nutrientName==='Energy')n.calories=Math.round(x.value||0);if(x.nutrientName==='Protein')n.protein=Math.round(x.value||0);if(x.nutrientName==='Carbohydrate, by difference')n.carbs=Math.round(x.value||0);if(x.nutrientName==='Total lipid (fat)')n.fat=Math.round(x.value||0);});
+      const nm=f.description.length>45?f.description.slice(0,45)+'…':f.description;
+      return`<div class="food-result-row"><div class="fr-name">${nm}</div><div class="fr-macros">${n.calories||0} kcal/100g · P:${n.protein||0}g C:${n.carbs||0}g F:${n.fat||0}g</div><button class="fr-add" onclick="addFoodToMeal(${mi},'${f.description.replace(/'/g,"\\'")}',${n.calories||0},${n.protein||0},${n.carbs||0},${n.fat||0})">+ Add</button></div>`;
     }).join('');
-  } catch(e) {
-    el.innerHTML = '<div class="loading-inline" style="color:var(--red);">Search failed. Check connection.</div>';
-  }
+  }catch(e){el.innerHTML='<div class="loading-inline" style="color:var(--red);">Search failed.</div>';}
 }
 
-function addFoodToMeal(mi, name, cals, protein, carbs, fat) {
-  meals[mi].foods.push({ name, amount: '100g', cals, protein, carbs, fat, id: Date.now() });
-  document.getElementById(`fresults-${mi}`).innerHTML = '';
-  document.getElementById(`fsearch-${mi}`).value = '';
-  renderMeals();
-  updateTotals();
-  // Re-open card
-  const body = document.getElementById(`meal-body-${mi}`);
-  if (body) { body.style.display = 'block'; document.getElementById(`chev-meal-${mi}`).textContent = '▲'; }
+function addFoodToMeal(mi,name,cals,protein,carbs,fat){
+  meals[mi].foods.push({name,amount:'100g',cals,protein,carbs,fat});
+  document.getElementById(`fresults-${mi}`).innerHTML='';
+  document.getElementById(`fsearch-${mi}`).value='';
+  renderMeals();updateTotals();
+  const body=document.getElementById(`meal-body-${mi}`);
+  if(body){body.style.display='block';document.getElementById(`chev-meal-${mi}`).textContent='▲';}
 }
 
-function updateTotals() {
-  let totCal = 0, totP = 0, totC = 0, totF = 0;
-  meals.forEach((meal, mi) => {
-    const cal = getMealCals(mi);
-    const p = getMealMacro(mi, 'protein');
-    const c = getMealMacro(mi, 'carbs');
-    const f = getMealMacro(mi, 'fat');
-    totCal += cal; totP += p; totC += c; totF += f;
-    const badge = document.getElementById(`meal-cal-badge-${mi}`);
-    if (badge) badge.textContent = cal + ' kcal';
+function updateTotals(){
+  let totCal=0,totP=0,totC=0,totF=0;
+  meals.forEach((meal,mi)=>{
+    const cal=getMealCals(mi),p=getMealMacro(mi,'protein'),c=getMealMacro(mi,'carbs'),f=getMealMacro(mi,'fat');
+    totCal+=cal;totP+=p;totC+=c;totF+=f;
+    const badge=document.getElementById(`meal-cal-badge-${mi}`);if(badge)badge.textContent=cal+' kcal';
   });
-  document.getElementById('total-cals').textContent = totCal;
-  document.getElementById('total-protein').textContent = totP + 'g';
-  document.getElementById('total-carbs').textContent = totC + 'g';
-  document.getElementById('total-fat').textContent = totF + 'g';
-  updateTargetCompare(totCal, totP, totC, totF);
+  document.getElementById('total-cals').textContent=totCal;
+  document.getElementById('total-protein').textContent=totP+'g';
+  document.getElementById('total-carbs').textContent=totC+'g';
+  document.getElementById('total-fat').textContent=totF+'g';
+  const el=document.getElementById('target-compare');
+  if(!selectedClient?.macros){el.textContent='';return;}
+  const m=selectedClient.macros;
+  if(!totCal){el.innerHTML=`Target: <strong style="color:var(--gold)">${m.calories} kcal</strong> · P:${m.protein}g C:${m.carbs}g F:${m.fat}g`;return;}
+  const diff=totCal-m.calories;
+  const dc=Math.abs(diff)<=50?'var(--green)':Math.abs(diff)<=150?'var(--gold)':'var(--red)';
+  el.innerHTML=`Target: <strong>${m.calories} kcal</strong> · Difference: <strong style="color:${dc}">${diff>=0?'+':''}${diff} kcal</strong>`;
 }
 
-function updateTargetCompare(totCal, totP, totC, totF) {
-  const el = document.getElementById('target-compare');
-  if (!selectedClient?.macros) { el.textContent = ''; return; }
-  const m = selectedClient.macros;
-  if (!totCal) { el.innerHTML = `Target: <strong style="color:var(--gold)">${m.calories} kcal</strong> · P:${m.protein}g C:${m.carbs}g F:${m.fat}g`; return; }
-  const diff = totCal - m.calories;
-  const diffColor = Math.abs(diff) <= 50 ? 'var(--green)' : Math.abs(diff) <= 150 ? 'var(--gold)' : 'var(--red)';
-  el.innerHTML = `Target: <strong>${m.calories} kcal</strong> · Difference: <strong style="color:${diffColor}">${diff >= 0 ? '+' : ''}${diff} kcal</strong>`;
+function updateTargetCompare(){updateTotals();}
+
+// ── SUPPLEMENTS ──
+function addSuppRow(s={name:'',dose:'',timing:'Daily — any time',benefit:''}){supplements.push(s);renderSupplements();}
+function loadDefaultSupps(){supplements=DEFAULT_SUPPLEMENTS.map(s=>({...s}));renderSupplements();}
+function removeSupp(i){supplements.splice(i,1);renderSupplements();}
+function onSuppNameChange(i,val){supplements[i].name=val;const b=SUPP_BENEFITS[val]||'';supplements[i].benefit=b;const bi=document.getElementById(`supp-benefit-${i}`);if(bi)bi.value=b;}
+
+function renderSupplements(){
+  const el=document.getElementById('supplements-container');
+  if(!supplements.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);padding:8px 0;">No supplements added. Use buttons below.</div>';return;}
+  el.innerHTML=`
+    <div style="display:grid;grid-template-columns:160px 110px 150px 1fr 36px;gap:8px;margin-bottom:6px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Supplement</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Dose</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Timing</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Benefit (auto-fills)</div>
+      <div></div>
+    </div>
+    ${supplements.map((s,i)=>`
+      <div style="display:grid;grid-template-columns:160px 110px 150px 1fr 36px;gap:8px;margin-bottom:8px;align-items:center;">
+        <input type="text" value="${s.name}" placeholder="e.g. Whey Protein" list="supp-list" oninput="onSuppNameChange(${i},this.value)" style="padding:8px 10px;font-size:12px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;">
+        <input type="text" value="${s.dose}" placeholder="e.g. 1 scoop" oninput="supplements[${i}].dose=this.value" style="padding:8px 10px;font-size:12px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;">
+        <select onchange="supplements[${i}].timing=this.value" style="padding:8px 10px;font-size:12px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;">${TIMING_OPTIONS.map(t=>`<option value="${t}" ${s.timing===t?'selected':''}>${t}</option>`).join('')}</select>
+        <input type="text" id="supp-benefit-${i}" value="${s.benefit||''}" placeholder="Auto-fills when you type a name…" oninput="supplements[${i}].benefit=this.value" style="padding:8px 10px;font-size:12px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--muted);outline:none;">
+        <button class="del-btn" onclick="removeSupp(${i})">✕</button>
+      </div>
+    `).join('')}
+    <datalist id="supp-list">${Object.keys(SUPP_BENEFITS).map(n=>`<option value="${n}">`).join('')}</datalist>
+  `;
 }
 
-async function saveMealPlan() {
-  if (!selectedClient) { alert('Please select a client first.'); return; }
-  const planData = meals.map(meal => ({
-    name: meal.name,
-    time: meal.time,
-    foods: meal.foods.map(f => ({
-      name: f.name,
-      amount: f.amount || '100g',
-      protein: f.protein || 0,
-      carbs: f.carbs || 0,
-      fat: f.fat || 0,
-      cals: f.cals || 0
-    }))
-  }));
+// ── APPROVED FOODS ──
+function initApprovedFoods(bt){approvedFoods={protein:BT_FOODS[bt].protein.map(f=>({...f})),carbs:BT_FOODS[bt].carbs.map(f=>({...f})),fats:BT_FOODS[bt].fats.map(f=>({...f}))};renderApprovedFoods();}
 
-  const status = document.getElementById('save-status');
-  status.style.display = 'inline';
-  status.className = 'save-status';
-  status.textContent = 'Saving…';
+function setAFTab(tab){
+  currentAFTab=tab;
+  ['protein','carbs','fats'].forEach(t=>{
+    document.getElementById(`af-tab-${t}`).className=t===tab?'tab-btn-active':'tab-btn-inactive';
+  });
+  renderApprovedFoods();
+}
 
-  try {
-    if (db) {
+function onBloodTypeChange(){
+  const bt=document.getElementById('blood-type-select').value;
+  document.getElementById('blood-type-desc').textContent=BT_DESCS[bt]||'';
+  initApprovedFoods(bt);
+}
+
+function addApprovedFoodRow(){approvedFoods[currentAFTab].push({name:'',macro:''});renderApprovedFoods();}
+function removeApprovedFood(tab,i){approvedFoods[tab].splice(i,1);renderApprovedFoods();}
+
+function renderApprovedFoods(){
+  const el=document.getElementById('approved-foods-container');
+  const foods=approvedFoods[currentAFTab]||[];
+  const labels={protein:'💪 Protein Sources',carbs:'🌾 Carbohydrate Sources',fats:'🥑 Fat Sources'};
+  if(!foods.length){el.innerHTML=`<div style="font-size:13px;color:var(--muted);padding:8px 0;">No ${currentAFTab} foods. Add custom foods below.</div>`;return;}
+  el.innerHTML=`
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:8px;">${labels[currentAFTab]}</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 36px;gap:8px;margin-bottom:6px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Food Name</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Macro Info</div>
+      <div></div>
+    </div>
+    ${foods.map((f,i)=>`
+      <div class="approved-food-row">
+        <input type="text" value="${f.name}" placeholder="e.g. Chicken Breast" oninput="approvedFoods['${currentAFTab}'][${i}].name=this.value">
+        <input type="text" value="${f.macro}" placeholder="e.g. 31g P / 0g C / 4g F per 100g" oninput="approvedFoods['${currentAFTab}'][${i}].macro=this.value">
+        <button class="del-btn" onclick="removeApprovedFood('${currentAFTab}',${i})">✕</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+// ── SAVE ──
+async function savePlan(){
+  if(!selectedClient){alert('Please select a client first.');return;}
+  const planData=meals.map(meal=>({name:meal.name,time:meal.time,foods:meal.foods.map(f=>({name:f.name,amount:f.amount||'100g',protein:f.protein||0,carbs:f.carbs||0,fat:f.fat||0,cals:f.cals||0}))}));
+  const status=document.getElementById('save-status');
+  status.style.display='inline';status.className='save-status';status.textContent='Saving…';
+  try{
+    if(db){
       await db.collection('clients').doc(selectedClient.id).update({
-        meal_plan: planData,
-        meal_plan_updated: new Date().toISOString(),
-        meal_plan_notes: document.getElementById('plan-notes').value,
-        meal_plan_type: document.getElementById('plan-type').value
+        meal_plan:planData,
+        meal_plan_updated:new Date().toISOString(),
+        meal_plan_notes:document.getElementById('plan-notes').value,
+        meal_plan_type:document.getElementById('plan-type').value,
+        supplements:supplements.filter(s=>s.name),
+        approved_foods:approvedFoods,
+        blood_type:document.getElementById('blood-type-select').value
       });
     }
-    status.className = 'save-status success';
-    status.textContent = `✓ Saved to ${selectedClient.name} — live in their tracker now!`;
-    // Update local cache
-    const idx = allClients.findIndex(c => c.id === selectedClient.id);
-    if (idx >= 0) allClients[idx].meal_plan = planData;
-    selectedClient.meal_plan = planData;
-    setTimeout(() => { status.style.display = 'none'; }, 4000);
-  } catch(e) {
-    status.className = 'save-status error';
-    status.textContent = '✕ Save failed. Check connection.';
-  }
+    status.className='save-status success';
+    status.textContent=`✓ Saved to ${selectedClient.name} — live in their tracker now!`;
+    setTimeout(()=>{status.style.display='none';},4000);
+  }catch(e){status.className='save-status error';status.textContent='✕ Save failed. Check connection.';}
 }
 </script>
 </body>

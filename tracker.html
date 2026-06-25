@@ -380,10 +380,15 @@ select option{background:var(--dark);}
 <!-- PLAN TAB -->
 <div class="panel" id="panel-plan">
 
+<!-- Disclaimer -->
+<div style="background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:11px;color:var(--muted);line-height:1.7;">
+⚠️ <strong style="color:var(--gold);">Important Notice:</strong> Please consult a qualified healthcare practitioner prior to beginning any exercise regimen or taking any products or supplements recommended by See Me Now Fitness or any other party. Individual results may vary.
+</div>
+
 <!-- Leg/Non-Leg Day Toggle -->
 <div id="plan-day-toggle" style="display:flex;gap:8px;margin-bottom:16px;">
-<button id="plan-nonleg" onclick="setPlanDay('nonleg')" style="flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;">💪 NON LEG DAY</button>
-<button id="plan-leg" onclick="setPlanDay('leg')" style="flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;">🦵 LEG DAY</button>
+<button id="plan-nonleg" onclick="setPlanDay('nonleg')" style="flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;">🔥 HIGH DAY</button>
+<button id="plan-leg" onclick="setPlanDay('leg')" style="flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;">❄️ LOW DAY</button>
 </div>
 
 <!-- Today's Summary Card -->
@@ -414,7 +419,7 @@ select option{background:var(--dark);}
 <div id="tabs">
 <button class="tab active" onclick="switchTab('today',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Today</button>
 <button class="tab" onclick="switchTab('log',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>Log</button>
-<button class="tab" onclick="switchTab('plan',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Plan</button>
+<button class="tab" onclick="switchTab('plan',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>My Plan</button>
 <button class="tab" onclick="switchTab('progress',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M3 17l4-8 4 4 4-6 4 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Progress</button>
 <button class="tab" onclick="switchTab('recipes',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Recipes</button>
 </div>
@@ -785,7 +790,7 @@ function setPlanDay(day) {
     nonleg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
     leg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
   } else {
-    leg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+    leg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--blue);color:var(--white);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
     nonleg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
   }
   renderPlanTab();
@@ -850,11 +855,7 @@ const DEFAULT_MEAL_PLAN = [
     { name: 'Sweet Potato', amount: '150g', protein: 2, carbs: 30, fat: 0, cals: 129 },
     { name: 'Chicken Breast', amount: '150g', protein: 47, carbs: 0, fat: 5, cals: 248 },
   ]},
-  { name: 'Meal 5 — Post Workout', time: '7:00 PM', foods: [
-    { name: 'Protein Shake', amount: '1 scoop', protein: 25, carbs: 3, fat: 2, cals: 130 },
-    { name: 'Banana', amount: '1 medium', protein: 1, carbs: 27, fat: 0, cals: 105 },
-  ]},
-  { name: 'Meal 6 — Dinner', time: '9:00 PM', foods: [
+  { name: 'Meal 5 — Dinner', time: '7:00 PM', foods: [
     { name: 'Salmon', amount: '200g', protein: 40, carbs: 0, fat: 26, cals: 416 },
     { name: 'Asparagus', amount: '150g', protein: 4, carbs: 8, fat: 0, cals: 34 },
     { name: 'Brown Rice (cooked)', amount: '150g', protein: 4, carbs: 38, fat: 1, cals: 165 },
@@ -1053,33 +1054,53 @@ function renderSupplements() {
     <div class="card">
       ${supps.map(s => `
         <div class="supp-row">
-          <div>
+          <div style="flex:1;">
             <div class="supp-name">${s.name}</div>
             <div class="supp-dose">${s.dose}</div>
+            ${s.benefit ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;font-style:italic;">${s.benefit}</div>` : ''}
           </div>
           <div class="supp-timing">${s.timing}</div>
         </div>
       `).join('')}
     </div>
+    <div style="font-size:10px;color:var(--muted);line-height:1.6;padding:8px 0;">⚠️ Please consult a qualified healthcare practitioner before taking any supplements.</div>
   `;
 }
 
 function renderApprovedFoods() {
   const el = document.getElementById('plan-approved-foods-content');
   const profile = clientProfile || {};
-  const foods = profile.approved_foods || DEFAULT_APPROVED_FOODS;
-  const isTemplate = !profile.approved_foods;
+  const af = profile.approved_foods;
+  const isTemplate = !af;
+
+  // Handle both old flat array format and new P/C/F object format
+  let protein = [], carbs = [], fats = [];
+  if (af) {
+    if (Array.isArray(af)) {
+      protein = af; // old format fallback
+    } else {
+      protein = af.protein || [];
+      carbs = af.carbs || [];
+      fats = af.fats || [];
+    }
+  } else {
+    protein = DEFAULT_APPROVED_FOODS.slice(0, 4);
+    carbs = DEFAULT_APPROVED_FOODS.slice(4, 8);
+    fats = DEFAULT_APPROVED_FOODS.slice(8);
+  }
+
+  const renderGrid = (foods) => foods.map(f => `
+    <div class="approved-food-item">
+      <div class="af-name">${f.name}</div>
+      <div class="af-macro">${f.macro}</div>
+    </div>
+  `).join('');
 
   el.innerHTML = `
     ${isTemplate ? `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">📋 <strong style="color:var(--gold);">Blueprint Approved Foods</strong> — Stick to these for best results.</div>` : ''}
-    <div class="approved-food-grid">
-      ${foods.map(f => `
-        <div class="approved-food-item">
-          <div class="af-name">${f.name}</div>
-          <div class="af-macro">${f.macro}</div>
-        </div>
-      `).join('')}
-    </div>
+    ${protein.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:8px;margin-top:4px;">💪 Protein Sources</div><div class="approved-food-grid">${renderGrid(protein)}</div>` : ''}
+    ${carbs.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue);margin-bottom:8px;margin-top:12px;">🌾 Carbohydrate Sources</div><div class="approved-food-grid">${renderGrid(carbs)}</div>` : ''}
+    ${fats.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--orange);margin-bottom:8px;margin-top:12px;">🥑 Fat Sources</div><div class="approved-food-grid">${renderGrid(fats)}</div>` : ''}
   `;
 }
 
