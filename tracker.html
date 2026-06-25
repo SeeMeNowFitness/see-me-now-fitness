@@ -387,6 +387,9 @@ select option{background:var(--dark);}
 <option value="tsp">teaspoon</option>
 <option value="piece">piece / item</option>
 <option value="scoop">scoop</option>
+<option value="ml">milliliters (ml)</option>
+<option value="fl_oz">fluid ounces (fl oz)</option>
+<option value="l">liters (l)</option>
 </select>
 </div>
 <div id="add-food-macro-preview" style="background:var(--black);border-radius:8px;padding:12px;font-size:13px;color:var(--muted);min-height:48px;"></div>
@@ -399,7 +402,7 @@ select option{background:var(--dark);}
 
 <script>
 // ── UNIT CONVERSION TABLE (all to grams) ──
-const UNIT_TO_GRAMS={g:1,oz:28.3495,cup:240,tbsp:15,tsp:5,piece:100,scoop:30};
+const UNIT_TO_GRAMS={g:1,oz:28.3495,cup:240,tbsp:15,tsp:5,piece:100,scoop:30,ml:1,fl_oz:29.5735,l:1000};
 
 // STATE
 let clientProfile=null,currentDateKey=todayKey(),pendingFood=null,searchTimer=null,deferredPWAPrompt=null;
@@ -534,7 +537,7 @@ function updateAddPreview(){
   const unit=document.getElementById('add-food-unit').value;
   const grams=amount*(UNIT_TO_GRAMS[unit]||1);
   const mult=grams/100;
-  const unitLabels={g:`${Math.round(grams)}g`,oz:`${amount} oz (${Math.round(grams)}g)`,cup:`${amount} cup${amount!==1?'s':''} (${Math.round(grams)}g)`,tbsp:`${amount} tbsp (${Math.round(grams)}g)`,tsp:`${amount} tsp (${Math.round(grams)}g)`,piece:`${amount} piece${amount!==1?'s':''} (~${Math.round(grams)}g)`,scoop:`${amount} scoop${amount!==1?'s':''} (~${Math.round(grams)}g)`};
+  const unitLabels={g:`${Math.round(grams)}g`,oz:`${amount} oz (${Math.round(grams)}g)`,cup:`${amount} cup${amount!==1?'s':''} (${Math.round(grams)}g)`,tbsp:`${amount} tbsp (${Math.round(grams)}g)`,tsp:`${amount} tsp (${Math.round(grams)}g)`,piece:`${amount} piece${amount!==1?'s':''} (~${Math.round(grams)}g)`,scoop:`${amount} scoop${amount!==1?'s':''} (~${Math.round(grams)}g)`,ml:`${Math.round(amount)}ml`,fl_oz:`${amount} fl oz (${Math.round(grams)}ml)`,l:`${amount}L (${Math.round(grams)}ml)`};
   const label=unitLabels[unit]||`${Math.round(grams)}g`;
   document.getElementById('add-food-macro-preview').innerHTML=
     `<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Serving: ${label}</div>`+
@@ -550,7 +553,7 @@ function confirmAddFood(){
   const unit=document.getElementById('add-food-unit').value;
   const grams=amount*(UNIT_TO_GRAMS[unit]||1);
   const mult=grams/100;
-  const unitLabels={g:`${Math.round(grams)}g`,oz:`${amount} oz`,cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,piece:`${amount} piece${amount!==1?'s':''}`,scoop:`${amount} scoop${amount!==1?'s':''}`};
+  const unitLabels={g:`${Math.round(grams)}g`,oz:`${amount} oz`,cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,piece:`${amount} piece${amount!==1?'s':''}`,scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`,fl_oz:`${amount} fl oz`,l:`${amount}L`};
   dayData.meals.push({
     name:pendingFood.name,
     grams:Math.round(grams),
