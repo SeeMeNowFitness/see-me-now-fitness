@@ -413,6 +413,12 @@ select option{background:var(--dark);}
 <div class="section-label">Approved Foods</div>
 <div id="plan-approved-foods-content"><div class="loading">Loading approved foods…</div></div>
 
+<!-- FLEX MEALS -->
+<div id="plan-flex-section" style="display:none;">
+<div class="section-label">⭐ Weekend Flex Meal</div>
+<div id="plan-flex-content"></div>
+</div>
+
 </div>
 </div><!-- /content -->
 
@@ -896,6 +902,7 @@ function renderPlanTab() {
   renderMealPlan();
   renderSupplements();
   renderApprovedFoods();
+  renderFlexMeals();
 }
 
 function renderPlanSummary() {
@@ -1101,6 +1108,44 @@ function renderApprovedFoods() {
     ${protein.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:8px;margin-top:4px;">💪 Protein Sources</div><div class="approved-food-grid">${renderGrid(protein)}</div>` : ''}
     ${carbs.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue);margin-bottom:8px;margin-top:12px;">🌾 Carbohydrate Sources</div><div class="approved-food-grid">${renderGrid(carbs)}</div>` : ''}
     ${fats.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--orange);margin-bottom:8px;margin-top:12px;">🥑 Fat Sources</div><div class="approved-food-grid">${renderGrid(fats)}</div>` : ''}
+  `;
+}
+
+function renderFlexMeals() {
+  const profile = clientProfile || {};
+  const section = document.getElementById('plan-flex-section');
+  const el = document.getElementById('plan-flex-content');
+  if (!profile.flex_enabled || !profile.flex_meals?.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  el.innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.04));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:8px;">⭐ Choose ONE option to replace Meal 2 — ONE day of the weekend only</div>
+      <div style="font-size:12px;color:var(--white);margin-bottom:4px;">✅ <strong>REPLACE</strong> — do not add on top of your plan</div>
+      <div style="font-size:12px;color:var(--white);">💧 Stick to water or zero calorie drinks only</div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="border-bottom:1px solid var(--border);">
+            <th style="text-align:left;padding:8px 10px;font-family:'Anton',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Restaurant</th>
+            <th style="text-align:left;padding:8px 10px;font-family:'Anton',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Meal Option</th>
+            <th style="text-align:left;padding:8px 10px;font-family:'Anton',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${profile.flex_meals.map((m, i) => `
+            <tr style="border-bottom:1px solid var(--border);${i % 2 === 0 ? 'background:rgba(255,255,255,0.02);' : ''}">
+              <td style="padding:10px;font-weight:700;color:var(--gold);white-space:nowrap;">${m.restaurant}</td>
+              <td style="padding:10px;color:var(--white);line-height:1.5;">${m.meal}</td>
+              <td style="padding:10px;color:var(--muted);white-space:nowrap;">${m.notes || ''}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;padding:10px 14px;background:rgba(201,168,76,0.06);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.7;">
+      ⚠️ <strong style="color:var(--gold);">Reminder:</strong> This is a weekly treat, not a daily option. Stay disciplined the rest of the week and results will follow. 💪
+    </div>
   `;
 }
 

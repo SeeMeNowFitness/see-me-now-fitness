@@ -78,6 +78,8 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 .approved-food-row input{padding:8px 10px;font-size:12px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);}
 .tab-btn-active{flex:1;padding:9px;border-radius:8px;background:var(--gold);color:var(--black);border:none;font-size:12px;font-weight:800;cursor:pointer;}
 .tab-btn-inactive{flex:1;padding:9px;border-radius:8px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-size:12px;font-weight:800;cursor:pointer;}
+.flex-meal-row{display:grid;grid-template-columns:140px 1fr 160px 36px;gap:8px;align-items:center;margin-bottom:8px;}
+.flex-meal-row input{padding:8px 10px;font-size:12px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;width:100%;}
 </style>
 </head>
 <body>
@@ -196,6 +198,31 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 </div>
 </div>
 
+<!-- 6. Flex Meals (Lifestyle Only) -->
+<div class="section">
+<h3>6. Flex Meal Options <span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(Lifestyle clients only)</span></h3>
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:700;color:var(--white);">
+<input type="checkbox" id="flex-enabled" onchange="toggleFlexSection()" style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;">
+Enable Flex Dieting for this client
+</label>
+</div>
+<div id="flex-section" style="display:none;">
+<div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-d);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--gold);line-height:1.7;">
+<strong>Client will see this instruction:</strong><br>
+<span style="color:var(--white);">⭐ Choose ONE of these options to replace Meal 2 on ONE day of the weekend only.<br>
+✅ Option to REPLACE — not add on top of plan.<br>
+💧 Stick to water or zero calorie drinks.</span>
+</div>
+<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Add restaurant flex meal options below. These show in the client's My Plan tab.</div>
+<div id="flex-meals-container"></div>
+<div style="margin-top:10px;display:flex;gap:8px;">
+<button class="btn btn-outline btn-sm" onclick="addFlexMealRow()">+ Add Restaurant Option</button>
+<button class="btn btn-outline btn-sm" onclick="loadDefaultFlexMeals()">Load SMN Defaults</button>
+</div>
+</div>
+</div>
+
 <!-- Save -->
 <div class="btn-row">
 <button class="btn btn-gold" onclick="savePlan()">💾 Save Plan to Client</button>
@@ -277,6 +304,8 @@ function onClientSelect(){
   if(selectedClient.blood_type){document.getElementById('blood-type-select').value=selectedClient.blood_type;onBloodTypeChange();}
   if(selectedClient.supplements?.length){supplements=selectedClient.supplements.map(s=>({...s}));renderSupplements();}
   if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
+  // Load flex meals
+  if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;document.getElementById('flex-section').style.display='block';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));renderFlexMeals();}
   if(selectedClient.meal_plan){if(confirm('This client already has a meal plan. Load it for editing?')){loadExistingPlan(selectedClient.meal_plan);}}
 }
 
@@ -478,28 +507,98 @@ function renderApprovedFoods(){
   `;
 }
 
-// ── SAVE ──
-async function savePlan(){
-  if(!selectedClient){alert('Please select a client first.');return;}
-  const planData=meals.map(meal=>({name:meal.name,time:meal.time,foods:meal.foods.map(f=>({name:f.name,amount:f.amount||'100g',protein:f.protein||0,carbs:f.carbs||0,fat:f.fat||0,cals:f.cals||0}))}));
-  const status=document.getElementById('save-status');
-  status.style.display='inline';status.className='save-status';status.textContent='Saving…';
-  try{
-    if(db){
+// ── FLEX MEALS ──
+let flexMeals = [];
+let flexEnabled = false;
+
+const DEFAULT_FLEX_MEALS = [
+  { restaurant: "Chick-fil-A", meal: "12ct Grilled Nuggets + Medium Waffle Fries (+ fruit cup optional)", notes: "High protein, balanced carbs" },
+  { restaurant: "Chick-fil-A", meal: "Grilled Chicken Sandwich + Fruit Cup", notes: "Cleaner option" },
+  { restaurant: "Chipotle", meal: "Double Chicken Bowl + White Rice + Fajita Veggies + Mild Salsa + Light Cheese", notes: "Customizable, macro-friendly" },
+  { restaurant: "McDonald's", meal: "Double Quarter Pounder + Medium Fries + Water/Diet Drink", notes: "High protein, controlled fats" },
+  { restaurant: "McDonald's", meal: "2 McDoubles (no mayo) + Small Fries", notes: "Cleaner alternative" },
+  { restaurant: "Wendy's", meal: "Dave's Single + Medium Fries", notes: "Balanced option" },
+  { restaurant: "Wendy's", meal: "Grilled Chicken Sandwich + Small Fries", notes: "Lower fat option" },
+  { restaurant: "Raising Cane's", meal: "3 Chicken Fingers + Fries + Light Sauce", notes: "Skip toast if needed" },
+  { restaurant: "Subway", meal: "Footlong Grilled Chicken + White Bread + Veggies + Light Sauce", notes: "High protein, flexible" },
+  { restaurant: "MOD Pizza", meal: "Thin Crust Pizza + Chicken/Lean Meat + Veggies + Light Cheese", notes: "Keep toppings simple" },
+];
+
+function toggleFlexSection() {
+  flexEnabled = document.getElementById('flex-enabled').checked;
+  document.getElementById('flex-section').style.display = flexEnabled ? 'block' : 'none';
+  if (flexEnabled && flexMeals.length === 0) loadDefaultFlexMeals();
+}
+
+function loadDefaultFlexMeals() {
+  flexMeals = DEFAULT_FLEX_MEALS.map(m => ({ ...m }));
+  renderFlexMeals();
+}
+
+function addFlexMealRow() {
+  flexMeals.push({ restaurant: '', meal: '', notes: '' });
+  renderFlexMeals();
+}
+
+function removeFlexMeal(i) {
+  flexMeals.splice(i, 1);
+  renderFlexMeals();
+}
+
+function renderFlexMeals() {
+  const el = document.getElementById('flex-meals-container');
+  if (!flexMeals.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;">No flex meals added. Use buttons below.</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="flex-meal-row" style="margin-bottom:4px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Restaurant</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Meal Option</div>
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Notes</div>
+      <div></div>
+    </div>
+    ${flexMeals.map((m, i) => `
+      <div class="flex-meal-row">
+        <input type="text" value="${m.restaurant}" placeholder="e.g. Chick-fil-A" oninput="flexMeals[${i}].restaurant=this.value">
+        <input type="text" value="${m.meal}" placeholder="e.g. Grilled Nuggets + Waffle Fries" oninput="flexMeals[${i}].meal=this.value">
+        <input type="text" value="${m.notes}" placeholder="e.g. High protein" oninput="flexMeals[${i}].notes=this.value">
+        <button class="del-btn" onclick="removeFlexMeal(${i})">✕</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+// ── SAVE (updated to include flex meals) ──
+async function savePlan() {
+  if (!selectedClient) { alert('Please select a client first.'); return; }
+  const planData = meals.map(meal => ({
+    name: meal.name, time: meal.time,
+    foods: meal.foods.map(f => ({ name: f.name, amount: f.amount || '100g', protein: f.protein || 0, carbs: f.carbs || 0, fat: f.fat || 0, cals: f.cals || 0 }))
+  }));
+  const status = document.getElementById('save-status');
+  status.style.display = 'inline'; status.className = 'save-status'; status.textContent = 'Saving…';
+  try {
+    if (db) {
       await db.collection('clients').doc(selectedClient.id).update({
-        meal_plan:planData,
-        meal_plan_updated:new Date().toISOString(),
-        meal_plan_notes:document.getElementById('plan-notes').value,
-        meal_plan_type:document.getElementById('plan-type').value,
-        supplements:supplements.filter(s=>s.name),
-        approved_foods:approvedFoods,
-        blood_type:document.getElementById('blood-type-select').value
+        meal_plan: planData,
+        meal_plan_updated: new Date().toISOString(),
+        meal_plan_notes: document.getElementById('plan-notes').value,
+        meal_plan_type: document.getElementById('plan-type').value,
+        supplements: supplements.filter(s => s.name),
+        approved_foods: approvedFoods,
+        blood_type: document.getElementById('blood-type-select').value,
+        flex_enabled: flexEnabled,
+        flex_meals: flexEnabled ? flexMeals.filter(m => m.restaurant || m.meal) : [],
       });
     }
-    status.className='save-status success';
-    status.textContent=`✓ Saved to ${selectedClient.name} — live in their tracker now!`;
-    setTimeout(()=>{status.style.display='none';},4000);
-  }catch(e){status.className='save-status error';status.textContent='✕ Save failed. Check connection.';}
+    status.className = 'save-status success';
+    status.textContent = `✓ Saved to ${selectedClient.name} — live in their tracker now!`;
+    setTimeout(() => { status.style.display = 'none'; }, 4000);
+  } catch (e) {
+    status.className = 'save-status error';
+    status.textContent = '✕ Save failed. Check connection.';
+  }
 }
 </script>
 </body>
