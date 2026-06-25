@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SMN — Meal Plan Builder</title>
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCLUo020Q7A9S_PCM0mti7E-0-SflNIRy8",
+  authDomain: "see-me-now-fitness.firebaseapp.com",
+  projectId: "see-me-now-fitness",
+  storageBucket: "see-me-now-fitness.firebasestorage.app",
+  messagingSenderId: "505059193724",
+  appId: "1:505059193724:web:704a12cbd0a55592612af9"
+};
+const ADMIN_PASSWORD = "seemenow2026";
+const USDA_KEY = "aLAQ0gLcU06f7ZeHlpt28KzKnK6TxsQ3DWFFzJve";
+</script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--black:#0a0a0a;--dark:#111111;--card:#181818;--border:#2a2a2a;--gold:#C9A84C;--gold-d:#8a6f2e;--white:#f5f5f5;--muted:#888;--green:#4caf76;--red:#e05c5c;--blue:#4c8fe0;--radius:12px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Arial,sans-serif;min-height:100vh;padding-bottom:60px;}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.login-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:40px;max-width:360px;width:100%;text-align:center;}
+.login-box h1{font-size:20px;font-weight:800;color:var(--gold);margin-bottom:6px;letter-spacing:0.06em;text-transform:uppercase;}
+.login-box p{font-size:13px;color:var(--muted);margin-bottom:24px;}
+.login-box input{background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);font-size:15px;padding:12px;width:100%;outline:none;margin-bottom:12px;letter-spacing:0.1em;}
+.login-box input:focus{border-color:var(--gold);}
+.login-box button{background:var(--gold);color:var(--black);border:none;border-radius:8px;padding:12px;width:100%;font-size:14px;font-weight:800;cursor:pointer;}
+.login-error{color:var(--red);font-size:13px;margin-top:10px;display:none;}
+#app{display:none;max-width:860px;margin:0 auto;padding:24px 16px;}
+.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;}
+.page-header h1{font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.06em;text-transform:uppercase;}
+.section{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
+.section h3{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:16px;}
+.field{margin-bottom:14px;}
+.field label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);display:block;margin-bottom:6px;}
+.field input,.field select,.field textarea{background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);font-size:14px;padding:10px 12px;width:100%;outline:none;font-family:inherit;}
+.field input:focus,.field select:focus{border-color:var(--gold);}
+.field select option{background:var(--dark);}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:800;cursor:pointer;border:none;transition:opacity 0.15s;}
+.btn:active{opacity:0.75;}
+.btn-gold{background:var(--gold);color:var(--black);}
+.btn-outline{background:none;border:1px solid var(--border);color:var(--white);}
+.btn-red{background:rgba(224,92,92,0.12);color:var(--red);border:1px solid rgba(224,92,92,0.3);}
+.btn-green{background:rgba(76,175,118,0.12);color:var(--green);border:1px solid rgba(76,175,118,0.3);}
+.btn-sm{padding:7px 12px;font-size:12px;}
+.btn-full{width:100%;}
+.btn-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;}
+/* Meal card */
+.meal-builder-card{background:var(--black);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;}
+.meal-card-header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;background:var(--dark);}
+.meal-card-header h4{font-size:14px;font-weight:800;color:var(--white);}
+.meal-card-body{padding:16px;}
+/* Food search */
+.food-search-wrap{position:relative;margin-bottom:10px;}
+.food-search-wrap input{padding-right:90px;}
+.food-search-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:800;cursor:pointer;}
+.food-results{margin-bottom:10px;}
+.food-result-row{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:var(--card);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;}
+.food-result-row .fr-name{font-size:13px;font-weight:700;color:var(--white);flex:1;margin-right:10px;}
+.food-result-row .fr-macros{font-size:11px;color:var(--muted);margin-right:10px;}
+.food-result-row .fr-add{background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;}
+/* Food in meal */
+.food-in-meal{display:grid;grid-template-columns:1fr 80px 50px 50px 50px 60px 36px;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.food-in-meal:last-child{border-bottom:none;}
+.food-in-meal .fim-name{font-weight:700;color:var(--white);}
+.food-in-meal input{padding:6px 8px;font-size:12px;background:var(--dark);}
+.food-in-meal .fim-label{font-size:10px;color:var(--muted);text-align:center;text-transform:uppercase;letter-spacing:0.04em;}
+.food-in-meal .fim-val{text-align:center;color:var(--muted);}
+.food-in-meal .fim-delete{background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;text-align:center;}
+.meal-totals{background:rgba(201,168,76,0.06);border:1px solid var(--gold-d);border-radius:8px;padding:10px 14px;margin-top:10px;display:flex;gap:20px;flex-wrap:wrap;font-size:13px;}
+.meal-totals span{color:var(--muted);}
+.meal-totals strong{color:var(--white);}
+/* Plan totals */
+.plan-totals{background:var(--card);border:1px solid var(--gold-d);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+.plan-totals h3{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:var(--gold);margin-bottom:12px;}
+.totals-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+.total-tile{text-align:center;background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px;}
+.total-tile .tv{font-size:22px;font-weight:900;color:var(--white);}
+.total-tile .tl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px;}
+/* Status */
+.save-status{display:none;font-size:13px;font-weight:700;margin-left:12px;}
+.save-status.success{color:var(--green);}
+.save-status.error{color:var(--red);}
+.loading-inline{font-size:12px;color:var(--muted);padding:8px 0;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+<div class="login-box">
+<h1>SMN Meal Builder</h1>
+<p>Coach access only</p>
+<input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkLogin()">
+<button onclick="checkLogin()">Enter</button>
+<div class="login-error" id="login-error">Wrong password</div>
+</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+<div class="page-header">
+<h1>📋 Meal Plan Builder</h1>
+<a href="smn-admin.html" style="color:var(--muted);font-size:13px;font-weight:700;">← Back to Admin</a>
+</div>
+
+<!-- Step 1: Select Client -->
+<div class="section">
+<h3>1. Select Client</h3>
+<div class="field">
+<label>Client</label>
+<select id="client-select" onchange="onClientSelect()">
+<option value="">— Choose a client —</option>
+</select>
+</div>
+<div id="client-info" style="display:none;font-size:12px;color:var(--muted);margin-top:-6px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-d);border-radius:8px;">
+</div>
+</div>
+
+<!-- Step 2: Plan Settings -->
+<div class="section">
+<h3>2. Plan Settings</h3>
+<div class="grid-3">
+<div class="field">
+<label>Number of Meals</label>
+<select id="meal-count" onchange="onMealCountChange()">
+<option value="3">3 meals</option>
+<option value="4">4 meals</option>
+<option value="5" selected>5 meals</option>
+<option value="6">6 meals</option>
+</select>
+</div>
+<div class="field">
+<label>Plan Type</label>
+<select id="plan-type">
+<option value="standard">Standard</option>
+<option value="high_day">High Day</option>
+<option value="low_day">Low Day</option>
+</select>
+</div>
+<div class="field">
+<label>Notes for Client (optional)</label>
+<input type="text" id="plan-notes" placeholder="e.g. Follow this on training days">
+</div>
+</div>
+</div>
+
+<!-- Plan Totals -->
+<div class="plan-totals">
+<h3>Plan Totals</h3>
+<div class="totals-grid">
+<div class="total-tile"><div class="tv" id="total-cals">0</div><div class="tl">Calories</div></div>
+<div class="total-tile"><div class="tv" id="total-protein">0g</div><div class="tl">Protein</div></div>
+<div class="total-tile"><div class="tv" id="total-carbs">0g</div><div class="tl">Carbs</div></div>
+<div class="total-tile"><div class="tv" id="total-fat">0g</div><div class="tl">Fat</div></div>
+</div>
+<div id="target-compare" style="font-size:12px;color:var(--muted);margin-top:10px;"></div>
+</div>
+
+<!-- Step 3: Build Meals -->
+<div class="section">
+<h3>3. Build Meals</h3>
+<div id="meals-container"></div>
+</div>
+
+<!-- Save -->
+<div class="btn-row">
+<button class="btn btn-gold" onclick="saveMealPlan()">💾 Save Plan to Client</button>
+<button class="btn btn-outline" onclick="clearPlan()">Clear All</button>
+<span class="save-status" id="save-status"></span>
+</div>
+
+</div><!-- /app -->
+
+<script>
+let db = null;
+let allClients = [];
+let selectedClient = null;
+let meals = [];
+let searchTimers = {};
+
+// Default meal names by count
+const MEAL_NAMES = {
+  3: ['Meal 1 — Breakfast', 'Meal 2 — Lunch', 'Meal 3 — Dinner'],
+  4: ['Meal 1 — Breakfast', 'Meal 2 — Lunch', 'Meal 3 — Pre Workout', 'Meal 4 — Dinner'],
+  5: ['Meal 1 — Breakfast', 'Meal 2 — Mid Morning', 'Meal 3 — Lunch', 'Meal 4 — Pre Workout', 'Meal 5 — Dinner'],
+  6: ['Meal 1 — Breakfast', 'Meal 2 — Mid Morning', 'Meal 3 — Lunch', 'Meal 4 — Pre Workout', 'Meal 5 — Post Workout', 'Meal 6 — Dinner'],
+};
+const MEAL_TIMES = {
+  3: ['7:00 AM', '12:00 PM', '7:00 PM'],
+  4: ['7:00 AM', '12:00 PM', '4:00 PM', '7:00 PM'],
+  5: ['7:00 AM', '10:00 AM', '1:00 PM', '4:00 PM', '7:00 PM'],
+  6: ['7:00 AM', '10:00 AM', '1:00 PM', '4:00 PM', '6:30 PM', '9:00 PM'],
+};
+
+// LOGIN
+function checkLogin() {
+  const pw = document.getElementById('pw-input').value;
+  if (pw === ADMIN_PASSWORD) {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+async function initApp() {
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  } catch(e) {}
+  await loadClients();
+  initMeals(5);
+}
+
+async function loadClients() {
+  const sel = document.getElementById('client-select');
+  if (!db) return;
+  try {
+    const snap = await db.collection('clients').get();
+    allClients = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    allClients.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    allClients.forEach(c => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name + (c.tier ? ` (${c.tier})` : '');
+      sel.appendChild(opt);
+    });
+  } catch(e) {}
+}
+
+function onClientSelect() {
+  const id = document.getElementById('client-select').value;
+  selectedClient = allClients.find(c => c.id === id) || null;
+  const info = document.getElementById('client-info');
+  if (!selectedClient) { info.style.display = 'none'; return; }
+  const m = selectedClient.macros || {};
+  info.style.display = 'block';
+  info.innerHTML = `<strong style="color:var(--white);">${selectedClient.name}</strong> &nbsp;·&nbsp; Target: <strong style="color:var(--gold);">${m.calories || '—'} kcal</strong> &nbsp;·&nbsp; P: ${m.protein || '—'}g &nbsp; C: ${m.carbs || '—'}g &nbsp; F: ${m.fat || '—'}g`;
+  updateTargetCompare();
+
+  // Load existing plan if any
+  if (selectedClient.meal_plan) {
+    if (confirm('This client already has a meal plan. Load it for editing?')) {
+      loadExistingPlan(selectedClient.meal_plan);
+    }
+  }
+}
+
+function loadExistingPlan(plan) {
+  const count = plan.length;
+  document.getElementById('meal-count').value = count;
+  meals = plan.map((m, i) => ({
+    name: m.name,
+    time: m.time,
+    foods: m.foods.map(f => ({ ...f, id: Date.now() + Math.random() }))
+  }));
+  renderMeals();
+  updateTotals();
+}
+
+function onMealCountChange() {
+  const count = parseInt(document.getElementById('meal-count').value);
+  initMeals(count);
+}
+
+function initMeals(count) {
+  const names = MEAL_NAMES[count] || MEAL_NAMES[5];
+  const times = MEAL_TIMES[count] || MEAL_TIMES[5];
+  meals = Array.from({ length: count }, (_, i) => ({
+    name: names[i],
+    time: times[i],
+    foods: []
+  }));
+  renderMeals();
+  updateTotals();
+}
+
+function clearPlan() {
+  if (!confirm('Clear all meals?')) return;
+  initMeals(parseInt(document.getElementById('meal-count').value));
+}
+
+function renderMeals() {
+  const container = document.getElementById('meals-container');
+  container.innerHTML = meals.map((meal, mi) => `
+    <div class="meal-builder-card">
+      <div class="meal-card-header" onclick="toggleMealCard(${mi})">
+        <h4>🍽 ${meal.name}</h4>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:12px;color:var(--gold);font-weight:700;" id="meal-cal-badge-${mi}">${getMealCals(mi)} kcal</span>
+          <span style="color:var(--muted);font-size:12px;" id="chev-meal-${mi}">▼</span>
+        </div>
+      </div>
+      <div class="meal-card-body" id="meal-body-${mi}" style="display:none;">
+        <!-- Meal name & time -->
+        <div class="grid-2" style="margin-bottom:12px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Meal Name</label>
+            <input type="text" value="${meal.name}" oninput="meals[${mi}].name=this.value;document.querySelector('#meal-body-${mi}').closest('.meal-builder-card').querySelector('h4').textContent='🍽 '+this.value;">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Time</label>
+            <input type="text" value="${meal.time}" oninput="meals[${mi}].time=this.value;">
+          </div>
+        </div>
+
+        <!-- Food search -->
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">Search & Add Food (USDA)</div>
+        <div class="food-search-wrap">
+          <input type="text" id="fsearch-${mi}" placeholder="Search foods e.g. chicken breast…" oninput="debounceSearch(${mi})">
+          <button class="food-search-btn" onclick="searchFood(${mi})">Search</button>
+        </div>
+        <div id="fresults-${mi}" class="food-results"></div>
+
+        <!-- Foods in this meal -->
+        ${meal.foods.length ? `
+          <div style="margin-top:8px;">
+            <div class="food-in-meal" style="padding-bottom:4px;">
+              <div class="fim-label">Food</div>
+              <div class="fim-label">Amount</div>
+              <div class="fim-label">P(g)</div>
+              <div class="fim-label">C(g)</div>
+              <div class="fim-label">F(g)</div>
+              <div class="fim-label">kcal</div>
+              <div></div>
+            </div>
+            ${meal.foods.map((food, fi) => `
+              <div class="food-in-meal" id="food-row-${mi}-${fi}">
+                <div class="fim-name">${food.name}</div>
+                <input type="text" value="${food.amount || '100g'}" onchange="meals[${mi}].foods[${fi}].amount=this.value;updateTotals();" style="width:100%;">
+                <input type="number" value="${food.protein}" onchange="meals[${mi}].foods[${fi}].protein=parseFloat(this.value)||0;updateTotals();" style="width:100%;">
+                <input type="number" value="${food.carbs}" onchange="meals[${mi}].foods[${fi}].carbs=parseFloat(this.value)||0;updateTotals();" style="width:100%;">
+                <input type="number" value="${food.fat}" onchange="meals[${mi}].foods[${fi}].fat=parseFloat(this.value)||0;updateTotals();" style="width:100%;">
+                <div class="fim-val">${food.cals}</div>
+                <button class="fim-delete" onclick="removeFood(${mi},${fi})">✕</button>
+              </div>
+            `).join('')}
+            <div class="meal-totals">
+              <span>Total: <strong>${getMealCals(mi)} kcal</strong></span>
+              <span>P: <strong>${getMealMacro(mi,'protein')}g</strong></span>
+              <span>C: <strong>${getMealMacro(mi,'carbs')}g</strong></span>
+              <span>F: <strong>${getMealMacro(mi,'fat')}g</strong></span>
+            </div>
+          </div>
+        ` : `<div style="font-size:13px;color:var(--muted);padding:8px 0;">No foods added yet. Search above to add.</div>`}
+      </div>
+    </div>
+  `).join('');
+}
+
+function toggleMealCard(mi) {
+  const body = document.getElementById(`meal-body-${mi}`);
+  const chev = document.getElementById(`chev-meal-${mi}`);
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  chev.textContent = open ? '▼' : '▲';
+}
+
+function getMealCals(mi) {
+  return meals[mi].foods.reduce((s, f) => s + (f.cals || 0), 0);
+}
+function getMealMacro(mi, key) {
+  return Math.round(meals[mi].foods.reduce((s, f) => s + (f[key] || 0), 0));
+}
+
+function removeFood(mi, fi) {
+  meals[mi].foods.splice(fi, 1);
+  renderMeals();
+  updateTotals();
+  // Re-open the card
+  const body = document.getElementById(`meal-body-${mi}`);
+  if (body) { body.style.display = 'block'; document.getElementById(`chev-meal-${mi}`).textContent = '▲'; }
+}
+
+// USDA FOOD SEARCH
+function debounceSearch(mi) {
+  clearTimeout(searchTimers[mi]);
+  const q = document.getElementById(`fsearch-${mi}`)?.value?.trim();
+  if (!q || q.length < 2) { document.getElementById(`fresults-${mi}`).innerHTML = ''; return; }
+  searchTimers[mi] = setTimeout(() => searchFood(mi), 500);
+}
+
+async function searchFood(mi) {
+  const q = document.getElementById(`fsearch-${mi}`)?.value?.trim();
+  if (!q) return;
+  const el = document.getElementById(`fresults-${mi}`);
+  el.innerHTML = '<div class="loading-inline">Searching USDA database…</div>';
+  try {
+    const r = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=5&api_key=${USDA_KEY}`);
+    const d = await r.json();
+    if (!d.foods?.length) { el.innerHTML = '<div class="loading-inline">No results found.</div>'; return; }
+    el.innerHTML = d.foods.map(f => {
+      const n = {};
+      (f.foodNutrients || []).forEach(x => {
+        if (x.nutrientName === 'Energy') n.calories = Math.round(x.value || 0);
+        if (x.nutrientName === 'Protein') n.protein = Math.round(x.value || 0);
+        if (x.nutrientName === 'Carbohydrate, by difference') n.carbs = Math.round(x.value || 0);
+        if (x.nutrientName === 'Total lipid (fat)') n.fat = Math.round(x.value || 0);
+      });
+      const nm = f.description.length > 45 ? f.description.slice(0, 45) + '…' : f.description;
+      return `<div class="food-result-row">
+        <div class="fr-name">${nm}</div>
+        <div class="fr-macros">${n.calories || 0} kcal/100g · P:${n.protein || 0}g C:${n.carbs || 0}g F:${n.fat || 0}g</div>
+        <button class="fr-add" onclick="addFoodToMeal(${mi},'${f.description.replace(/'/g, "\\'")}',${n.calories || 0},${n.protein || 0},${n.carbs || 0},${n.fat || 0})">+ Add</button>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    el.innerHTML = '<div class="loading-inline" style="color:var(--red);">Search failed. Check connection.</div>';
+  }
+}
+
+function addFoodToMeal(mi, name, cals, protein, carbs, fat) {
+  meals[mi].foods.push({ name, amount: '100g', cals, protein, carbs, fat, id: Date.now() });
+  document.getElementById(`fresults-${mi}`).innerHTML = '';
+  document.getElementById(`fsearch-${mi}`).value = '';
+  renderMeals();
+  updateTotals();
+  // Re-open card
+  const body = document.getElementById(`meal-body-${mi}`);
+  if (body) { body.style.display = 'block'; document.getElementById(`chev-meal-${mi}`).textContent = '▲'; }
+}
+
+function updateTotals() {
+  let totCal = 0, totP = 0, totC = 0, totF = 0;
+  meals.forEach((meal, mi) => {
+    const cal = getMealCals(mi);
+    const p = getMealMacro(mi, 'protein');
+    const c = getMealMacro(mi, 'carbs');
+    const f = getMealMacro(mi, 'fat');
+    totCal += cal; totP += p; totC += c; totF += f;
+    const badge = document.getElementById(`meal-cal-badge-${mi}`);
+    if (badge) badge.textContent = cal + ' kcal';
+  });
+  document.getElementById('total-cals').textContent = totCal;
+  document.getElementById('total-protein').textContent = totP + 'g';
+  document.getElementById('total-carbs').textContent = totC + 'g';
+  document.getElementById('total-fat').textContent = totF + 'g';
+  updateTargetCompare(totCal, totP, totC, totF);
+}
+
+function updateTargetCompare(totCal, totP, totC, totF) {
+  const el = document.getElementById('target-compare');
+  if (!selectedClient?.macros) { el.textContent = ''; return; }
+  const m = selectedClient.macros;
+  if (!totCal) { el.innerHTML = `Target: <strong style="color:var(--gold)">${m.calories} kcal</strong> · P:${m.protein}g C:${m.carbs}g F:${m.fat}g`; return; }
+  const diff = totCal - m.calories;
+  const diffColor = Math.abs(diff) <= 50 ? 'var(--green)' : Math.abs(diff) <= 150 ? 'var(--gold)' : 'var(--red)';
+  el.innerHTML = `Target: <strong>${m.calories} kcal</strong> · Difference: <strong style="color:${diffColor}">${diff >= 0 ? '+' : ''}${diff} kcal</strong>`;
+}
+
+async function saveMealPlan() {
+  if (!selectedClient) { alert('Please select a client first.'); return; }
+  const planData = meals.map(meal => ({
+    name: meal.name,
+    time: meal.time,
+    foods: meal.foods.map(f => ({
+      name: f.name,
+      amount: f.amount || '100g',
+      protein: f.protein || 0,
+      carbs: f.carbs || 0,
+      fat: f.fat || 0,
+      cals: f.cals || 0
+    }))
+  }));
+
+  const status = document.getElementById('save-status');
+  status.style.display = 'inline';
+  status.className = 'save-status';
+  status.textContent = 'Saving…';
+
+  try {
+    if (db) {
+      await db.collection('clients').doc(selectedClient.id).update({
+        meal_plan: planData,
+        meal_plan_updated: new Date().toISOString(),
+        meal_plan_notes: document.getElementById('plan-notes').value,
+        meal_plan_type: document.getElementById('plan-type').value
+      });
+    }
+    status.className = 'save-status success';
+    status.textContent = `✓ Saved to ${selectedClient.name} — live in their tracker now!`;
+    // Update local cache
+    const idx = allClients.findIndex(c => c.id === selectedClient.id);
+    if (idx >= 0) allClients[idx].meal_plan = planData;
+    selectedClient.meal_plan = planData;
+    setTimeout(() => { status.style.display = 'none'; }, 4000);
+  } catch(e) {
+    status.className = 'save-status error';
+    status.textContent = '✕ Save failed. Check connection.';
+  }
+}
+</script>
+</body>
+</html>
