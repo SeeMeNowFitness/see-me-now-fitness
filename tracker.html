@@ -174,6 +174,49 @@ select option{background:var(--dark);}
 #pwa-banner .pt span{font-size:11px;color:var(--muted);}
 #pwa-banner .install-btn{background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:7px 14px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;}
 #pwa-banner .dismiss-btn{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px;margin-left:4px;}
+/* ── PLAN TAB ── */
+.plan-day-btn{flex:1;padding:12px;border-radius:10px;font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;border:none;transition:all 0.15s;}
+.workout-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;}
+.workout-card-header{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.workout-card-header h4{font-size:14px;font-weight:800;color:var(--white);}
+.workout-card-body{padding:0 16px 14px;display:none;}
+.workout-card-body.open{display:block;}
+.exercise-row{display:flex;justify-content:space-between;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);}
+.exercise-row:last-child{border-bottom:none;}
+.exercise-name{font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;}
+.exercise-detail{font-size:11px;color:var(--muted);}
+.exercise-sets{text-align:right;font-family:'Anton',sans-serif;font-size:14px;color:var(--gold);}
+.exercise-sets span{display:block;font-size:10px;color:var(--muted);font-family:inherit;font-weight:400;}
+.coach-tip{background:rgba(201,168,76,0.08);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:10px 12px;margin-top:10px;font-size:12px;color:var(--muted);line-height:1.6;}
+.coach-tip strong{color:var(--gold);}
+.meal-plan-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;}
+.meal-plan-card-header{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.meal-plan-card-header .meal-title{font-size:13px;font-weight:800;color:var(--white);}
+.meal-plan-card-header .meal-cals{font-size:12px;font-weight:700;color:var(--gold);}
+.meal-plan-card-body{padding:0 16px 14px;display:none;}
+.meal-plan-card-body.open{display:block;}
+.food-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px;}
+.food-table th{font-family:'Anton',sans-serif;font-size:10px;letter-spacing:0.08em;text-transform:uppercase;color:var(--muted);padding:6px 0;text-align:left;border-bottom:1px solid var(--border);}
+.food-table th:not(:first-child){text-align:right;}
+.food-table td{padding:8px 0;border-bottom:1px solid rgba(42,42,42,0.5);color:var(--white);}
+.food-table td:not(:first-child){text-align:right;color:var(--muted);}
+.food-table tr:last-child td{border-bottom:none;}
+.macro-donut-wrap{display:flex;align-items:center;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
+.macro-legend{flex:1;}
+.macro-legend-item{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;}
+.macro-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-right:6px;}
+.supp-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.supp-row:last-child{border-bottom:none;}
+.supp-name{font-weight:700;color:var(--white);}
+.supp-timing{font-size:11px;color:var(--gold);font-weight:700;}
+.supp-dose{font-size:11px;color:var(--muted);}
+.approved-food-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+.approved-food-item{background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px 12px;}
+.approved-food-item .af-name{font-size:13px;font-weight:700;color:var(--white);margin-bottom:2px;}
+.approved-food-item .af-macro{font-size:11px;color:var(--muted);}
+.plan-empty{text-align:center;padding:24px 16px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;}
+.plan-empty .pe-icon{font-size:28px;margin-bottom:8px;}
+.plan-empty p{font-size:13px;color:var(--muted);line-height:1.6;}
 /* Serving unit selector */
 .unit-row{display:flex;gap:8px;margin-bottom:12px;}
 .unit-row input{flex:1;}
@@ -333,11 +376,45 @@ select option{background:var(--dark);}
 <div class="section-label">Suggested for Your Macros</div>
 <div id="spoonacular-results"><div class="loading">Finding meals that fit your remaining macros…</div></div>
 </div>
+
+<!-- PLAN TAB -->
+<div class="panel" id="panel-plan">
+
+<!-- Leg/Non-Leg Day Toggle -->
+<div id="plan-day-toggle" style="display:flex;gap:8px;margin-bottom:16px;">
+<button id="plan-nonleg" onclick="setPlanDay('nonleg')" style="flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;">💪 NON LEG DAY</button>
+<button id="plan-leg" onclick="setPlanDay('leg')" style="flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;">🦵 LEG DAY</button>
+</div>
+
+<!-- Today's Summary Card -->
+<div class="card" style="margin-bottom:12px;">
+<div class="card-title">Today's Blueprint</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;" id="plan-summary-pills"></div>
+</div>
+
+<!-- WORKOUT PLAN -->
+<div class="section-label">Today's Workout</div>
+<div id="plan-workout-content"><div class="loading">Loading your workout plan…</div></div>
+
+<!-- MEAL PLAN -->
+<div class="section-label">Meal Plan</div>
+<div id="plan-meal-content"><div class="loading">Loading your meal plan…</div></div>
+
+<!-- SUPPLEMENTS -->
+<div class="section-label">Supplements</div>
+<div id="plan-supplements-content"><div class="loading">Loading supplements…</div></div>
+
+<!-- APPROVED FOODS -->
+<div class="section-label">Approved Foods</div>
+<div id="plan-approved-foods-content"><div class="loading">Loading approved foods…</div></div>
+
+</div>
 </div><!-- /content -->
 
 <div id="tabs">
 <button class="tab active" onclick="switchTab('today',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Today</button>
 <button class="tab" onclick="switchTab('log',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M12 4v16m8-8H4" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>Log</button>
+<button class="tab" onclick="switchTab('plan',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Plan</button>
 <button class="tab" onclick="switchTab('progress',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M3 17l4-8 4 4 4-6 4 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Progress</button>
 <button class="tab" onclick="switchTab('recipes',this)"><svg viewBox="0 0 24 24" fill="none"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Recipes</button>
 </div>
@@ -688,13 +765,331 @@ function addBlueprintMealToLog(name,cal,p,c,f){dayData.meals.push({name,grams:0,
 function addRecipeToLog(name,cal,p,c,f){dayData.meals.push({name,grams:0,servingLabel:'1 serving',calories:cal,protein:p,carbs:c,fat:f,time:new Date().toISOString()});saveDay();renderMealLog();renderToday();closeModal('modal-recipe-detail');showToast(name+' added ✓');}
 
 // UI HELPERS
-function switchTab(name,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+name).classList.add('active');el.classList.add('active');if(name==='progress')loadProgressData();if(name==='recipes')loadRecipes();}
+function switchTab(name,el){document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+name).classList.add('active');el.classList.add('active');if(name==='progress')loadProgressData();if(name==='recipes')loadRecipes();if(name==='plan')loadPlanTab();}
 function toggleDetail(id){const body=document.getElementById(id),chev=document.getElementById('chev-'+id);body.classList.toggle('open');chev.classList.toggle('open');}
 function openModal(id){document.getElementById(id).classList.add('open');}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function closeModalOutside(e,id){if(e.target===document.getElementById(id))closeModal(id);}
 let toastTimer=null;
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2500);}
+
+
+// ── PLAN TAB ──
+let currentPlanDay = 'nonleg';
+
+function setPlanDay(day) {
+  currentPlanDay = day;
+  const nonleg = document.getElementById('plan-nonleg');
+  const leg = document.getElementById('plan-leg');
+  if (day === 'nonleg') {
+    nonleg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+    leg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+  } else {
+    leg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+    nonleg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+  }
+  renderPlanTab();
+}
+
+// Default workout templates
+const WORKOUT_TEMPLATES = {
+  ppl_push: { name: 'Push Day', icon: '💪', exercises: [
+    { name: 'Bench Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Control the descent, drive through your chest.' },
+    { name: 'Overhead Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Keep your core tight, avoid arching.' },
+    { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Slight incline targets upper chest.' },
+    { name: 'Lateral Raises', sets: 3, reps: '15-20', rest: '45s', tip: 'Lead with your elbows, not your hands.' },
+    { name: 'Tricep Pushdowns', sets: 3, reps: '12-15', rest: '45s', tip: 'Full lockout at the bottom.' },
+  ]},
+  ppl_pull: { name: 'Pull Day', icon: '🏋️', exercises: [
+    { name: 'Barbell Rows', sets: 4, reps: '8-10', rest: '90s', tip: 'Pull to your lower chest, keep back flat.' },
+    { name: 'Lat Pulldowns', sets: 3, reps: '10-12', rest: '60s', tip: 'Drive elbows down and back.' },
+    { name: 'Cable Rows', sets: 3, reps: '12-15', rest: '60s', tip: 'Squeeze shoulder blades together at the end.' },
+    { name: 'Face Pulls', sets: 3, reps: '15-20', rest: '45s', tip: 'Great for rear delts and rotator cuff health.' },
+    { name: 'Dumbbell Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Supinate at the top for full bicep contraction.' },
+  ]},
+  ppl_legs: { name: 'Leg Day', icon: '🦵', exercises: [
+    { name: 'Squats', sets: 4, reps: '8-10', rest: '120s', tip: 'Break parallel, drive knees out.' },
+    { name: 'Romanian Deadlifts', sets: 3, reps: '10-12', rest: '90s', tip: 'Feel the stretch in your hamstrings.' },
+    { name: 'Leg Press', sets: 3, reps: '12-15', rest: '60s', tip: 'High foot placement = more glutes and hams.' },
+    { name: 'Leg Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Full range of motion both ways.' },
+    { name: 'Calf Raises', sets: 4, reps: '20-25', rest: '30s', tip: 'Pause at the top and bottom.' },
+  ]},
+  glute: { name: 'Glute Focus', icon: '🍑', exercises: [
+    { name: 'Hip Thrusts', sets: 4, reps: '10-12', rest: '90s', tip: 'Squeeze hard at the top, chin to chest.' },
+    { name: 'Bulgarian Split Squats', sets: 3, reps: '10 each', rest: '60s', tip: 'Keep front shin vertical.' },
+    { name: 'Cable Kickbacks', sets: 3, reps: '15-20 each', rest: '45s', tip: 'Control the movement, don\'t swing.' },
+    { name: 'Sumo Deadlifts', sets: 3, reps: '10-12', rest: '90s', tip: 'Wide stance, toes out, drive hips forward.' },
+    { name: 'Abductor Machine', sets: 3, reps: '20-25', rest: '30s', tip: 'Slow and controlled, feel the burn.' },
+  ]},
+  physique: { name: "Men's Physique", icon: '🏆', exercises: [
+    { name: 'Cable Flyes', sets: 4, reps: '12-15', rest: '60s', tip: 'Focus on the squeeze, not the weight.' },
+    { name: 'Pull-Ups / Lat Pulldowns', sets: 4, reps: '10-12', rest: '60s', tip: 'Wide grip for a wider back.' },
+    { name: 'Side Laterals', sets: 4, reps: '15-20', rest: '30s', tip: 'Builds the shoulder width judges look for.' },
+    { name: 'Tricep Dips', sets: 3, reps: '12-15', rest: '45s', tip: 'Lean slightly forward to hit chest too.' },
+    { name: 'Posing Practice', sets: 1, reps: '10 min', rest: '—', tip: 'Practice your mandatory poses in the mirror.' },
+  ]},
+};
+
+// Default meal template (fallback)
+const DEFAULT_MEAL_PLAN = [
+  { name: 'Meal 1 — Breakfast', time: '7:00 AM', foods: [
+    { name: 'Oats (dry)', amount: '80g', protein: 14, carbs: 53, fat: 6, cals: 312 },
+    { name: 'Whole Eggs', amount: '2 large', protein: 12, carbs: 1, fat: 10, cals: 140 },
+    { name: 'Blueberries', amount: '100g', protein: 1, carbs: 14, fat: 0, cals: 57 },
+  ]},
+  { name: 'Meal 2 — Mid Morning', time: '10:00 AM', foods: [
+    { name: 'Greek Yogurt (nonfat)', amount: '200g', protein: 20, carbs: 7, fat: 1, cals: 118 },
+    { name: 'Almonds', amount: '30g', protein: 6, carbs: 6, fat: 14, cals: 173 },
+  ]},
+  { name: 'Meal 3 — Lunch', time: '1:00 PM', foods: [
+    { name: 'Chicken Breast', amount: '200g', protein: 62, carbs: 0, fat: 7, cals: 330 },
+    { name: 'White Rice (cooked)', amount: '200g', protein: 5, carbs: 56, fat: 1, cals: 260 },
+    { name: 'Broccoli', amount: '150g', protein: 4, carbs: 10, fat: 1, cals: 51 },
+  ]},
+  { name: 'Meal 4 — Pre Workout', time: '4:00 PM', foods: [
+    { name: 'Sweet Potato', amount: '150g', protein: 2, carbs: 30, fat: 0, cals: 129 },
+    { name: 'Chicken Breast', amount: '150g', protein: 47, carbs: 0, fat: 5, cals: 248 },
+  ]},
+  { name: 'Meal 5 — Post Workout', time: '7:00 PM', foods: [
+    { name: 'Protein Shake', amount: '1 scoop', protein: 25, carbs: 3, fat: 2, cals: 130 },
+    { name: 'Banana', amount: '1 medium', protein: 1, carbs: 27, fat: 0, cals: 105 },
+  ]},
+  { name: 'Meal 6 — Dinner', time: '9:00 PM', foods: [
+    { name: 'Salmon', amount: '200g', protein: 40, carbs: 0, fat: 26, cals: 416 },
+    { name: 'Asparagus', amount: '150g', protein: 4, carbs: 8, fat: 0, cals: 34 },
+    { name: 'Brown Rice (cooked)', amount: '150g', protein: 4, carbs: 38, fat: 1, cals: 165 },
+  ]},
+];
+
+const DEFAULT_SUPPLEMENTS = [
+  { name: 'Whey Protein', dose: '1 scoop (25g protein)', timing: 'Post Workout' },
+  { name: 'Creatine Monohydrate', dose: '5g', timing: 'Daily — any time' },
+  { name: 'Multivitamin', dose: '1 tablet', timing: 'With breakfast' },
+  { name: 'Fish Oil', dose: '2 capsules (1g EPA/DHA)', timing: 'With meals' },
+  { name: 'Pre-Workout', dose: '1 scoop', timing: '20-30 min before training' },
+  { name: 'Vitamin D3', dose: '2000 IU', timing: 'With breakfast' },
+];
+
+const DEFAULT_APPROVED_FOODS = [
+  { name: 'Chicken Breast', macro: '31g P / 0g C / 4g F per 100g' },
+  { name: 'Salmon', macro: '20g P / 0g C / 13g F per 100g' },
+  { name: 'Egg Whites', macro: '11g P / 0g C / 0g F per 100g' },
+  { name: 'Greek Yogurt', macro: '10g P / 4g C / 0g F per 100g' },
+  { name: 'White Rice', macro: '3g P / 28g C / 0g F per 100g' },
+  { name: 'Sweet Potato', macro: '2g P / 20g C / 0g F per 100g' },
+  { name: 'Oats', macro: '17g P / 66g C / 7g F per 100g' },
+  { name: 'Broccoli', macro: '3g P / 7g C / 0g F per 100g' },
+  { name: 'Asparagus', macro: '2g P / 4g C / 0g F per 100g' },
+  { name: 'Almonds', macro: '21g P / 22g C / 50g F per 100g' },
+  { name: 'Avocado', macro: '2g P / 9g C / 15g F per 100g' },
+  { name: 'Olive Oil', macro: '0g P / 0g C / 100g F per 100g' },
+];
+
+async function loadPlanTab() {
+  renderPlanTab();
+}
+
+function renderPlanTab() {
+  renderPlanSummary();
+  renderWorkoutPlan();
+  renderMealPlan();
+  renderSupplements();
+  renderApprovedFoods();
+}
+
+function renderPlanSummary() {
+  const m = getMacros();
+  const isLeg = currentPlanDay === 'leg';
+  document.getElementById('plan-summary-pills').innerHTML = `
+    <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 12px;flex:1;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);">Calories</div>
+      <div style="font-size:18px;font-weight:900;color:var(--white);">${m.calories}<span style="font-size:11px;font-weight:400;color:var(--muted);">kcal</span></div>
+    </div>
+    <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 12px;flex:1;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);">Protein</div>
+      <div style="font-size:18px;font-weight:900;color:var(--white);">${m.protein}<span style="font-size:11px;font-weight:400;color:var(--muted);">g</span></div>
+    </div>
+    <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 12px;flex:1;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue);">Focus</div>
+      <div style="font-size:13px;font-weight:900;color:var(--white);margin-top:3px;">${isLeg ? '🦵 Legs' : '💪 Upper'}</div>
+    </div>
+  `;
+}
+
+function renderWorkoutPlan() {
+  const el = document.getElementById('plan-workout-content');
+  const profile = clientProfile || {};
+  const isLeg = currentPlanDay === 'leg';
+
+  // Check if client has assigned workout plan in Firestore
+  const assignedPlan = profile.workout_plan;
+
+  if (assignedPlan) {
+    // Use Charles's assigned plan
+    const days = isLeg ? (assignedPlan.leg_days || []) : (assignedPlan.nonleg_days || []);
+    if (days.length) {
+      el.innerHTML = renderWorkoutDays(days);
+      return;
+    }
+  }
+
+  // Fallback to templates based on client tier/goal
+  const tier = profile.tier || 'lifestyle';
+  let templateKey = isLeg ? 'ppl_legs' : 'ppl_push';
+  if (tier === 'contest_prep') templateKey = isLeg ? 'ppl_legs' : 'physique';
+  if (profile.goal === 'glute') templateKey = isLeg ? 'glute' : 'ppl_pull';
+
+  const template = WORKOUT_TEMPLATES[templateKey];
+  el.innerHTML = `
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">
+      📋 <strong style="color:var(--gold);">Blueprint Template</strong> — Your coach will customize this to your specific plan.
+    </div>
+    ${renderWorkoutDays([template])}
+  `;
+}
+
+function renderWorkoutDays(days) {
+  return days.map((day, i) => `
+    <div class="workout-card">
+      <div class="workout-card-header" onclick="togglePlanCard('wday-${i}')">
+        <h4>${day.icon || '💪'} ${day.name}</h4>
+        <span class="chevron" id="chev-wday-${i}">▼</span>
+      </div>
+      <div class="workout-card-body" id="wday-${i}">
+        ${(day.exercises || []).map(ex => `
+          <div class="exercise-row">
+            <div>
+              <div class="exercise-name">${ex.name}</div>
+              <div class="exercise-detail">Rest: ${ex.rest || '60s'}</div>
+              ${ex.tip ? `<div class="coach-tip" style="margin-top:6px;"><strong>Coach:</strong> ${ex.tip}</div>` : ''}
+            </div>
+            <div class="exercise-sets">${ex.sets}×${ex.reps}<span>sets×reps</span></div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderMealPlan() {
+  const el = document.getElementById('plan-meal-content');
+  const profile = clientProfile || {};
+  const assignedMeals = profile.meal_plan;
+  const meals = assignedMeals || DEFAULT_MEAL_PLAN;
+  const isTemplate = !assignedMeals;
+
+  el.innerHTML = (isTemplate ? `
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">
+      📋 <strong style="color:var(--gold);">Sample Blueprint Meal Plan</strong> — Your coach will assign your personalized plan.
+    </div>
+  ` : '') + meals.map((meal, i) => {
+    const totalP = meal.foods.reduce((s, f) => s + (f.protein || 0), 0);
+    const totalC = meal.foods.reduce((s, f) => s + (f.carbs || 0), 0);
+    const totalF = meal.foods.reduce((s, f) => s + (f.fat || 0), 0);
+    const totalCal = meal.foods.reduce((s, f) => s + (f.cals || 0), 0);
+    const pPct = Math.round(totalP * 4 / totalCal * 100) || 0;
+    const cPct = Math.round(totalC * 4 / totalCal * 100) || 0;
+    const fPct = Math.round(totalF * 9 / totalCal * 100) || 0;
+    const r = 30, circ = 2 * Math.PI * r;
+
+    return `
+    <div class="meal-plan-card">
+      <div class="meal-plan-card-header" onclick="togglePlanCard('meal-${i}')">
+        <div>
+          <div class="meal-title">${meal.name}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${meal.time || ''}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="meal-cals">${totalCal} kcal</div>
+          <span class="chevron" id="chev-meal-${i}">▼</span>
+        </div>
+      </div>
+      <div class="meal-plan-card-body" id="meal-${i}">
+        <table class="food-table">
+          <tr><th>Food</th><th>Amount</th><th>P</th><th>C</th><th>F</th><th>kcal</th></tr>
+          ${meal.foods.map(f => `<tr>
+            <td>${f.name}</td>
+            <td>${f.amount}</td>
+            <td>${f.protein}g</td>
+            <td>${f.carbs}g</td>
+            <td>${f.fat}g</td>
+            <td>${f.cals}</td>
+          </tr>`).join('')}
+          <tr style="font-weight:800;">
+            <td colspan="2" style="color:var(--gold);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Total</td>
+            <td>${totalP}g</td><td>${totalC}g</td><td>${totalF}g</td><td>${totalCal}</td>
+          </tr>
+        </table>
+        <div class="macro-donut-wrap">
+          <svg width="70" height="70" viewBox="0 0 70 70">
+            <circle cx="35" cy="35" r="${r}" fill="none" stroke="#2a2a2a" stroke-width="8"/>
+            <circle cx="35" cy="35" r="${r}" fill="none" stroke="#C9A84C" stroke-width="8"
+              stroke-dasharray="${circ * pPct / 100} ${circ}" stroke-dashoffset="${circ * 0.25}" stroke-linecap="round"/>
+            <circle cx="35" cy="35" r="${r}" fill="none" stroke="#4c8fe0" stroke-width="8"
+              stroke-dasharray="${circ * cPct / 100} ${circ}" stroke-dashoffset="${circ * (0.25 - pPct / 100)}" stroke-linecap="round"/>
+            <circle cx="35" cy="35" r="${r}" fill="none" stroke="#e07c2a" stroke-width="8"
+              stroke-dasharray="${circ * fPct / 100} ${circ}" stroke-dashoffset="${circ * (0.25 - pPct / 100 - cPct / 100)}" stroke-linecap="round"/>
+            <text x="35" y="39" text-anchor="middle" fill="#f5f5f5" font-size="11" font-weight="900" font-family="Anton,sans-serif">${totalCal}</text>
+          </svg>
+          <div class="macro-legend">
+            <div class="macro-legend-item"><div style="display:flex;align-items:center;"><div class="macro-legend-dot" style="background:#C9A84C;"></div><span style="color:var(--muted);">Protein</span></div><span style="font-weight:700;">${totalP}g <span style="color:var(--muted);font-weight:400;">${pPct}%</span></span></div>
+            <div class="macro-legend-item"><div style="display:flex;align-items:center;"><div class="macro-legend-dot" style="background:#4c8fe0;"></div><span style="color:var(--muted);">Carbs</span></div><span style="font-weight:700;">${totalC}g <span style="color:var(--muted);font-weight:400;">${cPct}%</span></span></div>
+            <div class="macro-legend-item"><div style="display:flex;align-items:center;"><div class="macro-legend-dot" style="background:#e07c2a;"></div><span style="color:var(--muted);">Fat</span></div><span style="font-weight:700;">${totalF}g <span style="color:var(--muted);font-weight:400;">${fPct}%</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderSupplements() {
+  const el = document.getElementById('plan-supplements-content');
+  const profile = clientProfile || {};
+  const supps = profile.supplements || DEFAULT_SUPPLEMENTS;
+  const isTemplate = !profile.supplements;
+
+  el.innerHTML = `
+    ${isTemplate ? `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">📋 <strong style="color:var(--gold);">General Recommendations</strong> — Your coach may adjust these for you.</div>` : ''}
+    <div class="card">
+      ${supps.map(s => `
+        <div class="supp-row">
+          <div>
+            <div class="supp-name">${s.name}</div>
+            <div class="supp-dose">${s.dose}</div>
+          </div>
+          <div class="supp-timing">${s.timing}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderApprovedFoods() {
+  const el = document.getElementById('plan-approved-foods-content');
+  const profile = clientProfile || {};
+  const foods = profile.approved_foods || DEFAULT_APPROVED_FOODS;
+  const isTemplate = !profile.approved_foods;
+
+  el.innerHTML = `
+    ${isTemplate ? `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">📋 <strong style="color:var(--gold);">Blueprint Approved Foods</strong> — Stick to these for best results.</div>` : ''}
+    <div class="approved-food-grid">
+      ${foods.map(f => `
+        <div class="approved-food-item">
+          <div class="af-name">${f.name}</div>
+          <div class="af-macro">${f.macro}</div>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function togglePlanCard(id) {
+  const body = document.getElementById(id);
+  const chev = document.getElementById('chev-' + id);
+  if (!body) return;
+  body.classList.toggle('open');
+  if (chev) chev.classList.toggle('open');
+}
 
 // AUTH / LOGIN
 async function init(){
