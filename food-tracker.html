@@ -21,8 +21,12 @@
   const SPOONACULAR_API_KEY = "YOUR_SPOONACULAR_KEY";
   // Client ID from URL param, localStorage, or null (triggers email login)
   const URL_CLIENT_ID = new URLSearchParams(window.location.search).get("client");
+  const URL_EMAIL    = new URLSearchParams(window.location.search).get("email");
   const STORED_CLIENT_ID = localStorage.getItem('smn_client_id');
+  const STORED_EMAIL     = localStorage.getItem('smn_client_email');
   let CLIENT_ID = URL_CLIENT_ID || STORED_CLIENT_ID || null;
+  // If Wix passed ?email= and we don't already have a client ID, we'll look it up in init()
+  let PENDING_EMAIL = (!CLIENT_ID && URL_EMAIL) ? URL_EMAIL.trim().toLowerCase() : null;
 </script>
 
 <!-- No Firebase SDK needed — using Firestore REST API directly -->
@@ -965,7 +969,7 @@ function applyTierUI() {
   document.getElementById('weigh-food-note').style.display = tier === 'contest_prep' ? 'block' : 'none';
   document.getElementById('contest-countdown').style.display = tier === 'contest_prep' ? 'block' : 'none';
   document.getElementById('session-countdown').style.display = tier === 'inperson' ? 'block' : 'none';
-  document.getElementById('checkin-streak').style.display = (tier === 'lifestyle') ? 'block' : 'none';
+  document.getElementById('checkin-streak').style.display = 'block';
   document.getElementById('upsell-block').style.display = tier === 'tracker' ? 'block' : 'none';
 
   // Show zigzag toggle if client is on zigzag plan
@@ -2028,46 +2032,12 @@ async function submitEmailLogin() {
   btn.textContent = 'Looking up your profile…';
   btn.style.opacity = '0.7';
 
-  try {
-    // Query Firestore for client with matching email
-    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents:runQuery?key=${FIREBASE_CONFIG.apiKey}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        structuredQuery: {
-          from: [{ collectionId: 'clients' }],
-          where: {
-            fieldFilter: {
-              field: { fieldPath: 'email_lower' },
-              op: 'EQUAL',
-              value: { stringValue: email }
-            }
-          },
-          limit: 1
-        }
-      })
-    });
-    const results = await res.json();
-    const match = results.find(r => r.document);
-
-    if (match && match.document) {
-      const docId = match.document.name.split('/').pop();
-      // Save to localStorage so they don't have to log in again
-      localStorage.setItem('smn_client_id', docId);
-      localStorage.setItem('smn_client_email', email);
-      CLIENT_ID = docId;
-      // Hide login screen and start app
-      document.getElementById('email-login-screen').style.display = 'none';
-      await init();
-    } else {
-      errEl.textContent = "We couldn't find an account with that email. Contact Charles at wa.me/17137017828.";
-      errEl.style.display = 'block';
-      btn.textContent = 'OPEN MY TRACKER';
-      btn.style.opacity = '1';
-    }
-  } catch (e) {
-    errEl.textContent = 'Connection error. Please try again.';
+  const found = await lookupClientByEmail(email);
+  if (found) {
+    document.getElementById('email-login-screen').style.display = 'none';
+    await init();
+  } else {
+    errEl.textContent = "We couldn't find an account with that email. Contact Charles at wa.me/17137017828.";
     errEl.style.display = 'block';
     btn.textContent = 'OPEN MY TRACKER';
     btn.style.opacity = '1';
@@ -2102,6 +2072,31 @@ function hideEmailLogin() {
 // ============================================================
 async function init() {
   updateDateLabel();
+
+  // Wix portal flow: ?email= passed in URL — auto-lookup without showing login screen
+  if (!CLIENT_ID && PENDING_EMAIL) {
+    hideEmailLogin();
+    document.getElementById('app').style.display = 'flex';
+    // Show a silent loading state
+    const todayPanel = document.getElementById('panel-today');
+    if (todayPanel) todayPanel.innerHTML = '<div class="loading" style="padding:60px 20px;">Setting up your tracker…</div>';
+    const found = await lookupClientByEmail(PENDING_EMAIL);
+    if (found) {
+      PENDING_EMAIL = null;
+      await loadClientProfile();
+      await loadDay(currentDateKey);
+    } else {
+      // Email not found — fall back to login screen with a message
+      showEmailLogin();
+      const errEl = document.getElementById('login-error');
+      if (errEl) {
+        errEl.textContent = "We couldn't find your account. Please enter your email below.";
+        errEl.style.display = 'block';
+      }
+    }
+    return;
+  }
+
   if (!CLIENT_ID) {
     showEmailLogin();
     return;
@@ -2111,7 +2106,43 @@ async function init() {
   await loadDay(currentDateKey);
 }
 
-// Start the app — called here so all functions and constants are declared first
+// Shared email lookup used by both Wix auto-login and manual login form
+async function lookupClientByEmail(email) {
+  try {
+    const url = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents:runQuery?key=${FIREBASE_CONFIG.apiKey}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        structuredQuery: {
+          from: [{ collectionId: 'clients' }],
+          where: {
+            fieldFilter: {
+              field: { fieldPath: 'email_lower' },
+              op: 'EQUAL',
+              value: { stringValue: email }
+            }
+          },
+          limit: 1
+        }
+      })
+    });
+    const results = await res.json();
+    const match = results.find(r => r.document);
+    if (match && match.document) {
+      const docId = match.document.name.split('/').pop();
+      localStorage.setItem('smn_client_id', docId);
+      localStorage.setItem('smn_client_email', email);
+      CLIENT_ID = docId;
+      return true;
+    }
+    return false;
+  } catch (e) {
+    return false;
+  }
+}
+
+// Start the app — called here so all functions are declared first
 init();
 </script>
 </body>
