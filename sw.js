@@ -1,46 +1,58 @@
-// See Me Now Fitness — Blueprint Tracker Service Worker
-const CACHE = 'smn-blueprint-v1';
-const PRECACHE = [
-  '/tracker.html',
-  'https://fonts.googleapis.com/css2?family=Anton&display=swap'
+// ── See Me Now Fitness — Service Worker ──
+// Update this version number every time you upload a new tracker.html
+// Clients will automatically get the fresh version within seconds
+const CACHE_VERSION = 'smn-v10';
+const CACHE_NAME = CACHE_VERSION;
+
+const PRECACHE_URLS = [
+  '/',
+  '/see-me-now-fitness/tracker.html',
+  '/see-me-now-fitness/manifest.json',
+  '/see-me-now-fitness/logo.png'
 ];
 
-self.addEventListener('install', e => {
+// Install — cache core files
+self.addEventListener('install', event => {
+  // Force this service worker to activate immediately, don't wait
   self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(PRECACHE).catch(() => {}))
+  event.waitUntil(
+    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS).catch(() => {}))
   );
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
+// Activate — delete ALL old caches immediately
+self.addEventListener('activate', event => {
+  event.waitUntil(
+    caches.keys().then(cacheNames =>
+      Promise.all(
+        cacheNames
+          .filter(name => name !== CACHE_NAME)
+          .map(name => caches.delete(name))
+      )
+    ).then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
-self.addEventListener('fetch', e => {
-  // Network-first for Firestore & API calls
-  const url = e.request.url;
-  if (url.includes('firestore.googleapis.com') ||
-      url.includes('api.spoonacular.com') ||
-      url.includes('api.nal.usda.gov')) {
-    return; // let browser handle API calls normally
-  }
+// Fetch — network first, fall back to cache
+// This means clients ALWAYS get the latest version if online
+self.addEventListener('fetch', event => {
+  // Skip non-GET requests and cross-origin requests
+  if (event.request.method !== 'GET') return;
+  if (!event.request.url.startsWith(self.location.origin)) return;
 
-  // Cache-first for fonts and static assets
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(res => {
-        if (res && res.status === 200 && res.type === 'basic') {
-          const clone = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, clone));
+  event.respondWith(
+    fetch(event.request)
+      .then(response => {
+        // Got a good response — update the cache and return it
+        if (response && response.status === 200) {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, responseClone));
         }
-        return res;
-      }).catch(() => cached);
-    })
+        return response;
+      })
+      .catch(() => {
+        // Offline — serve from cache
+        return caches.match(event.request);
+      })
   );
 });
