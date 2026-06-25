@@ -247,29 +247,224 @@ const TIMING_OPTIONS=['Pre Workout','Post Workout','With breakfast','With meals'
 // ── BLOOD TYPE FOODS ──
 const BT_FOODS={
   unknown:{
-    protein:[{name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},{name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},{name:'Egg Whites',macro:'11g P / 0g C / 0g F per 100g'},{name:'Greek Yogurt (nonfat)',macro:'10g P / 4g C / 0g F per 100g'},{name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},{name:'Tuna (canned)',macro:'30g P / 0g C / 1g F per 100g'}],
-    carbs:[{name:'White Rice (cooked)',macro:'3g P / 28g C / 0g F per 100g'},{name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},{name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},{name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},{name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},{name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'}],
-    fats:[{name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},{name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Almonds',macro:'21g P / 22g C / 50g F per 100g'},{name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},{name:'Whole Eggs',macro:'13g P / 1g C / 11g F per 100g'},{name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'}]
+    protein:[
+      {name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},
+      {name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},
+      {name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},
+      {name:'Tuna (canned in water)',macro:'30g P / 0g C / 1g F per 100g'},
+      {name:'Egg Whites',macro:'11g P / 0g C / 0g F per 100g'},
+      {name:'Whole Eggs',macro:'13g P / 1g C / 11g F per 100g'},
+      {name:'Greek Yogurt (nonfat)',macro:'10g P / 4g C / 0g F per 100g'},
+      {name:'Cottage Cheese (low fat)',macro:'11g P / 3g C / 2g F per 100g'},
+      {name:'Tilapia',macro:'26g P / 0g C / 3g F per 100g'},
+      {name:'Shrimp',macro:'24g P / 0g C / 1g F per 100g'},
+      {name:'Cod',macro:'18g P / 0g C / 1g F per 100g'},
+      {name:'Bison (lean)',macro:'28g P / 0g C / 5g F per 100g'},
+    ],
+    carbs:[
+      {name:'White Rice (cooked)',macro:'3g P / 28g C / 0g F per 100g'},
+      {name:'Brown Rice (cooked)',macro:'3g P / 23g C / 1g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
+      {name:'Quinoa (cooked)',macro:'4g P / 21g C / 2g F per 100g'},
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
+      {name:'Asparagus',macro:'2g P / 4g C / 0g F per 100g'},
+      {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
+      {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
+      {name:'Apple',macro:'0g P / 14g C / 0g F per 100g'},
+      {name:'Green Beans',macro:'2g P / 7g C / 0g F per 100g'},
+    ],
+    fats:[
+      {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+      {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Almonds',macro:'21g P / 22g C / 50g F per 100g'},
+      {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+      {name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'},
+      {name:'Peanut Butter (natural)',macro:'25g P / 20g C / 50g F per 100g'},
+      {name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Flaxseed (ground)',macro:'18g P / 29g C / 42g F per 100g'},
+      {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+      {name:'Cashews',macro:'18g P / 30g C / 44g F per 100g'},
+      {name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},
+      {name:'Sunflower Seeds',macro:'21g P / 20g C / 51g F per 100g'},
+    ]
   },
   O:{
-    protein:[{name:'Beef (lean)',macro:'26g P / 0g C / 7g F per 100g'},{name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},{name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},{name:'Sardines',macro:'25g P / 0g C / 11g F per 100g'},{name:'Venison',macro:'30g P / 0g C / 3g F per 100g'},{name:'Cod',macro:'18g P / 0g C / 1g F per 100g'}],
-    carbs:[{name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},{name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},{name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},{name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},{name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},{name:'Plums',macro:'1g P / 11g C / 0g F per 100g'}],
-    fats:[{name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},{name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},{name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},{name:'Macadamia Nuts',macro:'8g P / 14g C / 76g F per 100g'}]
+    protein:[
+      {name:'Beef (lean ground)',macro:'26g P / 0g C / 10g F per 100g'},
+      {name:'Beef Sirloin',macro:'31g P / 0g C / 8g F per 100g'},
+      {name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},
+      {name:'Venison',macro:'30g P / 0g C / 3g F per 100g'},
+      {name:'Bison',macro:'28g P / 0g C / 5g F per 100g'},
+      {name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},
+      {name:'Sardines',macro:'25g P / 0g C / 11g F per 100g'},
+      {name:'Cod',macro:'18g P / 0g C / 1g F per 100g'},
+      {name:'Tuna',macro:'30g P / 0g C / 1g F per 100g'},
+      {name:'Mackerel',macro:'19g P / 0g C / 14g F per 100g'},
+      {name:'Halibut',macro:'23g P / 0g C / 3g F per 100g'},
+      {name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},
+    ],
+    carbs:[
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
+      {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Collard Greens',macro:'3g P / 6g C / 0g F per 100g'},
+      {name:'Romaine Lettuce',macro:'1g P / 3g C / 0g F per 100g'},
+      {name:'Beets',macro:'2g P / 10g C / 0g F per 100g'},
+      {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
+      {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
+      {name:'Figs',macro:'1g P / 19g C / 0g F per 100g'},
+      {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
+      {name:'Artichoke',macro:'3g P / 11g C / 0g F per 100g'},
+    ],
+    fats:[
+      {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+      {name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+      {name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},
+      {name:'Macadamia Nuts',macro:'8g P / 14g C / 76g F per 100g'},
+      {name:'Sesame Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Hemp Seeds',macro:'31g P / 9g C / 49g F per 100g'},
+      {name:'Hazelnuts',macro:'15g P / 17g C / 61g F per 100g'},
+      {name:'Brazil Nuts',macro:'14g P / 12g C / 66g F per 100g'},
+      {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+    ]
   },
   A:{
-    protein:[{name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},{name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},{name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},{name:'Sardines',macro:'25g P / 0g C / 11g F per 100g'},{name:'Tofu',macro:'8g P / 2g C / 4g F per 100g'},{name:'Tempeh',macro:'19g P / 9g C / 11g F per 100g'}],
-    carbs:[{name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},{name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},{name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},{name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},{name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},{name:'Berries (mixed)',macro:'1g P / 14g C / 0g F per 100g'}],
-    fats:[{name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},{name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},{name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},{name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'}]
+    protein:[
+      {name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},
+      {name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},
+      {name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},
+      {name:'Sardines',macro:'25g P / 0g C / 11g F per 100g'},
+      {name:'Mackerel',macro:'19g P / 0g C / 14g F per 100g'},
+      {name:'Trout',macro:'21g P / 0g C / 6g F per 100g'},
+      {name:'Tofu',macro:'8g P / 2g C / 4g F per 100g'},
+      {name:'Tempeh',macro:'19g P / 9g C / 11g F per 100g'},
+      {name:'Eggs (limited)',macro:'13g P / 1g C / 11g F per 100g'},
+      {name:'Cottage Cheese (low fat)',macro:'11g P / 3g C / 2g F per 100g'},
+      {name:'Greek Yogurt',macro:'10g P / 4g C / 0g F per 100g'},
+      {name:'Lentils (cooked)',macro:'9g P / 20g C / 0g F per 100g'},
+    ],
+    carbs:[
+      {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
+      {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
+      {name:'Amaranth',macro:'14g P / 65g C / 7g F per 100g'},
+      {name:'Buckwheat',macro:'13g P / 72g C / 3g F per 100g'},
+      {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+      {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
+      {name:'Berries (mixed)',macro:'1g P / 14g C / 0g F per 100g'},
+      {name:'Apricots',macro:'1g P / 11g C / 0g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Artichoke',macro:'3g P / 11g C / 0g F per 100g'},
+    ],
+    fats:[
+      {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},
+      {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+      {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+      {name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'},
+      {name:'Peanut Butter',macro:'25g P / 20g C / 50g F per 100g'},
+      {name:'Tahini (sesame paste)',macro:'17g P / 26g C / 54g F per 100g'},
+      {name:'Hemp Seeds',macro:'31g P / 9g C / 49g F per 100g'},
+      {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+      {name:'Pine Nuts',macro:'14g P / 13g C / 68g F per 100g'},
+      {name:'Sunflower Seeds',macro:'21g P / 20g C / 51g F per 100g'},
+    ]
   },
   B:{
-    protein:[{name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},{name:'Rabbit',macro:'29g P / 0g C / 5g F per 100g'},{name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},{name:'Cod',macro:'18g P / 0g C / 1g F per 100g'},{name:'Eggs',macro:'13g P / 1g C / 11g F per 100g'},{name:'Greek Yogurt',macro:'10g P / 4g C / 0g F per 100g'}],
-    carbs:[{name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},{name:'Millet',macro:'11g P / 73g C / 4g F per 100g'},{name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},{name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},{name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},{name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'}],
-    fats:[{name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},{name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},{name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Macadamia Nuts',macro:'8g P / 14g C / 76g F per 100g'},{name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'}]
+    protein:[
+      {name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},
+      {name:'Rabbit',macro:'29g P / 0g C / 5g F per 100g'},
+      {name:'Venison',macro:'30g P / 0g C / 3g F per 100g'},
+      {name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},
+      {name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},
+      {name:'Cod',macro:'18g P / 0g C / 1g F per 100g'},
+      {name:'Halibut',macro:'23g P / 0g C / 3g F per 100g'},
+      {name:'Flounder',macro:'17g P / 0g C / 1g F per 100g'},
+      {name:'Eggs',macro:'13g P / 1g C / 11g F per 100g'},
+      {name:'Greek Yogurt',macro:'10g P / 4g C / 0g F per 100g'},
+      {name:'Cottage Cheese',macro:'11g P / 3g C / 2g F per 100g'},
+      {name:'Mozzarella',macro:'22g P / 2g C / 17g F per 100g'},
+    ],
+    carbs:[
+      {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
+      {name:'Millet',macro:'11g P / 73g C / 4g F per 100g'},
+      {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Collard Greens',macro:'3g P / 6g C / 0g F per 100g'},
+      {name:'Cabbage',macro:'1g P / 6g C / 0g F per 100g'},
+      {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
+      {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
+      {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
+      {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
+      {name:'Watermelon',macro:'1g P / 8g C / 0g F per 100g'},
+    ],
+    fats:[
+      {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+      {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+      {name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Macadamia Nuts',macro:'8g P / 14g C / 76g F per 100g'},
+      {name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'},
+      {name:'Pecans',macro:'9g P / 14g C / 72g F per 100g'},
+      {name:'Hazelnuts',macro:'15g P / 17g C / 61g F per 100g'},
+      {name:'Sesame Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+      {name:'Hemp Seeds',macro:'31g P / 9g C / 49g F per 100g'},
+    ]
   },
   AB:{
-    protein:[{name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},{name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},{name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},{name:'Tuna',macro:'30g P / 0g C / 1g F per 100g'},{name:'Eggs',macro:'13g P / 1g C / 11g F per 100g'},{name:'Tofu',macro:'8g P / 2g C / 4g F per 100g'}],
-    carbs:[{name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},{name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},{name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},{name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},{name:'Cherries',macro:'1g P / 16g C / 0g F per 100g'},{name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'}],
-    fats:[{name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},{name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},{name:'Peanut Butter',macro:'25g P / 20g C / 50g F per 100g'},{name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},{name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'}]
+    protein:[
+      {name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},
+      {name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},
+      {name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},
+      {name:'Tuna',macro:'30g P / 0g C / 1g F per 100g'},
+      {name:'Sardines',macro:'25g P / 0g C / 11g F per 100g'},
+      {name:'Mackerel',macro:'19g P / 0g C / 14g F per 100g'},
+      {name:'Trout',macro:'21g P / 0g C / 6g F per 100g'},
+      {name:'Eggs (limited)',macro:'13g P / 1g C / 11g F per 100g'},
+      {name:'Greek Yogurt',macro:'10g P / 4g C / 0g F per 100g'},
+      {name:'Tofu',macro:'8g P / 2g C / 4g F per 100g'},
+      {name:'Cottage Cheese',macro:'11g P / 3g C / 2g F per 100g'},
+      {name:'Ricotta (part-skim)',macro:'14g P / 4g C / 9g F per 100g'},
+    ],
+    carbs:[
+      {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
+      {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
+      {name:'Millet',macro:'11g P / 73g C / 4g F per 100g'},
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
+      {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+      {name:'Cherries',macro:'1g P / 16g C / 0g F per 100g'},
+      {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
+      {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
+      {name:'Cranberries',macro:'0g P / 12g C / 0g F per 100g'},
+      {name:'Watermelon',macro:'1g P / 8g C / 0g F per 100g'},
+    ],
+    fats:[
+      {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+      {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+      {name:'Peanut Butter',macro:'25g P / 20g C / 50g F per 100g'},
+      {name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'},
+      {name:'Tahini',macro:'17g P / 26g C / 54g F per 100g'},
+      {name:'Macadamia Nuts',macro:'8g P / 14g C / 76g F per 100g'},
+      {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+      {name:'Hemp Seeds',macro:'31g P / 9g C / 49g F per 100g'},
+      {name:'Pine Nuts',macro:'14g P / 13g C / 68g F per 100g'},
+      {name:'Sesame Oil',macro:'0g P / 0g C / 100g F per 100g'},
+    ]
   }
 };
 
@@ -489,22 +684,48 @@ function renderApprovedFoods(){
   const el=document.getElementById('approved-foods-container');
   const foods=approvedFoods[currentAFTab]||[];
   const labels={protein:'💪 Protein Sources',carbs:'🌾 Carbohydrate Sources',fats:'🥑 Fat Sources'};
+  const colors={protein:'var(--gold)',carbs:'#4c8fe0',fats:'#e07c2a'};
   if(!foods.length){el.innerHTML=`<div style="font-size:13px;color:var(--muted);padding:8px 0;">No ${currentAFTab} foods. Add custom foods below.</div>`;return;}
+
+  // Group into chunks of 4 for collapsible sections
+  const chunkSize=4;
+  const chunks=[];
+  for(let i=0;i<foods.length;i+=chunkSize)chunks.push(foods.slice(i,i+chunkSize));
+
   el.innerHTML=`
-    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:8px;">${labels[currentAFTab]}</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 36px;gap:8px;margin-bottom:6px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Food Name</div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Macro Info</div>
-      <div></div>
-    </div>
-    ${foods.map((f,i)=>`
-      <div class="approved-food-row">
-        <input type="text" value="${f.name}" placeholder="e.g. Chicken Breast" oninput="approvedFoods['${currentAFTab}'][${i}].name=this.value">
-        <input type="text" value="${f.macro}" placeholder="e.g. 31g P / 0g C / 4g F per 100g" oninput="approvedFoods['${currentAFTab}'][${i}].macro=this.value">
-        <button class="del-btn" onclick="removeApprovedFood('${currentAFTab}',${i})">✕</button>
+    <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${colors[currentAFTab]};margin-bottom:10px;">${labels[currentAFTab]} (${foods.length} options)</div>
+    ${chunks.map((chunk,ci)=>`
+      <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;">
+        <div onclick="toggleAFChunk(${ci})" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;background:var(--dark);">
+          <span style="font-size:12px;font-weight:700;color:var(--white);">Options ${ci*chunkSize+1}–${Math.min((ci+1)*chunkSize,foods.length)}</span>
+          <span style="color:var(--muted);font-size:12px;" id="af-chev-${ci}">▼</span>
+        </div>
+        <div id="af-chunk-${ci}" style="display:${ci===0?'block':'none'};padding:10px 12px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 36px;gap:6px;margin-bottom:4px;">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Food Name</div>
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Macro Info</div>
+            <div></div>
+          </div>
+          ${chunk.map((f,ci2)=>{
+            const realIdx=ci*chunkSize+ci2;
+            return`<div class="approved-food-row">
+              <input type="text" value="${f.name}" placeholder="e.g. Chicken Breast" oninput="approvedFoods['${currentAFTab}'][${realIdx}].name=this.value">
+              <input type="text" value="${f.macro}" placeholder="e.g. 31g P / 0g C / 4g F per 100g" oninput="approvedFoods['${currentAFTab}'][${realIdx}].macro=this.value">
+              <button class="del-btn" onclick="removeApprovedFood('${currentAFTab}',${realIdx})">✕</button>
+            </div>`;
+          }).join('')}
+        </div>
       </div>
     `).join('')}
   `;
+}
+
+function toggleAFChunk(ci){
+  const body=document.getElementById(`af-chunk-${ci}`);
+  const chev=document.getElementById(`af-chev-${ci}`);
+  const open=body.style.display==='block';
+  body.style.display=open?'none':'block';
+  chev.textContent=open?'▼':'▲';
 }
 
 // ── FLEX MEALS ──
