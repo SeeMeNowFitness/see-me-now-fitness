@@ -618,6 +618,7 @@ async function saveClient() {
   const data = {
     name: document.getElementById('e-name').value,
     email: document.getElementById('e-email').value,
+    email_lower: document.getElementById('e-email').value.trim().toLowerCase(),
     tier,
     phone: document.getElementById('e-phone').value,
     tracking_method: currentTrackingMethod,
