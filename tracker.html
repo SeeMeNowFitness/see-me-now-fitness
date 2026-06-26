@@ -424,6 +424,9 @@ select option{background:var(--dark);}
 <!-- PLAN TAB -->
 <div class="panel" id="panel-plan">
 
+<!-- Check-In / Upsell Button -->
+<div id="plan-checkin-block" style="margin-bottom:16px;"></div>
+
 <!-- Disclaimer -->
 <div style="background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:11px;color:var(--muted);line-height:1.7;">
 ⚠️ <strong style="color:var(--gold);">Important Notice:</strong> Please consult a qualified healthcare practitioner prior to beginning any exercise regimen or taking any products or supplements recommended by See Me Now Fitness or any other party. Individual results may vary.
@@ -596,7 +599,7 @@ function calcBal(){const bmr=calcBMR(),wl=dayData.weight||(clientProfile?.bmr_in
 let currentDayType='high';
 function setDayType(t){currentDayType=t;const h=document.getElementById('zz-high'),l=document.getElementById('zz-low');if(t==='high'){h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';l.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';}else{l.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--blue);color:var(--white);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';}renderToday();}
 function getMacros(){if(!clientProfile)return{protein:150,carbs:175,fat:55,calories:1795};if(clientProfile.tracking_method==='zigzag')return currentDayType==='high'?(clientProfile.macros_high||clientProfile.macros):(clientProfile.macros_low||clientProfile.macros);return clientProfile.macros||{protein:150,carbs:175,fat:55,calories:1795};}
-function getZone(n){return n>100?'deficit':n<-100?'surplus':'maintenance';}
+function getZone(n){return n>100?'deficit':(n>-100?'maintenance':'surplus');}
 
 // RENDER TODAY
 function renderToday(){
@@ -794,7 +797,7 @@ function updateWorkoutCalPreview(){
 }
 
 // MODALS SAVE
-function saveSteps(){const v=parseInt(document.getElementById('steps-input').value);if(!v||v<0)return;dayData.steps=v;saveDay();closeModal('modal-steps');renderToday();showToast('Steps saved ✓');}
+function saveSteps(){const v=parseInt(document.getElementById('steps-input').value);if(!v||v<=0)return;dayData.steps=v;saveDay();closeModal('modal-steps');renderToday();showToast('Steps saved ✓');}
 
 function saveWorkout(){
   const type=document.getElementById('workout-type').value;
@@ -817,8 +820,8 @@ function saveWorkout(){
   showToast(`Workout saved · ${finalCal} kcal${src} ✓`);
 }
 
-function saveWeight(){const v=parseFloat(document.getElementById('weight-input').value);if(!v||v<0)return;dayData.weight=v;saveDay();closeModal('modal-weight');renderToday();showToast('Weight saved ✓');}
-function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<0)return;dayData.water=v;saveDay();closeModal('modal-water');showToast('Water saved ✓');}
+function saveWeight(){const v=parseFloat(document.getElementById('weight-input').value);if(!v||v<=0)return;dayData.weight=v;saveDay();closeModal('modal-weight');renderToday();showToast('Weight saved ✓');}
+function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=v;saveDay();closeModal('modal-water');showToast('Water saved ✓');}
 
 // FIREBASE IO
 async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},weight:null,water:0};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},weight:d.weight||null,water:d.water||0}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},weight:null,water:0};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},weight:null,water:0};}renderToday();renderMealLog();}
@@ -828,7 +831,8 @@ async function saveDay(){if(!CLIENT_ID||CLIENT_ID==='demo')return;try{await fsSe
 let weeklyBalanceCache = null;
 
 async function getWeeklyBalance() {
-  if (weeklyBalanceCache && Date.now() - weeklyBalanceCache.ts < 60000) return weeklyBalanceCache.data;
+  const ONE_MINUTE = 60000;
+  if (weeklyBalanceCache && (Date.now() - weeklyBalanceCache.ts) < ONE_MINUTE) return weeklyBalanceCache.data;
   const bmr = calcBMR();
   let totalNet = 0, daysLogged = 0;
   for (let i = 6; i >= 0; i--) {
@@ -1148,23 +1152,264 @@ const DEFAULT_SUPPLEMENTS = [
   { name: 'Vitamin D3', dose: '2000 IU', timing: 'With breakfast' },
 ];
 
-const DEFAULT_APPROVED_FOODS = [
-  { name: 'Chicken Breast', macro: '31g P / 0g C / 4g F per 100g' },
-  { name: 'Salmon', macro: '20g P / 0g C / 13g F per 100g' },
-  { name: 'Egg Whites', macro: '11g P / 0g C / 0g F per 100g' },
-  { name: 'Greek Yogurt', macro: '10g P / 4g C / 0g F per 100g' },
-  { name: 'White Rice', macro: '3g P / 28g C / 0g F per 100g' },
-  { name: 'Sweet Potato', macro: '2g P / 20g C / 0g F per 100g' },
-  { name: 'Oats', macro: '17g P / 66g C / 7g F per 100g' },
-  { name: 'Broccoli', macro: '3g P / 7g C / 0g F per 100g' },
-  { name: 'Asparagus', macro: '2g P / 4g C / 0g F per 100g' },
-  { name: 'Almonds', macro: '21g P / 22g C / 50g F per 100g' },
-  { name: 'Avocado', macro: '2g P / 9g C / 15g F per 100g' },
-  { name: 'Olive Oil', macro: '0g P / 0g C / 100g F per 100g' },
-];
+const TRACKER_BT_FOODS = {
+  unknown:{
+    protein:[
+      {name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},
+      {name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},
+      {name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},
+      {name:'Tuna (canned in water)',macro:'30g P / 0g C / 1g F per 100g'},
+      {name:'Egg Whites',macro:'11g P / 0g C / 0g F per 100g'},
+      {name:'Whole Eggs',macro:'13g P / 1g C / 11g F per 100g'},
+      {name:'Greek Yogurt (nonfat)',macro:'10g P / 4g C / 0g F per 100g'},
+      {name:'Cottage Cheese (low fat)',macro:'11g P / 3g C / 2g F per 100g'},
+      {name:'Tilapia',macro:'26g P / 0g C / 3g F per 100g'},
+      {name:'Shrimp',macro:'24g P / 0g C / 1g F per 100g'},
+      {name:'Cod',macro:'18g P / 0g C / 1g F per 100g'},
+      {name:'Bison (lean)',macro:'28g P / 0g C / 5g F per 100g'},
+    ],
+    carbs:[
+      {name:'White Rice (cooked)',macro:'3g P / 28g C / 0g F per 100g'},
+      {name:'Brown Rice (cooked)',macro:'3g P / 23g C / 1g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
+      {name:'Quinoa (cooked)',macro:'4g P / 21g C / 2g F per 100g'},
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
+      {name:'Asparagus',macro:'2g P / 4g C / 0g F per 100g'},
+      {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
+      {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
+      {name:'Apple',macro:'0g P / 14g C / 0g F per 100g'},
+      {name:'Green Beans',macro:'2g P / 7g C / 0g F per 100g'},
+    ],
+    fats:[
+      {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+      {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Almonds',macro:'21g P / 22g C / 50g F per 100g'},
+      {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+      {name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'},
+      {name:'Peanut Butter (natural)',macro:'25g P / 20g C / 50g F per 100g'},
+      {name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Flaxseed (ground)',macro:'18g P / 29g C / 42g F per 100g'},
+      {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+      {name:'Cashews',macro:'18g P / 30g C / 44g F per 100g'},
+      {name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},
+      {name:'Sunflower Seeds',macro:'21g P / 20g C / 51g F per 100g'},
+    ]
+  },
+  O:{
+    protein:[
+      {name:'Beef (lean ground)',macro:'26g P / 0g C / 10g F per 100g'},
+      {name:'Beef Sirloin',macro:'31g P / 0g C / 8g F per 100g'},
+      {name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},
+      {name:'Venison',macro:'30g P / 0g C / 3g F per 100g'},
+      {name:'Bison',macro:'28g P / 0g C / 5g F per 100g'},
+      {name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},
+      {name:'Sardines',macro:'25g P / 0g C / 11g F per 100g'},
+      {name:'Cod',macro:'18g P / 0g C / 1g F per 100g'},
+      {name:'Tuna',macro:'30g P / 0g C / 1g F per 100g'},
+      {name:'Mackerel',macro:'19g P / 0g C / 14g F per 100g'},
+      {name:'Halibut',macro:'23g P / 0g C / 3g F per 100g'},
+      {name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},
+    ],
+    carbs:[
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
+      {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Collard Greens',macro:'3g P / 6g C / 0g F per 100g'},
+      {name:'Romaine Lettuce',macro:'1g P / 3g C / 0g F per 100g'},
+      {name:'Beets',macro:'2g P / 10g C / 0g F per 100g'},
+      {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
+      {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
+      {name:'Figs',macro:'1g P / 19g C / 0g F per 100g'},
+      {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
+      {name:'Artichoke',macro:'3g P / 11g C / 0g F per 100g'},
+    ],
+    fats:[
+      {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+      {name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+      {name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},
+      {name:'Macadamia Nuts',macro:'8g P / 14g C / 76g F per 100g'},
+      {name:'Sesame Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Hemp Seeds',macro:'31g P / 9g C / 49g F per 100g'},
+      {name:'Hazelnuts',macro:'15g P / 17g C / 61g F per 100g'},
+      {name:'Brazil Nuts',macro:'14g P / 12g C / 66g F per 100g'},
+      {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+    ]
+  },
+  A:{
+    protein:[
+      {name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},
+      {name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},
+      {name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},
+      {name:'Sardines',macro:'25g P / 0g C / 11g F per 100g'},
+      {name:'Mackerel',macro:'19g P / 0g C / 14g F per 100g'},
+      {name:'Trout',macro:'21g P / 0g C / 6g F per 100g'},
+      {name:'Tofu',macro:'8g P / 2g C / 4g F per 100g'},
+      {name:'Tempeh',macro:'19g P / 9g C / 11g F per 100g'},
+      {name:'Eggs (limited)',macro:'13g P / 1g C / 11g F per 100g'},
+      {name:'Cottage Cheese (low fat)',macro:'11g P / 3g C / 2g F per 100g'},
+      {name:'Greek Yogurt',macro:'10g P / 4g C / 0g F per 100g'},
+      {name:'Lentils (cooked)',macro:'9g P / 20g C / 0g F per 100g'},
+    ],
+    carbs:[
+      {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
+      {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
+      {name:'Amaranth',macro:'14g P / 65g C / 7g F per 100g'},
+      {name:'Buckwheat',macro:'13g P / 72g C / 3g F per 100g'},
+      {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+      {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
+      {name:'Berries (mixed)',macro:'1g P / 14g C / 0g F per 100g'},
+      {name:'Apricots',macro:'1g P / 11g C / 0g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Artichoke',macro:'3g P / 11g C / 0g F per 100g'},
+    ],
+    fats:[
+      {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},
+      {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+      {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+      {name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'},
+      {name:'Peanut Butter',macro:'25g P / 20g C / 50g F per 100g'},
+      {name:'Tahini (sesame paste)',macro:'17g P / 26g C / 54g F per 100g'},
+      {name:'Hemp Seeds',macro:'31g P / 9g C / 49g F per 100g'},
+      {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+      {name:'Pine Nuts',macro:'14g P / 13g C / 68g F per 100g'},
+      {name:'Sunflower Seeds',macro:'21g P / 20g C / 51g F per 100g'},
+    ]
+  },
+  B:{
+    protein:[
+      {name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},
+      {name:'Rabbit',macro:'29g P / 0g C / 5g F per 100g'},
+      {name:'Venison',macro:'30g P / 0g C / 3g F per 100g'},
+      {name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},
+      {name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},
+      {name:'Cod',macro:'18g P / 0g C / 1g F per 100g'},
+      {name:'Halibut',macro:'23g P / 0g C / 3g F per 100g'},
+      {name:'Flounder',macro:'17g P / 0g C / 1g F per 100g'},
+      {name:'Eggs',macro:'13g P / 1g C / 11g F per 100g'},
+      {name:'Greek Yogurt',macro:'10g P / 4g C / 0g F per 100g'},
+      {name:'Cottage Cheese',macro:'11g P / 3g C / 2g F per 100g'},
+      {name:'Mozzarella',macro:'22g P / 2g C / 17g F per 100g'},
+    ],
+    carbs:[
+      {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
+      {name:'Millet',macro:'11g P / 73g C / 4g F per 100g'},
+      {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Collard Greens',macro:'3g P / 6g C / 0g F per 100g'},
+      {name:'Cabbage',macro:'1g P / 6g C / 0g F per 100g'},
+      {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
+      {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
+      {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
+      {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
+      {name:'Watermelon',macro:'1g P / 8g C / 0g F per 100g'},
+    ],
+    fats:[
+      {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+      {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+      {name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Macadamia Nuts',macro:'8g P / 14g C / 76g F per 100g'},
+      {name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'},
+      {name:'Pecans',macro:'9g P / 14g C / 72g F per 100g'},
+      {name:'Hazelnuts',macro:'15g P / 17g C / 61g F per 100g'},
+      {name:'Sesame Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+      {name:'Hemp Seeds',macro:'31g P / 9g C / 49g F per 100g'},
+    ]
+  },
+  AB:{
+    protein:[
+      {name:'Turkey Breast',macro:'29g P / 0g C / 1g F per 100g'},
+      {name:'Lamb',macro:'25g P / 0g C / 9g F per 100g'},
+      {name:'Salmon',macro:'20g P / 0g C / 13g F per 100g'},
+      {name:'Tuna',macro:'30g P / 0g C / 1g F per 100g'},
+      {name:'Sardines',macro:'25g P / 0g C / 11g F per 100g'},
+      {name:'Mackerel',macro:'19g P / 0g C / 14g F per 100g'},
+      {name:'Trout',macro:'21g P / 0g C / 6g F per 100g'},
+      {name:'Eggs (limited)',macro:'13g P / 1g C / 11g F per 100g'},
+      {name:'Greek Yogurt',macro:'10g P / 4g C / 0g F per 100g'},
+      {name:'Tofu',macro:'8g P / 2g C / 4g F per 100g'},
+      {name:'Cottage Cheese',macro:'11g P / 3g C / 2g F per 100g'},
+      {name:'Ricotta (part-skim)',macro:'14g P / 4g C / 9g F per 100g'},
+    ],
+    carbs:[
+      {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
+      {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
+      {name:'Millet',macro:'11g P / 73g C / 4g F per 100g'},
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
+      {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+      {name:'Cherries',macro:'1g P / 16g C / 0g F per 100g'},
+      {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
+      {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
+      {name:'Cranberries',macro:'0g P / 12g C / 0g F per 100g'},
+      {name:'Watermelon',macro:'1g P / 8g C / 0g F per 100g'},
+    ],
+    fats:[
+      {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+      {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+      {name:'Peanut Butter',macro:'25g P / 20g C / 50g F per 100g'},
+      {name:'Flaxseed Oil',macro:'0g P / 0g C / 100g F per 100g'},
+      {name:'Almond Butter',macro:'21g P / 22g C / 50g F per 100g'},
+      {name:'Tahini',macro:'17g P / 26g C / 54g F per 100g'},
+      {name:'Macadamia Nuts',macro:'8g P / 14g C / 76g F per 100g'},
+      {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+      {name:'Hemp Seeds',macro:'31g P / 9g C / 49g F per 100g'},
+      {name:'Pine Nuts',macro:'14g P / 13g C / 68g F per 100g'},
+      {name:'Sesame Oil',macro:'0g P / 0g C / 100g F per 100g'},
+    ]
+  }
+};
+
+function getDefaultApprovedFoods(bloodType) {
+  return TRACKER_BT_FOODS[bloodType] || TRACKER_BT_FOODS.unknown;
+}
 
 async function loadPlanTab() {
+  renderCheckinBlock();
   renderPlanTab();
+}
+
+function renderCheckinBlock() {
+  const el = document.getElementById('plan-checkin-block');
+  if (!el) return;
+  const tier = clientProfile?.tier || 'tracker';
+  if (tier === 'tracker') {
+    // Standalone — show upsell
+    el.innerHTML = `
+      <div style="background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.04));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:3px;">Upgrade to Coaching</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.5;">Get a personalized meal plan, workout program, and weekly check-ins with Coach Charles.</div>
+        </div>
+        <a href="https://www.seemenowfitness.com/blank#in-person-training" target="_blank" style="background:var(--gold);color:var(--black);border-radius:8px;padding:10px 14px;font-size:12px;font-weight:800;text-decoration:none;white-space:nowrap;flex-shrink:0;">View Plans →</a>
+      </div>`;
+  } else {
+    // Coached client — show check-in button
+    const checkinDay = clientProfile?.checkin_schedule === 'weekly' ? 'Weekly' : 'Bi-Weekly';
+    el.innerHTML = `
+      <a href="https://www.seemenowfitness.com/blank-4" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(76,175,118,0.1),rgba(76,175,118,0.04));border:1px solid rgba(76,175,118,0.3);border-radius:var(--radius);padding:14px 16px;text-decoration:none;">
+        <div>
+          <div style="font-size:13px;font-weight:800;color:var(--green);margin-bottom:3px;">📋 ${checkinDay} Check-In</div>
+          <div style="font-size:12px;color:var(--muted);">Submit your progress update to Coach Charles</div>
+        </div>
+        <div style="background:var(--green);color:var(--black);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;white-space:nowrap;">Check In →</div>
+      </a>`;
+  }
 }
 
 function renderPlanTab() {
@@ -1222,7 +1467,7 @@ function renderWorkoutPlan() {
     const activeIdx = todayIdx >= 0 ? todayIdx : 0;
 
     el.innerHTML = weekStrip + `<div id="workout-day-detail"></div>`;
-    renderWorkoutDayDetail(activeIdx, assignedPlan);
+    renderWorkoutDayDetail(activeIdx, assignedPlan, false);
     return;
   }
 
@@ -1241,24 +1486,32 @@ function selectWorkoutDay(idx) {
   const profile = clientProfile || {};
   const plan = profile.workout_plan;
   if (!plan) return;
-  // Update strip highlights
   plan.days.forEach((_, i) => {
     const strip = document.getElementById(`wstrip-${i}`);
     if (!strip) return;
     if (i === idx) {
       strip.style.background = 'var(--gold)';
-      strip.style.color = 'var(--black)';
+      strip.style.border = 'none';
       strip.querySelectorAll('div').forEach(d => d.style.color = 'var(--black)');
     } else {
       strip.style.background = 'var(--card)';
       strip.style.border = '1px solid var(--border)';
-      strip.style.color = 'var(--muted)';
+      strip.querySelectorAll('div').forEach(d => d.style.color = 'var(--muted)');
     }
   });
-  renderWorkoutDayDetail(idx, plan);
+  renderWorkoutDayDetail(idx, plan, false);
 }
 
-function renderWorkoutDayDetail(idx, plan) {
+function toggleWorkoutDetail() {
+  const body = document.getElementById('workout-detail-body');
+  const chev = document.getElementById('workout-detail-chev');
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  chev.textContent = open ? '▼' : '▲';
+}
+
+function renderWorkoutDayDetail(idx, plan, startOpen = false) {
   const el = document.getElementById('workout-day-detail');
   if (!el) return;
   const day = plan.days[idx];
@@ -1280,16 +1533,19 @@ function renderWorkoutDayDetail(idx, plan) {
 
   el.innerHTML = `
     <div class="workout-card" style="border:${isToday ? '1px solid var(--gold)' : '1px solid var(--border)'};">
-      <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+      <div onclick="toggleWorkoutDetail()" style="padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <div>
             <div style="font-size:15px;font-weight:800;color:var(--white);">${day.icon} ${day.label}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px;">${day.focus}</div>
           </div>
-          ${isToday ? '<div style="background:var(--gold);color:var(--black);font-size:10px;font-weight:800;letter-spacing:0.06em;padding:4px 10px;border-radius:99px;">TODAY</div>' : ''}
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${isToday ? '<div style="background:var(--gold);color:var(--black);font-size:10px;font-weight:800;letter-spacing:0.06em;padding:4px 10px;border-radius:99px;">TODAY</div>' : ''}
+            <span style="color:var(--muted);font-size:12px;" id="workout-detail-chev">${startOpen ? '▲' : '▼'}</span>
+          </div>
         </div>
       </div>
-      <div style="padding:14px 16px;">
+      <div id="workout-detail-body" style="display:${startOpen ? 'block' : 'none'};padding:14px 16px;">
         ${warmup.length ? `
           <div style="margin-bottom:14px;">
             <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);margin-bottom:8px;">🔥 Warmup</div>
@@ -1306,19 +1562,63 @@ function renderWorkoutDayDetail(idx, plan) {
         ` : ''}
         ${day.exercises.length ? `
           <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">💪 Main Workout</div>
-          ${day.exercises.map(ex => `
-            <div class="exercise-row">
-              <div style="flex:1;">
-                <div class="exercise-name">${ex.name}</div>
-                <div class="exercise-detail">Rest: ${ex.rest || '60s'}</div>
-                ${ex.tip ? `<div class="coach-tip"><strong>Coach:</strong> ${ex.tip}</div>` : ''}
-              </div>
-              <div class="exercise-sets">${ex.sets}×${ex.reps}<span>sets×reps</span></div>
-            </div>
-          `).join('')}
+          ${renderClientExercises(day.exercises)}
         ` : ''}
       </div>
     </div>`;
+}
+
+function renderClientExercises(exercises) {
+  let html = '';
+  let i = 0;
+  while (i < exercises.length) {
+    const ex = exercises[i];
+    const group = ex.group || 'none';
+    const groupColors = { superset: '#4c8fe0', triset: '#9b59b6' };
+    const groupLabels = { superset: 'Superset', triset: 'Triset' };
+
+    if (group !== 'none' && groupColors[group]) {
+      // Collect all exercises in this group
+      const groupExes = [ex];
+      let j = i + 1;
+      while (j < exercises.length && exercises[j].group === group) {
+        groupExes.push(exercises[j]);
+        j++;
+      }
+      // Find the last exercise's rest time
+      const lastEx = groupExes[groupExes.length - 1];
+      const restAfter = lastEx.rest && lastEx.rest !== 'No rest' ? lastEx.rest : '60s';
+
+      html += `
+        <div style="border-left:3px solid ${groupColors[group]};padding-left:10px;margin-bottom:14px;margin-left:2px;">
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:${groupColors[group]};margin-bottom:8px;">⚡ ${groupLabels[group]}</div>
+          ${groupExes.map(gex => `
+            <div class="exercise-row" style="border-color:rgba(255,255,255,0.06);">
+              <div style="flex:1;">
+                <div class="exercise-name">${gex.name}</div>
+                <div class="exercise-detail" style="color:${groupColors[group]};opacity:0.7;">No rest — go straight to next exercise</div>
+                ${gex.tip ? `<div class="coach-tip"><strong>Coach:</strong> ${gex.tip}</div>` : ''}
+              </div>
+              <div class="exercise-sets">${gex.sets}×${gex.reps}<span>sets×reps</span></div>
+            </div>
+          `).join('')}
+          <div style="font-size:11px;color:var(--muted);padding:6px 0;border-top:1px solid var(--border);">⏱ Rest <strong style="color:var(--white);">${restAfter}</strong> after completing all ${groupExes.length} exercises</div>
+        </div>`;
+      i = j;
+    } else {
+      html += `
+        <div class="exercise-row">
+          <div style="flex:1;">
+            <div class="exercise-name">${ex.name}</div>
+            <div class="exercise-detail">Rest: ${ex.rest || '60s'}</div>
+            ${ex.tip ? `<div class="coach-tip"><strong>Coach:</strong> ${ex.tip}</div>` : ''}
+          </div>
+          <div class="exercise-sets">${ex.sets}×${ex.reps}<span>sets×reps</span></div>
+        </div>`;
+      i++;
+    }
+  }
+  return html;
 }
 
 function renderWorkoutDayCard(template) {
@@ -1377,7 +1677,7 @@ function renderMealPlan() {
           <span class="chevron" id="chev-meal-${i}">▼</span>
         </div>
       </div>
-      <div class="meal-plan-card-body" id="meal-${i}">
+      <div class="meal-plan-card-body" id="meal-${i}" style="display:none;">
         <table class="food-table">
           <tr><th>Food</th><th>Amount</th><th>P</th><th>C</th><th>F</th><th>kcal</th></tr>
           ${meal.foods.map(f => `<tr>
@@ -1443,24 +1743,27 @@ function renderApprovedFoods() {
   const el = document.getElementById('plan-approved-foods-content');
   const profile = clientProfile || {};
   const af = profile.approved_foods;
-  const isTemplate = !af;
+  const bloodType = profile.blood_type || 'unknown';
+  const isAssigned = !!af;
 
-  // Handle both old flat array format and new P/C/F object format
+  // Use assigned foods if available, otherwise use blood type defaults
   let protein = [], carbs = [], fats = [];
   if (af) {
     if (Array.isArray(af)) {
-      protein = af; // old format fallback
+      protein = af; // old flat format fallback
     } else {
       protein = af.protein || [];
       carbs = af.carbs || [];
       fats = af.fats || [];
     }
   } else {
-    protein = DEFAULT_APPROVED_FOODS.slice(0, 4);
-    carbs = DEFAULT_APPROVED_FOODS.slice(4, 8);
-    fats = DEFAULT_APPROVED_FOODS.slice(8);
+    const defaults = getDefaultApprovedFoods(bloodType);
+    protein = defaults.protein || [];
+    carbs = defaults.carbs || [];
+    fats = defaults.fats || [];
   }
 
+  const btLabels = { unknown:'General Blueprint', O:'Type O', A:'Type A', B:'Type B', AB:'Type AB' };
   const renderGrid = (foods) => foods.map(f => `
     <div class="approved-food-item">
       <div class="af-name">${f.name}</div>
@@ -1468,12 +1771,38 @@ function renderApprovedFoods() {
     </div>
   `).join('');
 
+  const renderCategory = (foods, id, label, color) => {
+    if (!foods.length) return '';
+    return `
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;">
+        <div onclick="toggleAFCategory('${id}')" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:${color};">${label}</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:11px;color:var(--muted);">${foods.length} foods</span>
+            <span style="color:var(--muted);font-size:12px;" id="af-chev-${id}">▼</span>
+          </div>
+        </div>
+        <div id="af-body-${id}" style="display:none;padding:0 14px 12px;">
+          <div class="approved-food-grid">${renderGrid(foods)}</div>
+        </div>
+      </div>`;
+  };
+
   el.innerHTML = `
-    ${isTemplate ? `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">📋 <strong style="color:var(--gold);">Blueprint Approved Foods</strong> — Stick to these for best results.</div>` : ''}
-    ${protein.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:8px;margin-top:4px;">💪 Protein Sources</div><div class="approved-food-grid">${renderGrid(protein)}</div>` : ''}
-    ${carbs.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue);margin-bottom:8px;margin-top:12px;">🌾 Carbohydrate Sources</div><div class="approved-food-grid">${renderGrid(carbs)}</div>` : ''}
-    ${fats.length ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--orange);margin-bottom:8px;margin-top:12px;">🥑 Fat Sources</div><div class="approved-food-grid">${renderGrid(fats)}</div>` : ''}
+    ${!isAssigned ? `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">📋 <strong style="color:var(--gold);">Blueprint Approved Foods</strong> — ${btLabels[bloodType]} · Tap each category to expand.</div>` : ''}
+    ${renderCategory(protein, 'protein', '💪 Protein Sources', 'var(--gold)')}
+    ${renderCategory(carbs, 'carbs', '🌾 Carbohydrate Sources', 'var(--blue)')}
+    ${renderCategory(fats, 'fats', '🥑 Fat Sources', 'var(--orange)')}
   `;
+}
+
+function toggleAFCategory(id) {
+  const body = document.getElementById(`af-body-${id}`);
+  const chev = document.getElementById(`af-chev-${id}`);
+  if (!body) return;
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  chev.textContent = open ? '▼' : '▲';
 }
 
 function renderFlexMeals() {

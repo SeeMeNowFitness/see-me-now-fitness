@@ -1187,23 +1187,59 @@ function loadDefaultWarmup(di) {
   if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
 }
 
-const exInputStyle = `font-size:12px;padding:6px 8px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;`;
+function setGroupType(di, ei, type) {
+  if (!workoutPlan) return;
+  workoutPlan.days[di].exercises[ei].group = type;
+  // Auto-set rest for grouped exercises
+  if (type === 'superset' || type === 'triset') {
+    workoutPlan.days[di].exercises[ei].groupRest = workoutPlan.days[di].exercises[ei].rest || '60s';
+    workoutPlan.days[di].exercises[ei].rest = 'No rest';
+  } else {
+    // Restore original rest if ungrouping
+    if (workoutPlan.days[di].exercises[ei].groupRest) {
+      workoutPlan.days[di].exercises[ei].rest = workoutPlan.days[di].exercises[ei].groupRest;
+    }
+    delete workoutPlan.days[di].exercises[ei].groupRest;
+  }
+  renderWorkoutDays();
+  const body = document.getElementById(`wday-body-${di}`);
+  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+}
 
 function renderExerciseRow(ex, di, ei, isWarmup = false) {
+  const exInputStyle = `font-size:12px;padding:6px 8px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;`;
   const arr = isWarmup ? 'warmup' : 'exercises';
+  const group = !isWarmup ? (ex.group || 'none') : 'none';
+  const groupColors = { superset: '#4c8fe0', triset: '#9b59b6' };
+  const groupLabels = { superset: 'SS', triset: 'TS' };
+  const borderColor = group !== 'none' ? groupColors[group] : 'var(--border)';
+  const groupBadge = group !== 'none' ? `<span style="background:${groupColors[group]};color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:4px;letter-spacing:0.06em;">${groupLabels[group]}</span>` : '';
+
   return `
-    <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+    <div style="padding:10px 0;border-bottom:1px solid ${borderColor};${group!=='none'?`border-left:3px solid ${groupColors[group]};padding-left:10px;margin-left:-2px;`:''}">
       <div style="display:grid;grid-template-columns:1fr 54px 62px 54px 30px;gap:6px;align-items:center;margin-bottom:6px;">
-        <input type="text" value="${ex.name}" placeholder="${isWarmup ? 'e.g. Band Pull-Aparts' : 'e.g. Incline Machine Press'}" oninput="workoutPlan.days[${di}].${arr}[${ei}].name=this.value" style="${exInputStyle}font-weight:700;font-size:13px;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          ${groupBadge}
+          <input type="text" value="${ex.name}" placeholder="${isWarmup ? 'e.g. Band Pull-Aparts' : 'e.g. Incline Machine Press'}" oninput="workoutPlan.days[${di}].${arr}[${ei}].name=this.value" style="${exInputStyle}font-weight:700;font-size:13px;">
+        </div>
         <input type="text" value="${ex.sets}" oninput="workoutPlan.days[${di}].${arr}[${ei}].sets=this.value" placeholder="Sets" style="${exInputStyle}text-align:center;">
         <input type="text" value="${ex.reps}" oninput="workoutPlan.days[${di}].${arr}[${ei}].reps=this.value" placeholder="Reps" style="${exInputStyle}text-align:center;">
-        <input type="text" value="${ex.rest||'—'}" oninput="workoutPlan.days[${di}].${arr}[${ei}].rest=this.value" placeholder="Rest" style="${exInputStyle}text-align:center;">
+        <input type="text" value="${ex.rest||'60s'}" oninput="workoutPlan.days[${di}].${arr}[${ei}].rest=this.value" placeholder="Rest" style="${exInputStyle}text-align:center;${group!=='none'&&ex.rest==='No rest'?'color:var(--muted);':''}">
         <button onclick="${isWarmup ? `removeWarmup(${di},${ei})` : `removeExercise(${di},${ei})`}" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0;">✕</button>
       </div>
-      <div style="display:flex;gap:6px;align-items:center;">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:${!isWarmup?'6px':'0'};">
         <span style="font-size:10px;color:var(--gold);font-weight:700;white-space:nowrap;">Tip:</span>
         <input type="text" value="${ex.tip||''}" oninput="workoutPlan.days[${di}].${arr}[${ei}].tip=this.value" placeholder="Add a coach tip…" style="${exInputStyle}color:var(--muted);font-size:11px;">
       </div>
+      ${!isWarmup ? `
+        <div style="display:flex;gap:5px;align-items:center;">
+          <span style="font-size:10px;color:var(--muted);font-weight:700;white-space:nowrap;">Group:</span>
+          <button onclick="setGroupType(${di},${ei},'none')" style="padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800;cursor:pointer;border:1px solid var(--border);${group==='none'?'background:var(--border);color:var(--white);':'background:none;color:var(--muted);'}">None</button>
+          <button onclick="setGroupType(${di},${ei},'superset')" style="padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800;cursor:pointer;border:1px solid ${groupColors.superset};${group==='superset'?`background:${groupColors.superset};color:#fff;`:'background:none;color:'+groupColors.superset+';'}">Superset</button>
+          <button onclick="setGroupType(${di},${ei},'triset')" style="padding:3px 8px;border-radius:4px;font-size:10px;font-weight:800;cursor:pointer;border:1px solid ${groupColors.triset};${group==='triset'?`background:${groupColors.triset};color:#fff;`:'background:none;color:'+groupColors.triset+';'}">Triset</button>
+          ${group!=='none'?`<span style="font-size:10px;color:var(--muted);margin-left:4px;">↓ continues to next exercise, then rest</span>`:''}
+        </div>
+      ` : ''}
     </div>`;
 }
 
