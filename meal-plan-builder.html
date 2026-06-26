@@ -223,6 +223,35 @@ Enable Flex Dieting for this client
 </div>
 </div>
 
+<!-- 7. Workout Plan -->
+<div class="section">
+<h3>7. Workout Plan</h3>
+<div class="grid-2" style="margin-bottom:14px;">
+  <div class="field" style="margin-bottom:0;">
+    <label>Template</label>
+    <select id="workout-template-select" onchange="onWorkoutTemplateChange()">
+      <option value="">— No workout plan —</option>
+      <option value="ppl">Push / Pull / Legs (PPL)</option>
+      <option value="ppl_shoulders">PPL + Shoulders on Leg Day</option>
+      <option value="physique">Men's Physique</option>
+      <option value="glute">Glute Focus</option>
+      <option value="bikini">Bikini</option>
+      <option value="wellness">Wellness</option>
+      <option value="powerlifting">Powerlifting</option>
+      <option value="fullbody">Full Body 3x</option>
+    </select>
+  </div>
+  <div class="field" style="margin-bottom:0;">
+    <label>Plan Name (shown to client)</label>
+    <input type="text" id="workout-plan-name" placeholder="e.g. Your Blueprint Training Plan">
+  </div>
+</div>
+<div id="workout-template-preview" style="display:none;">
+  <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Rename any day below — clients see your names, not the template structure.</div>
+  <div id="workout-days-container"></div>
+</div>
+</div>
+
 <!-- Save -->
 <div class="btn-row">
 <button class="btn btn-gold" onclick="savePlan()">💾 Save Plan to Client</button>
@@ -501,6 +530,14 @@ function onClientSelect(){
   if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
   // Load flex meals
   if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;document.getElementById('flex-section').style.display='block';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));renderFlexMeals();}
+  // Load workout plan
+  if(selectedClient.workout_plan){
+    workoutPlan=JSON.parse(JSON.stringify(selectedClient.workout_plan));
+    document.getElementById('workout-template-select').value=selectedClient.workout_plan.template||'';
+    document.getElementById('workout-plan-name').value=selectedClient.workout_plan.name||'';
+    document.getElementById('workout-template-preview').style.display='block';
+    renderWorkoutDays();
+  }
   if(selectedClient.meal_plan){if(confirm('This client already has a meal plan. Load it for editing?')){loadExistingPlan(selectedClient.meal_plan);}}
 }
 
@@ -728,6 +765,532 @@ function toggleAFChunk(ci){
   chev.textContent=open?'▼':'▲';
 }
 
+// ── WORKOUT TEMPLATES ──
+let workoutPlan = null;
+
+const WORKOUT_TEMPLATES = {
+  ppl: {
+    name: 'Your Blueprint Training Plan',
+    days: [
+      { day: 'Monday', label: 'Push Day', icon: '💪', focus: 'Chest · Shoulders · Triceps', exercises: [
+        { name: 'Barbell Bench Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Control the descent, drive through your chest at the top.' },
+        { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Slight incline targets the upper chest effectively.' },
+        { name: 'Overhead Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Keep core tight and avoid excessive lower back arch.' },
+        { name: 'Lateral Raises', sets: 3, reps: '15-20', rest: '45s', tip: 'Lead with your elbows, control the weight on the way down.' },
+        { name: 'Tricep Pushdowns', sets: 3, reps: '12-15', rest: '45s', tip: 'Full lockout at the bottom for maximum tricep activation.' },
+        { name: 'Overhead Tricep Extension', sets: 2, reps: '12-15', rest: '45s', tip: 'Keep elbows close to your head throughout the movement.' },
+      ]},
+      { day: 'Tuesday', label: 'Pull Day', icon: '🏋️', focus: 'Back · Biceps · Rear Delts', exercises: [
+        { name: 'Barbell Rows', sets: 4, reps: '8-10', rest: '90s', tip: 'Pull to your lower chest, keep your back flat throughout.' },
+        { name: 'Lat Pulldowns', sets: 3, reps: '10-12', rest: '60s', tip: 'Drive elbows down and back, squeeze at the bottom.' },
+        { name: 'Seated Cable Rows', sets: 3, reps: '12-15', rest: '60s', tip: 'Squeeze shoulder blades together at the end of each rep.' },
+        { name: 'Face Pulls', sets: 3, reps: '15-20', rest: '45s', tip: 'Great for rear delts and rotator cuff health — don\'t skip these.' },
+        { name: 'Dumbbell Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Supinate at the top for full bicep contraction.' },
+        { name: 'Hammer Curls', sets: 2, reps: '12-15', rest: '45s', tip: 'Targets the brachialis for thicker-looking arms.' },
+      ]},
+      { day: 'Wednesday', label: 'Rest Day', icon: '😴', focus: 'Recovery · Mobility', exercises: [] },
+      { day: 'Thursday', label: 'Leg Day', icon: '🦵', focus: 'Quads · Hamstrings · Glutes · Calves', exercises: [
+        { name: 'Barbell Squats', sets: 4, reps: '8-10', rest: '120s', tip: 'Break parallel, drive knees out, chest up throughout.' },
+        { name: 'Romanian Deadlifts', sets: 3, reps: '10-12', rest: '90s', tip: 'Feel the stretch in your hamstrings — hinge don\'t squat.' },
+        { name: 'Leg Press', sets: 3, reps: '12-15', rest: '60s', tip: 'High foot placement hits more glutes and hamstrings.' },
+        { name: 'Leg Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Full range of motion, control both the up and down.' },
+        { name: 'Leg Extensions', sets: 3, reps: '15-20', rest: '45s', tip: 'Pause at the top for an extra quad squeeze.' },
+        { name: 'Standing Calf Raises', sets: 4, reps: '20-25', rest: '30s', tip: 'Pause at the top and bottom — calves respond to full ROM.' },
+      ]},
+      { day: 'Friday', label: 'Push Day 2', icon: '💪', focus: 'Chest · Shoulders · Triceps', exercises: [
+        { name: 'Dumbbell Bench Press', sets: 4, reps: '10-12', rest: '90s', tip: 'Greater range of motion than barbell — feel the stretch.' },
+        { name: 'Cable Flyes', sets: 3, reps: '12-15', rest: '60s', tip: 'Focus on the squeeze in the middle, not the weight.' },
+        { name: 'Arnold Press', sets: 3, reps: '10-12', rest: '60s', tip: 'The rotation hits all three heads of the shoulder.' },
+        { name: 'Lateral Raises', sets: 4, reps: '15-20', rest: '45s', tip: 'Keep a slight bend in the elbow, lead with elbows.' },
+        { name: 'Skull Crushers', sets: 3, reps: '12-15', rest: '45s', tip: 'Keep upper arms vertical throughout the movement.' },
+      ]},
+      { day: 'Saturday', label: 'Pull Day 2', icon: '🏋️', focus: 'Back · Biceps', exercises: [
+        { name: 'Pull-Ups / Assisted Pull-Ups', sets: 4, reps: '8-10', rest: '90s', tip: 'Full hang at the bottom, chin over bar at the top.' },
+        { name: 'Single Arm Dumbbell Row', sets: 3, reps: '10-12 each', rest: '60s', tip: 'Brace on a bench, drive your elbow back toward your hip.' },
+        { name: 'Cable Pullover', sets: 3, reps: '12-15', rest: '60s', tip: 'Great lat isolator — keep arms slightly bent.' },
+        { name: 'Reverse Flyes', sets: 3, reps: '15-20', rest: '45s', tip: 'Targets rear delts — keep a slight bend in the elbows.' },
+        { name: 'Barbell Curls', sets: 3, reps: '10-12', rest: '45s', tip: 'No swinging — strict form for maximum bicep engagement.' },
+      ]},
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Recovery · Active Rest', exercises: [] },
+    ]
+  },
+  ppl_shoulders: {
+    name: 'Your Blueprint Training Plan',
+    days: [
+      { day: 'Monday', label: 'Push Day', icon: '💪', focus: 'Chest · Triceps', exercises: [
+        { name: 'Barbell Bench Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Drive through your chest at the top of every rep.' },
+        { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Targets upper chest — keep the angle around 30–45°.' },
+        { name: 'Cable Flyes', sets: 3, reps: '12-15', rest: '60s', tip: 'Squeeze hard in the middle, control the negative.' },
+        { name: 'Tricep Pushdowns', sets: 3, reps: '12-15', rest: '45s', tip: 'Full lockout every rep for complete tricep activation.' },
+        { name: 'Overhead Tricep Extension', sets: 3, reps: '12-15', rest: '45s', tip: 'Keep elbows tight and close to your head.' },
+      ]},
+      { day: 'Tuesday', label: 'Pull Day', icon: '🏋️', focus: 'Back · Biceps · Rear Delts', exercises: [
+        { name: 'Barbell Rows', sets: 4, reps: '8-10', rest: '90s', tip: 'Pull to lower chest, back stays flat and neutral.' },
+        { name: 'Lat Pulldowns', sets: 3, reps: '10-12', rest: '60s', tip: 'Think about pulling your elbows to your pockets.' },
+        { name: 'Seated Cable Rows', sets: 3, reps: '12-15', rest: '60s', tip: 'Full stretch at the front, hard squeeze at the back.' },
+        { name: 'Face Pulls', sets: 3, reps: '15-20', rest: '45s', tip: 'Keep this in — essential for shoulder health and rear delts.' },
+        { name: 'Dumbbell Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Supinate at the top for peak contraction.' },
+      ]},
+      { day: 'Wednesday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
+      { day: 'Thursday', label: 'Legs + Shoulders', icon: '🦵', focus: 'Quads · Hamstrings · Glutes · Shoulders', exercises: [
+        { name: 'Barbell Squats', sets: 4, reps: '8-10', rest: '120s', tip: 'Break parallel every rep. Drive the floor away from you.' },
+        { name: 'Romanian Deadlifts', sets: 3, reps: '10-12', rest: '90s', tip: 'Hinge at the hips, feel the hamstring stretch.' },
+        { name: 'Leg Press', sets: 3, reps: '12-15', rest: '60s', tip: 'Vary foot position to target different areas of the legs.' },
+        { name: 'Overhead Press', sets: 4, reps: '10-12', rest: '60s', tip: 'Shoulders are fresh — hit them hard here.' },
+        { name: 'Lateral Raises', sets: 4, reps: '15-20', rest: '45s', tip: 'Lead with your elbows, slight forward lean for better activation.' },
+        { name: 'Calf Raises', sets: 4, reps: '20-25', rest: '30s', tip: 'Full range — pause at the top and bottom.' },
+      ]},
+      { day: 'Friday', label: 'Push Day 2', icon: '💪', focus: 'Chest · Triceps', exercises: [
+        { name: 'Dumbbell Bench Press', sets: 4, reps: '10-12', rest: '90s', tip: 'Greater ROM than barbell — really feel the stretch at the bottom.' },
+        { name: 'Pec Deck / Machine Flyes', sets: 3, reps: '12-15', rest: '60s', tip: 'Isolation work — squeeze and hold for a beat at peak contraction.' },
+        { name: 'Dips', sets: 3, reps: '10-12', rest: '60s', tip: 'Lean forward to target chest more than triceps.' },
+        { name: 'Skull Crushers', sets: 3, reps: '12-15', rest: '45s', tip: 'Keep upper arms vertical throughout the movement.' },
+      ]},
+      { day: 'Saturday', label: 'Pull Day 2', icon: '🏋️', focus: 'Back · Biceps', exercises: [
+        { name: 'Pull-Ups / Assisted Pull-Ups', sets: 4, reps: '8-10', rest: '90s', tip: 'Full hang to chin over bar — quality reps over quantity.' },
+        { name: 'Single Arm Dumbbell Row', sets: 3, reps: '10-12 each', rest: '60s', tip: 'Drive elbow back toward your hip, not up toward ceiling.' },
+        { name: 'Reverse Flyes', sets: 3, reps: '15-20', rest: '45s', tip: 'Rear delts — light weight, strict form, feel the squeeze.' },
+        { name: 'Hammer Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Great for brachialis thickness — no swinging.' },
+      ]},
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Recovery · Active Rest', exercises: [] },
+    ]
+  },
+  physique: {
+    name: 'Your Blueprint Physique Plan',
+    days: [
+      { day: 'Monday', label: 'Chest & Shoulders', icon: '🏆', focus: 'Chest · Shoulders', exercises: [
+        { name: 'Incline Barbell Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Upper chest is key for stage presence — prioritize this.' },
+        { name: 'Cable Flyes', sets: 4, reps: '12-15', rest: '60s', tip: 'Squeeze every rep — judges see your chest detail on stage.' },
+        { name: 'Overhead Press', sets: 4, reps: '10-12', rest: '60s', tip: 'Shoulder width is the foundation of the physique look.' },
+        { name: 'Lateral Raises', sets: 5, reps: '15-20', rest: '45s', tip: 'These build the capped shoulder look. Do them every session.' },
+        { name: 'Rear Delt Flyes', sets: 3, reps: '15-20', rest: '45s', tip: 'Rear delts round out the shoulder — never skip.' },
+      ]},
+      { day: 'Tuesday', label: 'Back & Biceps', icon: '🏋️', focus: 'Width · Thickness · Biceps', exercises: [
+        { name: 'Wide Grip Pull-Ups', sets: 4, reps: '8-10', rest: '90s', tip: 'Width is everything in physique. Pull-ups are non-negotiable.' },
+        { name: 'Lat Pulldowns', sets: 4, reps: '10-12', rest: '60s', tip: 'Lean back slightly, drive elbows to your sides.' },
+        { name: 'T-Bar Rows', sets: 3, reps: '10-12', rest: '60s', tip: 'Builds the thickness judges look for from the side.' },
+        { name: 'Cable Rows', sets: 3, reps: '12-15', rest: '60s', tip: 'Squeeze hard at the end of every rep.' },
+        { name: 'Barbell Curls', sets: 3, reps: '10-12', rest: '45s', tip: 'Strict form — judges can see everything on stage.' },
+        { name: 'Hammer Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Adds brachialis thickness for a fuller arm look.' },
+      ]},
+      { day: 'Wednesday', label: 'Legs', icon: '🦵', focus: 'Quads · Hamstrings · Glutes', exercises: [
+        { name: 'Leg Press', sets: 4, reps: '12-15', rest: '90s', tip: 'Physique doesn\'t require massive legs — focus on proportion.' },
+        { name: 'Romanian Deadlifts', sets: 3, reps: '12-15', rest: '90s', tip: 'Hamstring detail shows well in mandatory poses.' },
+        { name: 'Leg Extensions', sets: 4, reps: '15-20', rest: '45s', tip: 'Quad sweep is important — go through full ROM.' },
+        { name: 'Leg Curls', sets: 3, reps: '15-20', rest: '45s', tip: 'Hamstring detail is visible from the rear mandatory.' },
+        { name: 'Calf Raises', sets: 5, reps: '20-25', rest: '30s', tip: 'Calves are often judged heavily — don\'t neglect them.' },
+      ]},
+      { day: 'Thursday', label: 'Posing & Conditioning', icon: '🎯', focus: 'Posing · Cardio · Core', exercises: [
+        { name: 'Posing Practice', sets: 1, reps: '15-20 min', rest: '—', tip: 'Practice mandatory poses and your walk in front of a mirror.' },
+        { name: 'Vacuum / Core Breathing', sets: 3, reps: '30-60 sec holds', rest: '30s', tip: 'A tight midsection on stage separates placings.' },
+        { name: 'Steady State Cardio', sets: 1, reps: '20-30 min', rest: '—', tip: 'Low intensity — bike, treadmill walk, or stairmaster.' },
+      ]},
+      { day: 'Friday', label: 'Chest & Triceps', icon: '💪', focus: 'Chest · Triceps · Detail', exercises: [
+        { name: 'Flat Dumbbell Press', sets: 4, reps: '10-12', rest: '90s', tip: 'More ROM than barbell — feel the full chest stretch.' },
+        { name: 'Pec Deck', sets: 4, reps: '12-15', rest: '60s', tip: 'Isolation and detail work — squeeze and hold.' },
+        { name: 'Dips', sets: 3, reps: '10-12', rest: '60s', tip: 'Lean forward slightly to keep chest as the prime mover.' },
+        { name: 'Tricep Pushdowns', sets: 4, reps: '12-15', rest: '45s', tip: 'Triceps make up 2/3 of arm size — don\'t neglect them.' },
+        { name: 'Overhead Tricep Extension', sets: 3, reps: '12-15', rest: '45s', tip: 'Long head activation for that horseshoe look.' },
+      ]},
+      { day: 'Saturday', label: 'Shoulders & Arms', icon: '💥', focus: 'Shoulders · Biceps · Triceps', exercises: [
+        { name: 'Seated Dumbbell Press', sets: 4, reps: '10-12', rest: '60s', tip: 'Full shoulder pressing to maintain cap and width.' },
+        { name: 'Lateral Raises', sets: 5, reps: '15-20', rest: '30s', tip: 'The most important exercise for the physique look.' },
+        { name: 'Barbell Curls', sets: 4, reps: '10-12', rest: '45s', tip: 'Peak biceps are a focal point — strict form always.' },
+        { name: 'Cable Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Constant tension throughout the movement.' },
+        { name: 'Skull Crushers', sets: 3, reps: '12-15', rest: '45s', tip: 'Full ROM for maximum tricep stretch and activation.' },
+      ]},
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
+    ]
+  },
+  glute: {
+    name: 'Your Blueprint Glute Program',
+    days: [
+      { day: 'Monday', label: 'Glute & Hamstring Focus', icon: '🍑', focus: 'Glutes · Hamstrings', exercises: [
+        { name: 'Hip Thrusts', sets: 4, reps: '10-12', rest: '90s', tip: 'Squeeze hard at the top, chin to chest, drive through heels.' },
+        { name: 'Romanian Deadlifts', sets: 4, reps: '10-12', rest: '90s', tip: 'Push your hips back, feel the hamstring stretch fully.' },
+        { name: 'Cable Kickbacks', sets: 3, reps: '15-20 each', rest: '45s', tip: 'Control the movement — don\'t swing the leg.' },
+        { name: 'Leg Curls', sets: 3, reps: '12-15', rest: '60s', tip: 'Slow eccentric for maximum hamstring development.' },
+        { name: 'Glute Bridge', sets: 3, reps: '15-20', rest: '45s', tip: 'Bodyweight or weighted — squeeze at the top every rep.' },
+      ]},
+      { day: 'Tuesday', label: 'Upper Body Pull', icon: '🏋️', focus: 'Back · Biceps · Rear Delts', exercises: [
+        { name: 'Lat Pulldowns', sets: 4, reps: '10-12', rest: '60s', tip: 'Wide grip for width, drive elbows to your sides.' },
+        { name: 'Seated Cable Rows', sets: 3, reps: '12-15', rest: '60s', tip: 'Squeeze shoulder blades together at the end of each rep.' },
+        { name: 'Face Pulls', sets: 3, reps: '15-20', rest: '45s', tip: 'Essential for shoulder health — don\'t skip these.' },
+        { name: 'Dumbbell Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Controlled movement — feel the bicep working.' },
+      ]},
+      { day: 'Wednesday', label: 'Quad & Glute Day', icon: '🦵', focus: 'Quads · Glutes', exercises: [
+        { name: 'Bulgarian Split Squats', sets: 4, reps: '10-12 each', rest: '90s', tip: 'Keep front shin vertical, drive through the front heel.' },
+        { name: 'Leg Press (high foot)', sets: 4, reps: '12-15', rest: '90s', tip: 'High foot placement shifts emphasis to glutes.' },
+        { name: 'Sumo Squats', sets: 3, reps: '12-15', rest: '60s', tip: 'Wide stance, toes out — great inner thigh and glute activation.' },
+        { name: 'Abductor Machine', sets: 4, reps: '20-25', rest: '30s', tip: 'Slow and controlled — squeeze at the top of every rep.' },
+        { name: 'Leg Extensions', sets: 3, reps: '15-20', rest: '45s', tip: 'Quad sweep isolation — pause at the top.' },
+      ]},
+      { day: 'Thursday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
+      { day: 'Friday', label: 'Glute & Posterior Chain', icon: '🍑', focus: 'Glutes · Hamstrings · Back', exercises: [
+        { name: 'Barbell Hip Thrusts', sets: 5, reps: '8-12', rest: '90s', tip: 'Load this movement progressively — it\'s your #1 glute builder.' },
+        { name: 'Sumo Deadlifts', sets: 4, reps: '8-10', rest: '90s', tip: 'Wide stance, drive hips forward at the top.' },
+        { name: 'Reverse Hyperextensions', sets: 3, reps: '15-20', rest: '60s', tip: 'Great for glutes and lower back without compression.' },
+        { name: 'Cable Pull-Throughs', sets: 3, reps: '15-20', rest: '60s', tip: 'Hinge movement — focus on the glute squeeze at the top.' },
+        { name: 'Seated Calf Raises', sets: 4, reps: '20-25', rest: '30s', tip: 'Seated hits the soleus — different angle for full calf development.' },
+      ]},
+      { day: 'Saturday', label: 'Upper Body Push', icon: '💪', focus: 'Chest · Shoulders · Triceps', exercises: [
+        { name: 'Dumbbell Bench Press', sets: 4, reps: '10-12', rest: '90s', tip: 'Full chest development balances the physique.' },
+        { name: 'Overhead Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Shoulder pressing for balanced upper body.' },
+        { name: 'Lateral Raises', sets: 4, reps: '15-20', rest: '45s', tip: 'Capped shoulders complement a glute-focused physique.' },
+        { name: 'Tricep Pushdowns', sets: 3, reps: '12-15', rest: '45s', tip: 'Keep upper arms still — isolation only.' },
+      ]},
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Active Recovery', exercises: [] },
+    ]
+  },
+  bikini: {
+    name: 'Your Blueprint Bikini Program',
+    days: [
+      { day: 'Monday', label: 'Glutes & Hamstrings', icon: '🍑', focus: 'Glutes · Hamstrings', exercises: [
+        { name: 'Hip Thrusts', sets: 4, reps: '12-15', rest: '90s', tip: 'Squeeze hard at the top — this is your most important exercise.' },
+        { name: 'Romanian Deadlifts', sets: 4, reps: '12-15', rest: '90s', tip: 'Push hips back, keep bar close to your legs throughout.' },
+        { name: 'Cable Kickbacks', sets: 3, reps: '15-20 each', rest: '45s', tip: 'Slow and controlled — feel the glute squeeze each rep.' },
+        { name: 'Leg Curls', sets: 3, reps: '15-20', rest: '45s', tip: 'Hamstring detail shows from the rear — don\'t rush these.' },
+        { name: 'Abductor Machine', sets: 3, reps: '20-25', rest: '30s', tip: 'Essential for bikini — builds the outer glute shape.' },
+      ]},
+      { day: 'Tuesday', label: 'Upper Body Tone', icon: '💪', focus: 'Shoulders · Back · Arms', exercises: [
+        { name: 'Lateral Raises', sets: 4, reps: '15-20', rest: '45s', tip: 'Bikini judges love capped shoulders — prioritize these.' },
+        { name: 'Rear Delt Flyes', sets: 3, reps: '15-20', rest: '45s', tip: 'Balances the shoulder and shows from every angle on stage.' },
+        { name: 'Lat Pulldowns', sets: 3, reps: '12-15', rest: '60s', tip: 'Creates the V-taper that defines the bikini look.' },
+        { name: 'Face Pulls', sets: 3, reps: '15-20', rest: '45s', tip: 'Posture matters on stage — these keep your back healthy.' },
+        { name: 'Dumbbell Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Toned arms for a balanced, competition-ready look.' },
+      ]},
+      { day: 'Wednesday', label: 'Quads & Glutes', icon: '🦵', focus: 'Quads · Glutes', exercises: [
+        { name: 'Bulgarian Split Squats', sets: 4, reps: '12-15 each', rest: '90s', tip: 'Drive through your front heel, squeeze glute at the top.' },
+        { name: 'Leg Press', sets: 4, reps: '15-20', rest: '90s', tip: 'Higher reps for muscle tone and endurance.' },
+        { name: 'Walking Lunges', sets: 3, reps: '12-15 each', rest: '60s', tip: 'Great for glute and quad development with a functional movement.' },
+        { name: 'Leg Extensions', sets: 3, reps: '20-25', rest: '45s', tip: 'Quad sweep detail — squeeze and hold at the top.' },
+        { name: 'Sumo Squats', sets: 3, reps: '15-20', rest: '60s', tip: 'Inner thigh and glute sweep — important for bikini.' },
+      ]},
+      { day: 'Thursday', label: 'Posing & Cardio', icon: '🎯', focus: 'Stage Prep · Cardio', exercises: [
+        { name: 'Posing Practice', sets: 1, reps: '15-20 min', rest: '—', tip: 'Practice your T-walk, quarter turns, and comparisons daily.' },
+        { name: 'Stairmaster', sets: 1, reps: '20-30 min', rest: '—', tip: 'Low intensity — great for glute activation while doing cardio.' },
+        { name: 'Core Work', sets: 3, reps: '15-20', rest: '45s', tip: 'Tight core on stage separates placings in bikini.' },
+      ]},
+      { day: 'Friday', label: 'Full Glute Day', icon: '🍑', focus: 'Glutes · Posterior Chain', exercises: [
+        { name: 'Barbell Hip Thrusts', sets: 5, reps: '10-12', rest: '90s', tip: 'Progressive overload on this movement is the key to glute growth.' },
+        { name: 'Sumo Deadlifts', sets: 4, reps: '10-12', rest: '90s', tip: 'Wide stance, toes pointed out — drives hip and glute activation.' },
+        { name: 'Cable Pull-Throughs', sets: 3, reps: '15-20', rest: '60s', tip: 'Hinge movement — focus entirely on the glute squeeze at the top.' },
+        { name: 'Glute Kickbacks (Machine)', sets: 3, reps: '15-20 each', rest: '45s', tip: 'Full extension at the top — don\'t let momentum do the work.' },
+        { name: 'Seated Abductor Machine', sets: 4, reps: '20-25', rest: '30s', tip: 'Outer glute shape — important for bikini stage appearance.' },
+      ]},
+      { day: 'Saturday', label: 'Upper Body & Core', icon: '✨', focus: 'Shoulders · Arms · Core', exercises: [
+        { name: 'Dumbbell Shoulder Press', sets: 3, reps: '12-15', rest: '60s', tip: 'Bikini requires balanced upper body — don\'t skip shoulders.' },
+        { name: 'Lateral Raises', sets: 4, reps: '15-20', rest: '45s', tip: 'Your most important upper body exercise for stage.' },
+        { name: 'Tricep Pushdowns', sets: 3, reps: '15-20', rest: '45s', tip: 'Toned arms from behind — important in quarter turns.' },
+        { name: 'Plank', sets: 3, reps: '45-60 sec', rest: '45s', tip: 'Strong core for confident stage presence.' },
+        { name: 'Russian Twists', sets: 3, reps: '20 each', rest: '30s', tip: 'Tight midsection is part of the bikini package.' },
+      ]},
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Recovery · Self Care', exercises: [] },
+    ]
+  },
+  wellness: {
+    name: 'Your Blueprint Wellness Program',
+    days: [
+      { day: 'Monday', label: 'Lower Body Power', icon: '🦵', focus: 'Glutes · Quads · Hamstrings', exercises: [
+        { name: 'Barbell Squats', sets: 4, reps: '8-10', rest: '120s', tip: 'Wellness requires significant lower body development — squat heavy.' },
+        { name: 'Hip Thrusts', sets: 4, reps: '10-12', rest: '90s', tip: 'Glute size and roundness are the #1 wellness judging criteria.' },
+        { name: 'Romanian Deadlifts', sets: 3, reps: '10-12', rest: '90s', tip: 'Full hamstring development — hinge deep and squeeze at the top.' },
+        { name: 'Leg Press', sets: 3, reps: '12-15', rest: '90s', tip: 'Quad size matters in wellness — go heavy and progressive.' },
+        { name: 'Abductor Machine', sets: 4, reps: '20-25', rest: '30s', tip: 'Outer glute and hip width are key for the wellness shape.' },
+      ]},
+      { day: 'Tuesday', label: 'Upper Body', icon: '💪', focus: 'Shoulders · Back · Arms', exercises: [
+        { name: 'Overhead Press', sets: 4, reps: '10-12', rest: '60s', tip: 'Wellness requires a narrow, toned upper body — proportions matter.' },
+        { name: 'Lateral Raises', sets: 5, reps: '15-20', rest: '45s', tip: 'Capped shoulders create the contrast with a full lower body.' },
+        { name: 'Lat Pulldowns', sets: 4, reps: '10-12', rest: '60s', tip: 'V-taper is important for the wellness stage package.' },
+        { name: 'Rear Delt Flyes', sets: 3, reps: '15-20', rest: '45s', tip: 'Full shoulder development shows from every angle.' },
+        { name: 'Tricep Pushdowns', sets: 3, reps: '12-15', rest: '45s', tip: 'Toned arms contrast beautifully with developed lower body.' },
+      ]},
+      { day: 'Wednesday', label: 'Glute & Hamstring', icon: '🍑', focus: 'Glutes · Hamstrings · Posterior', exercises: [
+        { name: 'Sumo Deadlifts', sets: 4, reps: '8-10', rest: '90s', tip: 'Wide stance builds the hip and glute width wellness demands.' },
+        { name: 'Bulgarian Split Squats', sets: 4, reps: '10-12 each', rest: '90s', tip: 'Unilateral work for size and symmetry between legs.' },
+        { name: 'Cable Kickbacks', sets: 4, reps: '15-20 each', rest: '45s', tip: 'Glute peak isolation — squeeze hard at full extension.' },
+        { name: 'Leg Curls', sets: 4, reps: '12-15', rest: '60s', tip: 'Hamstring detail visible from rear mandatory poses.' },
+        { name: 'Reverse Hyperextensions', sets: 3, reps: '15-20', rest: '60s', tip: 'Builds posterior chain without lower back compression.' },
+      ]},
+      { day: 'Thursday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
+      { day: 'Friday', label: 'Quad & Glute Power', icon: '🦵', focus: 'Quads · Glutes', exercises: [
+        { name: 'Hack Squats', sets: 4, reps: '10-12', rest: '90s', tip: 'Quad sweep development is critical in wellness.' },
+        { name: 'Barbell Hip Thrusts', sets: 5, reps: '10-12', rest: '90s', tip: 'Most important exercise for wellness competitors — go heavy.' },
+        { name: 'Walking Lunges', sets: 3, reps: '12-15 each', rest: '60s', tip: 'Builds the quad and glute tie-in that judges look for.' },
+        { name: 'Leg Extensions', sets: 4, reps: '15-20', rest: '45s', tip: 'Quad sweep and separation — pause at peak contraction.' },
+        { name: 'Calf Raises', sets: 5, reps: '20-25', rest: '30s', tip: 'Balanced calf development completes the lower body package.' },
+      ]},
+      { day: 'Saturday', label: 'Posing & Conditioning', icon: '🎯', focus: 'Posing · Cardio · Core', exercises: [
+        { name: 'Posing Practice', sets: 1, reps: '20 min', rest: '—', tip: 'Practice your quarter turns and back pose — wellness is judged heavily from behind.' },
+        { name: 'Stairmaster', sets: 1, reps: '20-30 min', rest: '—', tip: 'Great glute activation while doing your cardio.' },
+        { name: 'Core Work', sets: 3, reps: '15-20', rest: '45s', tip: 'Tight midsection is required for the wellness package.' },
+      ]},
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Recovery · Self Care', exercises: [] },
+    ]
+  },
+  powerlifting: {
+    name: 'Your Blueprint Powerlifting Program',
+    days: [
+      { day: 'Monday', label: 'Squat Focus', icon: '🏋️', focus: 'Squat · Quads · Posterior Chain', exercises: [
+        { name: 'Barbell Back Squat (competition)', sets: 5, reps: '5', rest: '180s', tip: 'Focus on technique and depth — hit competition depth every rep.' },
+        { name: 'Pause Squats', sets: 3, reps: '3', rest: '120s', tip: 'Pause 2 seconds at the bottom — builds strength out of the hole.' },
+        { name: 'Leg Press', sets: 3, reps: '10-12', rest: '90s', tip: 'Accessory volume for quad development.' },
+        { name: 'Romanian Deadlifts', sets: 3, reps: '8-10', rest: '90s', tip: 'Posterior chain accessory work for stronger squats and pulls.' },
+        { name: 'Leg Curls', sets: 3, reps: '10-12', rest: '60s', tip: 'Hamstring strength supports squat and deadlift performance.' },
+      ]},
+      { day: 'Tuesday', label: 'Bench Focus', icon: '💪', focus: 'Bench Press · Chest · Triceps', exercises: [
+        { name: 'Barbell Bench Press (competition)', sets: 5, reps: '5', rest: '180s', tip: 'Touch chest, pause briefly, drive hard — competition technique.' },
+        { name: 'Close Grip Bench Press', sets: 3, reps: '6-8', rest: '120s', tip: 'Tricep strength is the limiting factor for most pressers.' },
+        { name: 'Incline Dumbbell Press', sets: 3, reps: '10-12', rest: '90s', tip: 'Upper chest hypertrophy accessory work.' },
+        { name: 'Tricep Pushdowns', sets: 4, reps: '12-15', rest: '60s', tip: 'Volume work for tricep strength and size.' },
+        { name: 'Dumbbell Rows', sets: 4, reps: '10-12', rest: '60s', tip: 'Back strength balances the bench and prevents injury.' },
+      ]},
+      { day: 'Wednesday', label: 'Rest / Accessories', icon: '💆', focus: 'Recovery · Weak Points', exercises: [
+        { name: 'Face Pulls', sets: 3, reps: '15-20', rest: '45s', tip: 'Shoulder health is critical for heavy benching longevity.' },
+        { name: 'Band Pull-Aparts', sets: 3, reps: '20-25', rest: '30s', tip: 'Prehab work for shoulder health — do these daily.' },
+        { name: 'Core Work', sets: 3, reps: '15-20', rest: '45s', tip: 'A strong core protects your spine under maximal loads.' },
+      ]},
+      { day: 'Thursday', label: 'Deadlift Focus', icon: '🔱', focus: 'Deadlift · Posterior Chain', exercises: [
+        { name: 'Barbell Deadlift (competition)', sets: 5, reps: '3-5', rest: '180s', tip: 'Set your brace before the pull — spine neutral throughout.' },
+        { name: 'Deficit Deadlifts', sets: 3, reps: '3-5', rest: '180s', tip: 'Greater ROM builds strength off the floor.' },
+        { name: 'Good Mornings', sets: 3, reps: '8-10', rest: '90s', tip: 'Builds lower back and hamstring strength for the pull.' },
+        { name: 'Barbell Rows', sets: 4, reps: '8-10', rest: '90s', tip: 'Upper back strength keeps the bar close during the deadlift.' },
+        { name: 'Lat Pulldowns', sets: 3, reps: '10-12', rest: '60s', tip: 'Lat tightness keeps your back locked in during heavy pulls.' },
+      ]},
+      { day: 'Friday', label: 'Squat & Bench Technique', icon: '🏋️', focus: 'Speed Work · Technique', exercises: [
+        { name: 'Speed Squats', sets: 6, reps: '3 (60-70% 1RM)', rest: '90s', tip: 'Bar speed is the goal — explosive out of the hole.' },
+        { name: 'Speed Bench', sets: 6, reps: '3 (60% 1RM)', rest: '90s', tip: 'Explosive speed work reinforces technique under lighter load.' },
+        { name: 'Overhead Press', sets: 3, reps: '8-10', rest: '90s', tip: 'Shoulder accessory work for bench strength.' },
+        { name: 'Bicep Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Elbow health and bicep strength help with deadlift lockout.' },
+      ]},
+      { day: 'Saturday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Full Recovery', exercises: [] },
+    ]
+  },
+  fullbody: {
+    name: 'Your Blueprint Full Body Program',
+    days: [
+      { day: 'Monday', label: 'Full Body A', icon: '💪', focus: 'Compound Lifts · Full Body', exercises: [
+        { name: 'Barbell Squats', sets: 4, reps: '8-10', rest: '90s', tip: 'Start with the most demanding compound movement while you\'re fresh.' },
+        { name: 'Barbell Bench Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Upper body push — drive through the chest at the top.' },
+        { name: 'Barbell Rows', sets: 4, reps: '8-10', rest: '90s', tip: 'Upper body pull to balance the press — keep back flat.' },
+        { name: 'Overhead Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Shoulder pressing for balanced upper body strength.' },
+        { name: 'Romanian Deadlifts', sets: 3, reps: '10-12', rest: '60s', tip: 'Hip hinge pattern — pairs well with squats for full leg development.' },
+        { name: 'Plank', sets: 3, reps: '45 sec', rest: '30s', tip: 'Core stability for safer lifting and better posture.' },
+      ]},
+      { day: 'Tuesday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
+      { day: 'Wednesday', label: 'Full Body B', icon: '🏋️', focus: 'Compound Lifts · Full Body', exercises: [
+        { name: 'Deadlifts', sets: 4, reps: '6-8', rest: '120s', tip: 'Hinge pattern — the most effective full body strength builder.' },
+        { name: 'Incline Dumbbell Press', sets: 4, reps: '10-12', rest: '90s', tip: 'Upper chest development with greater ROM than flat press.' },
+        { name: 'Pull-Ups / Lat Pulldowns', sets: 4, reps: '8-10', rest: '90s', tip: 'Back width and strength — essential for a balanced physique.' },
+        { name: 'Leg Press', sets: 3, reps: '12-15', rest: '90s', tip: 'Quad volume to complement the deadlift hip hinge pattern.' },
+        { name: 'Lateral Raises', sets: 3, reps: '15-20', rest: '45s', tip: 'Shoulder width — one of the most important aesthetic exercises.' },
+        { name: 'Dumbbell Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Arm isolation work at the end of a full body session.' },
+      ]},
+      { day: 'Thursday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
+      { day: 'Friday', label: 'Full Body C', icon: '💥', focus: 'Compound Lifts · Full Body', exercises: [
+        { name: 'Front Squats / Goblet Squats', sets: 4, reps: '10-12', rest: '90s', tip: 'Quad-dominant squat variation for complete leg development.' },
+        { name: 'Dumbbell Bench Press', sets: 4, reps: '10-12', rest: '90s', tip: 'More ROM and unilateral balance than barbell.' },
+        { name: 'Cable Rows', sets: 4, reps: '12-15', rest: '60s', tip: 'Constant tension throughout the full range of motion.' },
+        { name: 'Hip Thrusts', sets: 4, reps: '12-15', rest: '90s', tip: 'Glute isolation — the best exercise for posterior development.' },
+        { name: 'Face Pulls', sets: 3, reps: '15-20', rest: '45s', tip: 'Shoulder health and rear delt work — never skip these.' },
+        { name: 'Tricep Pushdowns', sets: 3, reps: '12-15', rest: '45s', tip: 'Arm isolation to finish the session.' },
+      ]},
+      { day: 'Saturday', label: 'Rest Day', icon: '😴', focus: 'Active Recovery', exercises: [] },
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Full Recovery', exercises: [] },
+    ]
+  }
+};
+
+function onWorkoutTemplateChange() {
+  const key = document.getElementById('workout-template-select').value;
+  const preview = document.getElementById('workout-template-preview');
+  if (!key) {
+    workoutPlan = null;
+    preview.style.display = 'none';
+    return;
+  }
+  const template = JSON.parse(JSON.stringify(WORKOUT_TEMPLATES[key])); // deep copy
+  workoutPlan = template;
+  document.getElementById('workout-plan-name').value = template.name;
+  preview.style.display = 'block';
+  renderWorkoutDays();
+}
+
+// Default warmup exercises by focus
+const DEFAULT_WARMUPS = {
+  upper: [
+    { name: 'Band Pull-Aparts', sets: 2, reps: '20', rest: '—', tip: 'Keep arms straight, squeeze shoulder blades together.' },
+    { name: 'Arm Circles', sets: 2, reps: '10 each direction', rest: '—', tip: 'Forward and backward to loosen the shoulder joint.' },
+    { name: 'Dynamic Chest Stretch', sets: 2, reps: '10', rest: '—', tip: 'Open up the chest before pressing movements.' },
+    { name: 'Shoulder Rotations (light band)', sets: 2, reps: '15', rest: '—', tip: 'Rotator cuff prep — never skip before heavy pressing.' },
+  ],
+  lower: [
+    { name: 'Hip Circles', sets: 2, reps: '10 each direction', rest: '—', tip: 'Loosen the hip joint before squatting or hinging.' },
+    { name: 'Leg Swings (front/back)', sets: 2, reps: '10 each leg', rest: '—', tip: 'Dynamic hamstring and hip flexor warmup.' },
+    { name: 'Bodyweight Squats', sets: 2, reps: '15', rest: '—', tip: 'Prime the movement pattern before adding load.' },
+    { name: 'Glute Bridges (bodyweight)', sets: 2, reps: '15', rest: '—', tip: 'Activate glutes before any leg or glute work.' },
+  ],
+  general: [
+    { name: '5-10 Min Cardio (treadmill/bike)', sets: 1, reps: '5-10 min', rest: '—', tip: 'Raise heart rate and body temperature before training.' },
+    { name: 'Dynamic Stretching', sets: 1, reps: '5 min', rest: '—', tip: 'Leg swings, arm circles, hip rotations — full body prep.' },
+    { name: 'Foam Rolling (target muscles)', sets: 1, reps: '60-90 sec per area', rest: '—', tip: 'Focus on the muscles you\'re training today.' },
+  ],
+};
+
+function getDefaultWarmup(focus) {
+  if (!focus) return DEFAULT_WARMUPS.general;
+  const f = focus.toLowerCase();
+  if (f.includes('chest') || f.includes('shoulder') || f.includes('back') || f.includes('bicep') || f.includes('tricep')) return DEFAULT_WARMUPS.upper;
+  if (f.includes('quad') || f.includes('glute') || f.includes('hamstring') || f.includes('leg') || f.includes('calf')) return DEFAULT_WARMUPS.lower;
+  return DEFAULT_WARMUPS.general;
+}
+
+function addCustomExercise(di) {
+  if (!workoutPlan) return;
+  workoutPlan.days[di].exercises.push({ name: '', sets: '3', reps: '10-12', rest: '60s', tip: '', custom: true });
+  renderWorkoutDays();
+  const body = document.getElementById(`wday-body-${di}`);
+  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+}
+
+function removeExercise(di, ei) {
+  if (!workoutPlan) return;
+  workoutPlan.days[di].exercises.splice(ei, 1);
+  renderWorkoutDays();
+  const body = document.getElementById(`wday-body-${di}`);
+  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+}
+
+function addCustomWarmup(di) {
+  if (!workoutPlan) return;
+  if (!workoutPlan.days[di].warmup) workoutPlan.days[di].warmup = [];
+  workoutPlan.days[di].warmup.push({ name: '', sets: '1', reps: '', rest: '—', tip: '', custom: true });
+  renderWorkoutDays();
+  const body = document.getElementById(`wday-body-${di}`);
+  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+}
+
+function removeWarmup(di, wi) {
+  if (!workoutPlan) return;
+  workoutPlan.days[di].warmup.splice(wi, 1);
+  renderWorkoutDays();
+  const body = document.getElementById(`wday-body-${di}`);
+  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+}
+
+function loadDefaultWarmup(di) {
+  if (!workoutPlan) return;
+  workoutPlan.days[di].warmup = getDefaultWarmup(workoutPlan.days[di].focus).map(w => ({ ...w }));
+  renderWorkoutDays();
+  const body = document.getElementById(`wday-body-${di}`);
+  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+}
+
+const exInputStyle = `font-size:12px;padding:6px 8px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;`;
+
+function renderExerciseRow(ex, di, ei, isWarmup = false) {
+  const arr = isWarmup ? 'warmup' : 'exercises';
+  return `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div style="display:grid;grid-template-columns:1fr 54px 62px 54px 30px;gap:6px;align-items:center;margin-bottom:6px;">
+        <input type="text" value="${ex.name}" placeholder="${isWarmup ? 'e.g. Band Pull-Aparts' : 'e.g. Incline Machine Press'}" oninput="workoutPlan.days[${di}].${arr}[${ei}].name=this.value" style="${exInputStyle}font-weight:700;font-size:13px;">
+        <input type="text" value="${ex.sets}" oninput="workoutPlan.days[${di}].${arr}[${ei}].sets=this.value" placeholder="Sets" style="${exInputStyle}text-align:center;">
+        <input type="text" value="${ex.reps}" oninput="workoutPlan.days[${di}].${arr}[${ei}].reps=this.value" placeholder="Reps" style="${exInputStyle}text-align:center;">
+        <input type="text" value="${ex.rest||'—'}" oninput="workoutPlan.days[${di}].${arr}[${ei}].rest=this.value" placeholder="Rest" style="${exInputStyle}text-align:center;">
+        <button onclick="${isWarmup ? `removeWarmup(${di},${ei})` : `removeExercise(${di},${ei})`}" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0;">✕</button>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <span style="font-size:10px;color:var(--gold);font-weight:700;white-space:nowrap;">Tip:</span>
+        <input type="text" value="${ex.tip||''}" oninput="workoutPlan.days[${di}].${arr}[${ei}].tip=this.value" placeholder="Add a coach tip…" style="${exInputStyle}color:var(--muted);font-size:11px;">
+      </div>
+    </div>`;
+}
+
+function renderWorkoutDays() {
+  if (!workoutPlan) return;
+  const container = document.getElementById('workout-days-container');
+  container.innerHTML = workoutPlan.days.map((day, di) => {
+    const warmup = day.warmup || [];
+    const isRest = day.exercises.length === 0;
+    return `
+    <div style="background:var(--black);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;">
+      <div onclick="toggleWDay(${di})" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;background:var(--dark);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:16px;">${day.icon}</span>
+          <div>
+            <div style="font-size:13px;font-weight:800;color:var(--white);">${day.day} — ${day.label}</div>
+            <div style="font-size:11px;color:var(--muted);">${day.focus}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:11px;color:var(--gold);font-weight:700;">${isRest ? 'Rest' : day.exercises.length + ' exercises'}</span>
+          <span style="color:var(--muted);font-size:12px;" id="wday-chev-${di}">▼</span>
+        </div>
+      </div>
+      <div id="wday-body-${di}" style="display:none;padding:14px 16px;">
+        <div class="grid-2" style="margin-bottom:14px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>Day Label (shown to client)</label>
+            <input type="text" value="${day.label}" oninput="workoutPlan.days[${di}].label=this.value">
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Focus (shown to client)</label>
+            <input type="text" value="${day.focus}" oninput="workoutPlan.days[${di}].focus=this.value">
+          </div>
+        </div>
+
+        ${isRest ? `<div style="font-size:13px;color:var(--muted);margin-bottom:10px;">Rest day — no exercises. You can still add a warmup or custom movement below.</div>` : ''}
+
+        <!-- WARMUP SECTION -->
+        <div style="background:rgba(76,175,118,0.06);border:1px solid rgba(76,175,118,0.2);border-radius:8px;padding:12px;margin-bottom:14px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${warmup.length ? '10px' : '0'};">
+            <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);">🔥 Warmup</div>
+            <div style="display:flex;gap:6px;">
+              <button onclick="loadDefaultWarmup(${di})" style="background:none;border:1px solid rgba(76,175,118,0.3);color:var(--green);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">Load Defaults</button>
+              <button onclick="addCustomWarmup(${di})" style="background:none;border:1px solid rgba(76,175,118,0.3);color:var(--green);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:700;cursor:pointer;">+ Add Custom</button>
+            </div>
+          </div>
+          ${warmup.length ? `
+            <div style="display:grid;grid-template-columns:1fr 54px 62px 54px 30px;gap:6px;margin-bottom:4px;">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Exercise</div>
+              <div style="font-size:10px;color:var(--muted);text-align:center;">Sets</div>
+              <div style="font-size:10px;color:var(--muted);text-align:center;">Reps/Time</div>
+              <div style="font-size:10px;color:var(--muted);text-align:center;">Rest</div>
+              <div></div>
+            </div>
+            ${warmup.map((w, wi) => renderExerciseRow(w, di, wi, true)).join('')}
+          ` : `<div style="font-size:12px;color:var(--muted);">No warmup added. Tap Load Defaults or Add Custom above.</div>`}
+        </div>
+
+        <!-- MAIN EXERCISES -->
+        ${!isRest ? `
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:10px;">💪 Main Workout</div>
+          <div style="display:grid;grid-template-columns:1fr 54px 62px 54px 30px;gap:6px;margin-bottom:4px;">
+            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Exercise</div>
+            <div style="font-size:10px;color:var(--muted);text-align:center;">Sets</div>
+            <div style="font-size:10px;color:var(--muted);text-align:center;">Reps</div>
+            <div style="font-size:10px;color:var(--muted);text-align:center;">Rest</div>
+            <div></div>
+          </div>
+          ${day.exercises.map((ex, ei) => renderExerciseRow(ex, di, ei, false)).join('')}
+          <button onclick="addCustomExercise(${di})" style="margin-top:10px;background:none;border:1px solid var(--gold-d);color:var(--gold);border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">+ Add Custom Exercise</button>
+        ` : `
+          <button onclick="addCustomExercise(${di})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">+ Add Exercise to Rest Day</button>
+        `}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleWDay(di) {
+  const body = document.getElementById(`wday-body-${di}`);
+  const chev = document.getElementById(`wday-chev-${di}`);
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  chev.textContent = open ? '▼' : '▲';
+}
+
 // ── FLEX MEALS ──
 let flexMeals = [];
 let flexEnabled = false;
@@ -811,6 +1374,11 @@ async function savePlan() {
         blood_type: document.getElementById('blood-type-select').value,
         flex_enabled: flexEnabled,
         flex_meals: flexEnabled ? flexMeals.filter(m => m.restaurant || m.meal) : [],
+        workout_plan: workoutPlan ? {
+          name: document.getElementById('workout-plan-name').value || workoutPlan.name,
+          template: document.getElementById('workout-template-select').value,
+          days: workoutPlan.days
+        } : null,
       });
     }
     status.className = 'save-status success';

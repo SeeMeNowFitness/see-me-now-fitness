@@ -1128,55 +1128,149 @@ function renderWorkoutPlan() {
   const el = document.getElementById('plan-workout-content');
   const profile = clientProfile || {};
   const isLeg = currentPlanDay === 'leg';
-
-  // Check if client has assigned workout plan in Firestore
   const assignedPlan = profile.workout_plan;
 
-  if (assignedPlan) {
-    // Use Charles's assigned plan
-    const days = isLeg ? (assignedPlan.leg_days || []) : (assignedPlan.nonleg_days || []);
-    if (days.length) {
-      el.innerHTML = renderWorkoutDays(days);
-      return;
-    }
+  if (assignedPlan?.days?.length) {
+    // Show weekly day strip
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    const weekStrip = `
+      <div style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;">
+        ${assignedPlan.days.map((day, i) => {
+          const isToday = day.day === today;
+          const isRest = day.exercises.length === 0;
+          return `<div onclick="selectWorkoutDay(${i})" id="wstrip-${i}" style="flex-shrink:0;text-align:center;padding:10px 8px;border-radius:10px;cursor:pointer;min-width:52px;transition:all 0.15s;${isToday ? 'background:var(--gold);color:var(--black);' : 'background:var(--card);border:1px solid var(--border);color:var(--muted);'}">
+            <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;${isToday?'color:var(--black)':''}">${day.day.slice(0,3)}</div>
+            <div style="font-size:16px;margin-bottom:3px;">${day.icon}</div>
+            <div style="font-size:9px;font-weight:700;${isToday?'color:var(--black)':'color:var(--muted)'};">${isRest ? 'Rest' : day.label.split(' ')[0]}</div>
+          </div>`;
+        }).join('')}
+      </div>`;
+
+    // Find today's day index
+    const todayIdx = assignedPlan.days.findIndex(d => d.day === today);
+    const activeIdx = todayIdx >= 0 ? todayIdx : 0;
+
+    el.innerHTML = weekStrip + `<div id="workout-day-detail"></div>`;
+    renderWorkoutDayDetail(activeIdx, assignedPlan);
+    return;
   }
 
-  // Fallback to templates based on client tier/goal
-  const tier = profile.tier || 'lifestyle';
-  let templateKey = isLeg ? 'ppl_legs' : 'ppl_push';
-  if (tier === 'contest_prep') templateKey = isLeg ? 'ppl_legs' : 'physique';
-  if (profile.goal === 'glute') templateKey = isLeg ? 'glute' : 'ppl_pull';
-
+  // Fallback template
+  const templateKey = isLeg ? 'ppl_legs' : 'ppl_push';
   const template = WORKOUT_TEMPLATES[templateKey];
   el.innerHTML = `
     <div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">
-      📋 <strong style="color:var(--gold);">Blueprint Template</strong> — Your coach will customize this to your specific plan.
+      📋 <strong style="color:var(--gold);">Blueprint Template</strong> — Your coach will assign your personalized workout plan.
     </div>
-    ${renderWorkoutDays([template])}
+    ${renderWorkoutDayCard(template)}
   `;
 }
 
-function renderWorkoutDays(days) {
-  return days.map((day, i) => `
-    <div class="workout-card">
-      <div class="workout-card-header" onclick="togglePlanCard('wday-${i}')">
-        <h4>${day.icon || '💪'} ${day.name}</h4>
-        <span class="chevron" id="chev-wday-${i}">▼</span>
+function selectWorkoutDay(idx) {
+  const profile = clientProfile || {};
+  const plan = profile.workout_plan;
+  if (!plan) return;
+  // Update strip highlights
+  plan.days.forEach((_, i) => {
+    const strip = document.getElementById(`wstrip-${i}`);
+    if (!strip) return;
+    if (i === idx) {
+      strip.style.background = 'var(--gold)';
+      strip.style.color = 'var(--black)';
+      strip.querySelectorAll('div').forEach(d => d.style.color = 'var(--black)');
+    } else {
+      strip.style.background = 'var(--card)';
+      strip.style.border = '1px solid var(--border)';
+      strip.style.color = 'var(--muted)';
+    }
+  });
+  renderWorkoutDayDetail(idx, plan);
+}
+
+function renderWorkoutDayDetail(idx, plan) {
+  const el = document.getElementById('workout-day-detail');
+  if (!el) return;
+  const day = plan.days[idx];
+  if (!day) return;
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const isToday = day.day === today;
+  const warmup = day.warmup || [];
+
+  if (day.exercises.length === 0 && warmup.length === 0) {
+    el.innerHTML = `
+      <div class="card" style="text-align:center;padding:24px;">
+        <div style="font-size:32px;margin-bottom:8px;">😴</div>
+        <div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px;">${day.label}</div>
+        <div style="font-size:13px;color:var(--muted);">${day.focus}</div>
+        ${isToday ? '<div style="margin-top:10px;font-size:12px;color:var(--green);font-weight:700;">✓ Today — enjoy your recovery!</div>' : ''}
+      </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="workout-card" style="border:${isToday ? '1px solid var(--gold)' : '1px solid var(--border)'};">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:15px;font-weight:800;color:var(--white);">${day.icon} ${day.label}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">${day.focus}</div>
+          </div>
+          ${isToday ? '<div style="background:var(--gold);color:var(--black);font-size:10px;font-weight:800;letter-spacing:0.06em;padding:4px 10px;border-radius:99px;">TODAY</div>' : ''}
+        </div>
       </div>
-      <div class="workout-card-body" id="wday-${i}">
-        ${(day.exercises || []).map(ex => `
+      <div style="padding:14px 16px;">
+        ${warmup.length ? `
+          <div style="margin-bottom:14px;">
+            <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);margin-bottom:8px;">🔥 Warmup</div>
+            ${warmup.map(ex => `
+              <div class="exercise-row" style="border-color:rgba(76,175,118,0.2);">
+                <div style="flex:1;">
+                  <div class="exercise-name" style="color:var(--white);">${ex.name}</div>
+                  <div class="exercise-detail">${ex.sets} set${ex.sets>1?'s':''} · ${ex.reps}${ex.rest && ex.rest!=='—' ? ' · Rest: '+ex.rest : ''}</div>
+                  ${ex.tip ? `<div class="coach-tip"><strong>Tip:</strong> ${ex.tip}</div>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+        ${day.exercises.length ? `
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">💪 Main Workout</div>
+          ${day.exercises.map(ex => `
+            <div class="exercise-row">
+              <div style="flex:1;">
+                <div class="exercise-name">${ex.name}</div>
+                <div class="exercise-detail">Rest: ${ex.rest || '60s'}</div>
+                ${ex.tip ? `<div class="coach-tip"><strong>Coach:</strong> ${ex.tip}</div>` : ''}
+              </div>
+              <div class="exercise-sets">${ex.sets}×${ex.reps}<span>sets×reps</span></div>
+            </div>
+          `).join('')}
+        ` : ''}
+      </div>
+    </div>`;
+}
+
+function renderWorkoutDayCard(template) {
+  if (!template) return '';
+  return `
+    <div class="workout-card">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--border);">
+        <div style="font-size:15px;font-weight:800;color:var(--white);">${template.icon || '💪'} ${template.name}</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px;">${template.focus || ''}</div>
+      </div>
+      <div style="padding:14px 16px;">
+        ${(template.exercises || []).map(ex => `
           <div class="exercise-row">
-            <div>
+            <div style="flex:1;">
               <div class="exercise-name">${ex.name}</div>
               <div class="exercise-detail">Rest: ${ex.rest || '60s'}</div>
-              ${ex.tip ? `<div class="coach-tip" style="margin-top:6px;"><strong>Coach:</strong> ${ex.tip}</div>` : ''}
+              ${ex.tip ? `<div class="coach-tip"><strong>Coach:</strong> ${ex.tip}</div>` : ''}
             </div>
             <div class="exercise-sets">${ex.sets}×${ex.reps}<span>sets×reps</span></div>
           </div>
         `).join('')}
       </div>
-    </div>
-  `).join('');
+    </div>`;
 }
 
 function renderMealPlan() {
