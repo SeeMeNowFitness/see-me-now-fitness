@@ -909,7 +909,16 @@ try{const meals=await fsList('blueprint_meals');if(meals.length){bpEl.innerHTML=
 const sp=document.getElementById('spoonacular-results');
 const cacheKey=`smn_recipes_${Math.round(rem.protein/10)*10}_${Math.round(rem.calories/100)*100}`;
 const cached=localStorage.getItem(cacheKey);
-if(cached){try{const d=JSON.parse(cached);if(d.ts&&Date.now()-d.ts<3600000){sp.innerHTML=renderSpoonacularCards(d.results);return;}}catch(e){}}
+if(cached){
+  try{
+    const d=JSON.parse(cached);
+    if(d.ts&&Date.now()-d.ts<3600000&&d.results?.length){
+      sp.innerHTML=renderSpoonacularCards(d.results);
+      return;
+    }
+  }catch(e){}
+  localStorage.removeItem(cacheKey); // clear bad/empty cache
+}
 try{
   const url=`https://api.spoonacular.com/recipes/findByNutrients?minProtein=${Math.max(20,rem.protein-30)}&maxProtein=${rem.protein+20}&maxCalories=${rem.calories+100}&minCalories=${Math.max(100,rem.calories-200)}&number=4&apiKey=${SPOONACULAR_API_KEY}`;
   const r=await fetch(url);
