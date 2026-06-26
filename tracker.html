@@ -321,6 +321,11 @@ select option{background:var(--dark);}
 <div class="quick-btn" onclick="openModal('modal-water')"><div class="icon">💧</div><div class="lbl">Log Water</div></div>
 </div>
 <div class="section-label">Search & Add Food</div>
+<div style="display:flex;gap:6px;margin-bottom:10px;">
+<button id="filter-all" onclick="setFoodFilter('all')" style="flex:1;padding:7px;border-radius:8px;background:var(--gold);color:var(--black);border:none;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.04em;">All</button>
+<button id="filter-cooked" onclick="setFoodFilter('cooked')" style="flex:1;padding:7px;border-radius:8px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.04em;">🍳 Cooked</button>
+<button id="filter-raw" onclick="setFoodFilter('raw')" style="flex:1;padding:7px;border-radius:8px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.04em;">🥩 Raw</button>
+</div>
 <div class="search-wrap">
 <span class="search-icon">🔍</span>
 <input type="text" id="food-search-input" placeholder="Search foods…" oninput="debounceSearch()" />
@@ -636,8 +641,74 @@ function deleteMeal(i){dayData.meals.splice(i,1);saveDay();renderMealLog();rende
 
 // FOOD SEARCH
 const USDA_KEY='aLAQ0gLcU06f7ZeHlpt28KzKnK6TxsQ3DWFFzJve';
+let currentFoodFilter='all';
+
+function setFoodFilter(f){
+  currentFoodFilter=f;
+  ['all','cooked','raw'].forEach(k=>{
+    const btn=document.getElementById('filter-'+k);
+    if(!btn)return;
+    if(k===f){btn.style.cssText='flex:1;padding:7px;border-radius:8px;background:var(--gold);color:var(--black);border:none;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.04em;';}
+    else{btn.style.cssText='flex:1;padding:7px;border-radius:8px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.04em;';}
+  });
+  const q=document.getElementById('food-search-input').value.trim();
+  if(q.length>=2)searchUSDA(q);
+}
+
+function getCookStatus(desc){
+  const d=desc.toLowerCase();
+  if(d.includes('raw')||d.includes('uncooked')||d.includes('fresh, '))return'raw';
+  if(d.includes('cooked')||d.includes('roasted')||d.includes('grilled')||d.includes('baked')||d.includes('boiled')||d.includes('fried')||d.includes('broiled')||d.includes('steamed')||d.includes('canned'))return'cooked';
+  return'unknown';
+}
+
 function debounceSearch(){clearTimeout(searchTimer);const q=document.getElementById('food-search-input').value.trim();if(q.length<2){document.getElementById('food-search-results').innerHTML='';return;}searchTimer=setTimeout(()=>searchUSDA(q),500);}
-async function searchUSDA(q){const el=document.getElementById('food-search-results');el.innerHTML='<div class="loading">Searching…</div>';try{const r=await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=6&api_key=${USDA_KEY}`);const d=await r.json();if(!d.foods?.length){el.innerHTML='<div class="loading">No results found.</div>';return;}el.innerHTML=d.foods.map(f=>{const n={};(f.foodNutrients||[]).forEach(x=>{if(x.nutrientName==='Energy')n.calories=Math.round(x.value||0);if(x.nutrientName==='Protein')n.protein=Math.round(x.value||0);if(x.nutrientName==='Carbohydrate, by difference')n.carbs=Math.round(x.value||0);if(x.nutrientName==='Total lipid (fat)')n.fat=Math.round(x.value||0);});const nm=f.description.length>40?f.description.slice(0,40)+'…':f.description;return`<div class="food-result"><div class="food-result-img">🥗</div><div class="food-result-info"><div class="food-result-name">${nm}</div><div class="food-result-macros">${n.calories||0} kcal/100g &nbsp;·&nbsp; P:<span>${n.protein||0}g</span> C:<span>${n.carbs||0}g</span> F:<span>${n.fat||0}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${f.description.replace(/'/g,"\\'")}',${n.calories||0},${n.protein||0},${n.carbs||0},${n.fat||0})">Add</button></div>`;}).join('');}catch(e){el.innerHTML=demoFood(q);}}
+
+async function searchUSDA(q){
+  const el=document.getElementById('food-search-results');
+  el.innerHTML='<div class="loading">Searching…</div>';
+  try{
+    const r=await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=12&api_key=${USDA_KEY}`);
+    const d=await r.json();
+    if(!d.foods?.length){el.innerHTML='<div class="loading">No results found.</div>';return;}
+
+    // Tag each food and filter
+    let foods=d.foods.map(f=>({...f,_cookStatus:getCookStatus(f.description)}));
+
+    // Sort: cooked first (default preference), then unknown, then raw
+    foods.sort((a,b)=>{
+      const order={cooked:0,unknown:1,raw:2};
+      return(order[a._cookStatus]||1)-(order[b._cookStatus]||1);
+    });
+
+    // Apply filter
+    if(currentFoodFilter==='cooked') foods=foods.filter(f=>f._cookStatus==='cooked');
+    else if(currentFoodFilter==='raw') foods=foods.filter(f=>f._cookStatus==='raw');
+
+    if(!foods.length){
+      el.innerHTML=`<div class="loading">No ${currentFoodFilter} results found. Try "All" filter.</div>`;
+      return;
+    }
+
+    el.innerHTML=foods.slice(0,6).map(f=>{
+      const n={};
+      (f.foodNutrients||[]).forEach(x=>{
+        if(x.nutrientName==='Energy')n.calories=Math.round(x.value||0);
+        if(x.nutrientName==='Protein')n.protein=Math.round(x.value||0);
+        if(x.nutrientName==='Carbohydrate, by difference')n.carbs=Math.round(x.value||0);
+        if(x.nutrientName==='Total lipid (fat)')n.fat=Math.round(x.value||0);
+      });
+      const nm=f.description.length>38?f.description.slice(0,38)+'…':f.description;
+      const status=f._cookStatus;
+      const badge=status==='cooked'
+        ?`<span style="font-size:9px;font-weight:800;background:rgba(76,175,118,0.15);color:var(--green);border-radius:4px;padding:2px 5px;margin-left:5px;text-transform:uppercase;letter-spacing:0.04em;">Cooked</span>`
+        :status==='raw'
+        ?`<span style="font-size:9px;font-weight:800;background:rgba(76,143,224,0.15);color:var(--blue);border-radius:4px;padding:2px 5px;margin-left:5px;text-transform:uppercase;letter-spacing:0.04em;">Raw</span>`
+        :``;
+      return`<div class="food-result"><div class="food-result-img">🥗</div><div class="food-result-info"><div class="food-result-name">${nm}${badge}</div><div class="food-result-macros">${n.calories||0} kcal/100g &nbsp;·&nbsp; P:<span>${n.protein||0}g</span> C:<span>${n.carbs||0}g</span> F:<span>${n.fat||0}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${f.description.replace(/'/g,"\\'")}',${n.calories||0},${n.protein||0},${n.carbs||0},${n.fat||0})">Add</button></div>`;
+    }).join('');
+  }catch(e){el.innerHTML=demoFood(q);}
+}
 function demoFood(q){const ds=[{name:'Chicken Breast (cooked)',cals:165,p:31,c:0,f:3.6},{name:'White Rice (cooked)',cals:130,p:2.7,c:28,f:0.3},{name:'Whole Eggs',cals:155,p:13,c:1.1,f:11},{name:'Greek Yogurt (nonfat)',cals:59,p:10,c:3.6,f:0.4},{name:'Sweet Potato',cals:86,p:1.6,c:20,f:0.1},{name:'Oats (dry)',cals:389,p:17,c:66,f:7},{name:'Salmon (cooked)',cals:208,p:20,c:0,f:13},{name:'Broccoli',cals:34,p:2.8,c:7,f:0.4}].filter(d=>d.name.toLowerCase().includes(q.toLowerCase()));if(!ds.length)return'<div class="loading">No results found.</div>';return ds.map(d=>`<div class="food-result"><div class="food-result-img">🥗</div><div class="food-result-info"><div class="food-result-name">${d.name}</div><div class="food-result-macros">${d.cals} kcal/100g &nbsp;·&nbsp; P:<span>${d.p}g</span> C:<span>${d.c}g</span> F:<span>${d.f}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${d.name}',${d.cals},${d.p},${d.c},${d.f})">Add</button></div>`).join('');}
 
 // BARCODE
