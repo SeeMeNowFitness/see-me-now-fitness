@@ -259,6 +259,32 @@ Enable Flex Dieting for this client
 <span class="save-status" id="save-status" style="display:none;"></span>
 </div>
 
+<!-- BLUEPRINT FOODS (Global — applies to all clients) -->
+<div style="margin-top:32px;padding-top:24px;border-top:2px solid var(--border);">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+  <div>
+    <div style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.06em;text-transform:uppercase;">⭐ Blueprint Foods</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">Global library — shows up first in every client's food search with a ⭐ badge. Add once, works for all clients.</div>
+  </div>
+  <button class="btn btn-outline btn-sm" onclick="toggleBlueprintFoods()">Show / Hide</button>
+</div>
+
+<div id="blueprint-foods-section" style="display:none;margin-top:16px;">
+  <div style="background:rgba(201,168,76,0.06);border:1px solid var(--gold-d);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7;">
+    💡 <strong style="color:var(--gold);">How it works:</strong> Foods you add here appear at the top of every client's food search with a ⭐ Blueprint Verified badge. Set the serving size to whatever makes sense (1oz, 1g, 1 egg, 1 scoop) and clients just type how many of that unit they had.
+  </div>
+
+  <div id="blueprint-foods-list"></div>
+
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-outline btn-sm" onclick="addBlueprintFoodRow()">+ Add Custom Food</button>
+    <button class="btn btn-outline btn-sm" onclick="loadDefaultBlueprintFoods()">Load SMN Defaults (21 foods)</button>
+    <button class="btn btn-gold btn-sm" onclick="saveBlueprintFoods()" style="margin-left:auto;">💾 Save Blueprint Foods</button>
+  </div>
+  <div id="bf-save-status" style="display:none;font-size:13px;font-weight:700;color:var(--green);margin-top:10px;"></div>
+</div>
+</div>
+
 </div>
 
 <script>
@@ -1325,6 +1351,167 @@ function toggleWDay(di) {
   const open = body.style.display === 'block';
   body.style.display = open ? 'none' : 'block';
   chev.textContent = open ? '▼' : '▲';
+}
+
+// ── BLUEPRINT FOODS ──
+let blueprintFoods = [];
+
+const DEFAULT_BLUEPRINT_FOODS = [
+  // Proteins — per 1oz cooked
+  { name:'Chicken Breast (cooked)', serving:'1 oz', servingG:28.35, cals:46, protein:8.7, carbs:0, fat:1, category:'protein' },
+  { name:'Ground Beef 93/7 (cooked)', serving:'1 oz', servingG:28.35, cals:49, protein:7, carbs:0, fat:2, category:'protein' },
+  { name:'Ground Beef 96/4 (cooked)', serving:'1 oz', servingG:28.35, cals:44, protein:7.8, carbs:0, fat:1.5, category:'protein' },
+  { name:'Ground Turkey 99/1 (cooked)', serving:'1 oz', servingG:28.35, cals:40, protein:8.5, carbs:0, fat:0.5, category:'protein' },
+  { name:'Salmon Wild Alaskan (cooked)', serving:'1 oz', servingG:28.35, cals:40, protein:7, carbs:0, fat:1.5, category:'protein' },
+  { name:'Salmon Atlantic Farmed (cooked)', serving:'1 oz', servingG:28.35, cals:58, protein:8, carbs:0, fat:3, category:'protein' },
+  { name:'Tilapia (cooked)', serving:'1 oz', servingG:28.35, cals:36, protein:7.5, carbs:0, fat:1, category:'protein' },
+  { name:'Turkey Breast (cooked)', serving:'1 oz', servingG:28.35, cals:40, protein:7.5, carbs:0, fat:1, category:'protein' },
+  // Proteins — per piece/scoop
+  { name:'Egg White (large)', serving:'1 egg white', servingG:33, cals:17, protein:3.6, carbs:0.2, fat:0, category:'protein' },
+  { name:'Whole Egg (large)', serving:'1 egg', servingG:50, cals:72, protein:6, carbs:0.4, fat:5, category:'protein' },
+  { name:'NutraBio Whey Protein Isolate', serving:'1 scoop (30g)', servingG:30, cals:110, protein:25, carbs:2, fat:0, category:'protein' },
+  // Carbs — per gram
+  { name:'White Jasmine Rice (cooked)', serving:'1g', servingG:1, cals:1.1, protein:0.02, carbs:0.25, fat:0, category:'carb' },
+  { name:'Oats (dry)', serving:'1g', servingG:1, cals:3.9, protein:0.17, carbs:0.66, fat:0.07, category:'carb' },
+  // Carbs — both versions
+  { name:'Sweet Potato (cooked, medium)', serving:'1 medium', servingG:130, cals:103, protein:2, carbs:24, fat:0, category:'carb' },
+  { name:'Sweet Potato (cooked, by weight)', serving:'1g', servingG:1, cals:0.86, protein:0.02, carbs:0.2, fat:0, category:'carb' },
+  { name:'Banana (medium)', serving:'1 banana', servingG:118, cals:105, protein:1, carbs:27, fat:0, category:'carb' },
+  { name:'Banana (by weight)', serving:'1g', servingG:1, cals:0.89, protein:0.01, carbs:0.23, fat:0, category:'carb' },
+  // Fats — per gram
+  { name:'Avocado (by weight)', serving:'1g', servingG:1, cals:1.6, protein:0.02, carbs:0.09, fat:0.15, category:'fat' },
+  { name:'Peanut Butter Natural (by weight)', serving:'1g', servingG:1, cals:5.9, protein:0.25, carbs:0.2, fat:0.5, category:'fat' },
+  // Olive Oil — tsp and tbsp
+  { name:'Olive Oil (teaspoon)', serving:'1 tsp', servingG:4.5, cals:40, protein:0, carbs:0, fat:4.5, category:'fat' },
+  { name:'Olive Oil (tablespoon)', serving:'1 tbsp', servingG:13.5, cals:119, protein:0, carbs:0, fat:14, category:'fat' },
+];
+
+const BF_CATEGORIES = { protein:'💪 Protein', carb:'🌾 Carb', fat:'🥑 Fat' };
+const BF_COLORS = { protein:'var(--gold)', carb:'var(--blue)', fat:'var(--orange)' };
+
+function toggleBlueprintFoods() {
+  const el = document.getElementById('blueprint-foods-section');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el.style.display === 'block' && blueprintFoods.length === 0) loadBlueprintFoodsFromFirestore();
+}
+
+function loadDefaultBlueprintFoods() {
+  if (blueprintFoods.length > 0 && !confirm('This will replace your current list with the 21 SMN defaults. Continue?')) return;
+  blueprintFoods = DEFAULT_BLUEPRINT_FOODS.map(f => ({ ...f }));
+  renderBlueprintFoods();
+}
+
+function addBlueprintFoodRow() {
+  blueprintFoods.push({ name:'', serving:'1 oz', servingG:28.35, cals:0, protein:0, carbs:0, fat:0, category:'protein' });
+  renderBlueprintFoods();
+}
+
+function removeBlueprintFood(i) {
+  blueprintFoods.splice(i, 1);
+  renderBlueprintFoods();
+}
+
+function renderBlueprintFoods() {
+  const el = document.getElementById('blueprint-foods-list');
+  if (!blueprintFoods.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:12px 0;">No Blueprint Foods yet. Click "Load SMN Defaults" to get started with 21 pre-loaded foods.</div>';
+    return;
+  }
+
+  // Group by category
+  const grouped = { protein:[], carb:[], fat:[] };
+  blueprintFoods.forEach((f, i) => {
+    const cat = f.category || 'protein';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push({ ...f, _idx: i });
+  });
+
+  el.innerHTML = Object.entries(grouped).map(([cat, foods]) => {
+    if (!foods.length) return '';
+    return `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:${BF_COLORS[cat]};margin-bottom:8px;">${BF_CATEGORIES[cat]} (${foods.length})</div>
+        <div style="display:grid;grid-template-columns:1.8fr 100px 55px 55px 55px 55px 80px 30px;gap:6px;margin-bottom:4px;">
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Food Name</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Serving</div>
+          <div style="font-size:10px;color:var(--muted);text-align:center;">kcal</div>
+          <div style="font-size:10px;color:var(--muted);text-align:center;">P(g)</div>
+          <div style="font-size:10px;color:var(--muted);text-align:center;">C(g)</div>
+          <div style="font-size:10px;color:var(--muted);text-align:center;">F(g)</div>
+          <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Category</div>
+          <div></div>
+        </div>
+        ${foods.map(f => `
+          <div style="display:grid;grid-template-columns:1.8fr 100px 55px 55px 55px 55px 80px 30px;gap:6px;margin-bottom:6px;align-items:center;">
+            <input type="text" value="${f.name}" placeholder="Food name" oninput="blueprintFoods[${f._idx}].name=this.value" style="padding:7px 8px;font-size:12px;font-weight:700;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;">
+            <input type="text" value="${f.serving}" placeholder="e.g. 1 oz" oninput="blueprintFoods[${f._idx}].serving=this.value" style="padding:7px 8px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;">
+            <input type="number" value="${f.cals}" step="0.1" oninput="blueprintFoods[${f._idx}].cals=parseFloat(this.value)||0" style="padding:7px 6px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
+            <input type="number" value="${f.protein}" step="0.01" oninput="blueprintFoods[${f._idx}].protein=parseFloat(this.value)||0" style="padding:7px 6px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
+            <input type="number" value="${f.carbs}" step="0.01" oninput="blueprintFoods[${f._idx}].carbs=parseFloat(this.value)||0" style="padding:7px 6px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
+            <input type="number" value="${f.fat}" step="0.01" oninput="blueprintFoods[${f._idx}].fat=parseFloat(this.value)||0" style="padding:7px 6px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
+            <select onchange="blueprintFoods[${f._idx}].category=this.value;renderBlueprintFoods();" style="padding:7px 6px;font-size:11px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;">
+              <option value="protein" ${f.category==='protein'?'selected':''}>💪 Protein</option>
+              <option value="carb" ${f.category==='carb'?'selected':''}>🌾 Carb</option>
+              <option value="fat" ${f.category==='fat'?'selected':''}>🥑 Fat</option>
+            </select>
+            <button onclick="removeBlueprintFood(${f._idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0;">✕</button>
+          </div>
+        `).join('')}
+      </div>`;
+  }).join('');
+}
+
+async function loadBlueprintFoodsFromFirestore() {
+  if (!db) { 
+    // Firebase not ready yet — just load defaults
+    if (blueprintFoods.length === 0) loadDefaultBlueprintFoods();
+    return; 
+  }
+  try {
+    const snap = await db.collection('blueprint_foods').get();
+    if (!snap.empty) {
+      blueprintFoods = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderBlueprintFoods();
+    } else {
+      loadDefaultBlueprintFoods();
+    }
+  } catch(e) { loadDefaultBlueprintFoods(); }
+}
+
+async function saveBlueprintFoods() {
+  const status = document.getElementById('bf-save-status');
+  status.style.display = 'block';
+  status.textContent = 'Saving…';
+  status.style.color = 'var(--muted)';
+  try {
+    if (!db) throw new Error('Firebase not connected');
+    const foods = blueprintFoods.filter(f => f.name);
+    // Delete all existing
+    const existing = await db.collection('blueprint_foods').get();
+    for (const doc of existing.docs) {
+      await doc.ref.delete();
+    }
+    // Add each food one by one
+    for (const f of foods) {
+      await db.collection('blueprint_foods').add({
+        name: f.name,
+        serving: f.serving || '1 oz',
+        servingG: parseFloat(f.servingG) || 28.35,
+        cals: parseFloat(f.cals) || 0,
+        protein: parseFloat(f.protein) || 0,
+        carbs: parseFloat(f.carbs) || 0,
+        fat: parseFloat(f.fat) || 0,
+        category: f.category || 'protein',
+        blueprint: true,
+      });
+    }
+    status.textContent = `✓ ${foods.length} Blueprint Foods saved — live in all client trackers now!`;
+    status.style.color = 'var(--green)';
+    setTimeout(() => { status.style.display = 'none'; }, 4000);
+  } catch(e) {
+    status.textContent = '✕ Save failed: ' + e.message;
+    status.style.color = 'var(--red)';
+  }
 }
 
 // ── FLEX MEALS ──

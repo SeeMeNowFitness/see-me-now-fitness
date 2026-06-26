@@ -445,16 +445,26 @@ select option{background:var(--dark);}
 </div>
 
 <!-- WORKOUT PLAN -->
-<div class="section-label">Today's Workout</div>
+<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
+<div onclick="togglePlanSection('workout')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Today's Workout</div>
+<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-workout">▼</span>
+</div>
+<div id="plan-section-body-workout" style="display:none;padding:0 16px 16px;">
 <div id="plan-workout-content"><div class="loading">Loading your workout plan…</div></div>
+</div>
+</div>
 
-<!-- MEAL PLAN -->
-<div class="section-label">Meal Plan</div>
-<div id="plan-meal-content"><div class="loading">Loading your meal plan…</div></div>
-
-<!-- SUPPLEMENTS -->
-<div class="section-label">Supplements</div>
+<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
+<div onclick="togglePlanSection('supplements')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Supplements</div>
+<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-supplements">▼</span>
+</div>
+<div id="plan-section-body-supplements" style="display:none;padding:0 16px 16px;">
 <div id="plan-supplements-content"><div class="loading">Loading supplements…</div></div>
+</div>
+</div>
+<div id="plan-meal-content"><div class="loading">Loading your meal plan…</div></div>
 
 <!-- APPROVED FOODS -->
 <div class="section-label">Approved Foods</div>
@@ -667,51 +677,90 @@ function getCookStatus(desc){
 
 function debounceSearch(){clearTimeout(searchTimer);const q=document.getElementById('food-search-input').value.trim();if(q.length<2){document.getElementById('food-search-results').innerHTML='';return;}searchTimer=setTimeout(()=>searchUSDA(q),500);}
 
-async function searchUSDA(q){
-  const el=document.getElementById('food-search-results');
-  el.innerHTML='<div class="loading">Searching…</div>';
-  try{
-    const r=await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=12&api_key=${USDA_KEY}`);
-    const d=await r.json();
-    if(!d.foods?.length){el.innerHTML='<div class="loading">No results found.</div>';return;}
+let blueprintFoodsCache = null;
 
-    // Tag each food and filter
-    let foods=d.foods.map(f=>({...f,_cookStatus:getCookStatus(f.description)}));
-
-    // Sort: cooked first (default preference), then unknown, then raw
-    foods.sort((a,b)=>{
-      const order={cooked:0,unknown:1,raw:2};
-      return(order[a._cookStatus]||1)-(order[b._cookStatus]||1);
-    });
-
-    // Apply filter
-    if(currentFoodFilter==='cooked') foods=foods.filter(f=>f._cookStatus==='cooked');
-    else if(currentFoodFilter==='raw') foods=foods.filter(f=>f._cookStatus==='raw');
-
-    if(!foods.length){
-      el.innerHTML=`<div class="loading">No ${currentFoodFilter} results found. Try "All" filter.</div>`;
-      return;
-    }
-
-    el.innerHTML=foods.slice(0,6).map(f=>{
-      const n={};
-      (f.foodNutrients||[]).forEach(x=>{
-        if(x.nutrientName==='Energy')n.calories=Math.round(x.value||0);
-        if(x.nutrientName==='Protein')n.protein=Math.round(x.value||0);
-        if(x.nutrientName==='Carbohydrate, by difference')n.carbs=Math.round(x.value||0);
-        if(x.nutrientName==='Total lipid (fat)')n.fat=Math.round(x.value||0);
-      });
-      const nm=f.description.length>38?f.description.slice(0,38)+'…':f.description;
-      const status=f._cookStatus;
-      const badge=status==='cooked'
-        ?`<span style="font-size:9px;font-weight:800;background:rgba(76,175,118,0.15);color:var(--green);border-radius:4px;padding:2px 5px;margin-left:5px;text-transform:uppercase;letter-spacing:0.04em;">Cooked</span>`
-        :status==='raw'
-        ?`<span style="font-size:9px;font-weight:800;background:rgba(76,143,224,0.15);color:var(--blue);border-radius:4px;padding:2px 5px;margin-left:5px;text-transform:uppercase;letter-spacing:0.04em;">Raw</span>`
-        :``;
-      return`<div class="food-result"><div class="food-result-img">🥗</div><div class="food-result-info"><div class="food-result-name">${nm}${badge}</div><div class="food-result-macros">${n.calories||0} kcal/100g &nbsp;·&nbsp; P:<span>${n.protein||0}g</span> C:<span>${n.carbs||0}g</span> F:<span>${n.fat||0}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${f.description.replace(/'/g,"\\'")}',${n.calories||0},${n.protein||0},${n.carbs||0},${n.fat||0})">Add</button></div>`;
-    }).join('');
-  }catch(e){el.innerHTML=demoFood(q);}
+async function getBlueprintFoods() {
+  if (blueprintFoodsCache) return blueprintFoodsCache;
+  if (!CLIENT_ID || CLIENT_ID === 'demo') return [];
+  try {
+    const r = await fetch(`${FB}/blueprint_foods?key=${FIREBASE_CONFIG.apiKey}`);
+    const d = await r.json();
+    blueprintFoodsCache = (d.documents || []).map(doc => fsDoc(doc)).filter(f => f && f.name);
+    return blueprintFoodsCache;
+  } catch(e) { return []; }
 }
+
+async function searchUSDA(q) {
+  const el = document.getElementById('food-search-results');
+  el.innerHTML = '<div class="loading">Searching…</div>';
+
+  const bpFoods = await getBlueprintFoods();
+  const bpMatches = bpFoods.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
+
+  const bpHtml = bpMatches.map(f => `
+    <div class="food-result" style="border-color:var(--gold-dim);background:rgba(201,168,76,0.04);">
+      <div class="food-result-img" style="font-size:18px;">⭐</div>
+      <div class="food-result-info">
+        <div class="food-result-name" style="color:var(--gold);">${f.name} <span style="font-size:9px;background:rgba(201,168,76,0.15);color:var(--gold);padding:2px 5px;border-radius:4px;font-weight:800;letter-spacing:0.04em;">BLUEPRINT</span></div>
+        <div class="food-result-macros">${f.cals} kcal / ${f.serving} &nbsp;·&nbsp; P:<span>${f.protein}g</span> C:<span>${f.carbs}g</span> F:<span>${f.fat}g</span></div>
+      </div>
+      <button class="food-result-add" onclick="prepareBlueprintFood('${f.name.replace(/'/g,"\\'")}',${f.cals},${f.protein},${f.carbs},${f.fat},'${f.serving}',${f.servingG||28.35})">Add</button>
+    </div>`).join('');
+
+  try {
+    const r = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=12&api_key=${USDA_KEY}`);
+    const d = await r.json();
+
+    let foods = (d.foods || []).map(f => ({ ...f, _cookStatus: getCookStatus(f.description) }));
+    foods.sort((a, b) => { const o = { cooked:0, unknown:1, raw:2 }; return (o[a._cookStatus]||1) - (o[b._cookStatus]||1); });
+    if (currentFoodFilter === 'cooked') foods = foods.filter(f => f._cookStatus === 'cooked');
+    else if (currentFoodFilter === 'raw') foods = foods.filter(f => f._cookStatus === 'raw');
+
+    const usdaHtml = foods.slice(0, bpMatches.length > 0 ? 4 : 6).map(f => {
+      const n = {};
+      (f.foodNutrients || []).forEach(x => {
+        if (x.nutrientName === 'Energy') n.calories = Math.round(x.value || 0);
+        if (x.nutrientName === 'Protein') n.protein = Math.round(x.value || 0);
+        if (x.nutrientName === 'Carbohydrate, by difference') n.carbs = Math.round(x.value || 0);
+        if (x.nutrientName === 'Total lipid (fat)') n.fat = Math.round(x.value || 0);
+      });
+      const nm = f.description.length > 38 ? f.description.slice(0, 38) + '…' : f.description;
+      const status = f._cookStatus;
+      const badge = status === 'cooked'
+        ? `<span style="font-size:9px;font-weight:800;background:rgba(76,175,118,0.15);color:var(--green);border-radius:4px;padding:2px 5px;margin-left:5px;text-transform:uppercase;letter-spacing:0.04em;">Cooked</span>`
+        : status === 'raw'
+        ? `<span style="font-size:9px;font-weight:800;background:rgba(76,143,224,0.15);color:var(--blue);border-radius:4px;padding:2px 5px;margin-left:5px;text-transform:uppercase;letter-spacing:0.04em;">Raw</span>`
+        : ``;
+      return `<div class="food-result"><div class="food-result-img">🥗</div><div class="food-result-info"><div class="food-result-name">${nm}${badge}</div><div class="food-result-macros">${n.calories||0} kcal/100g &nbsp;·&nbsp; P:<span>${n.protein||0}g</span> C:<span>${n.carbs||0}g</span> F:<span>${n.fat||0}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${f.description.replace(/'/g,"\\'")}',${n.calories||0},${n.protein||0},${n.carbs||0},${n.fat||0})">Add</button></div>`;
+    }).join('');
+
+    const divider = bpMatches.length && foods.length
+      ? `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);padding:8px 0 4px;">USDA Database</div>`
+      : '';
+
+    if (!bpHtml && !usdaHtml) { el.innerHTML = '<div class="loading">No results found.</div>'; return; }
+    el.innerHTML = bpHtml + divider + usdaHtml;
+
+  } catch(e) {
+    el.innerHTML = bpHtml || demoFood(q);
+  }
+}
+
+function prepareBlueprintFood(name, cals, protein, carbs, fat, serving, servingG) {
+  pendingFood = { name, cals, protein, carbs, fat, servingG, _blueprintServing: serving };
+  document.getElementById('add-food-title').textContent = '⭐ ' + name;
+  document.getElementById('add-food-amount').value = 1;
+  document.getElementById('add-food-unit').value = 'g';
+  document.getElementById('add-food-macro-preview').innerHTML = `
+    <div style="font-size:11px;color:var(--gold);margin-bottom:8px;font-weight:700;">⭐ Blueprint Verified · Per ${serving}</div>
+    <strong style="color:var(--white);font-size:15px;">${cals} kcal</strong>
+    &nbsp;&nbsp; P: <strong style="color:var(--white)">${protein}g</strong>
+    &nbsp; C: <strong style="color:var(--white)">${carbs}g</strong>
+    &nbsp; F: <strong style="color:var(--white)">${fat}g</strong>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px;">Change amount above to scale macros (e.g. type 3 for 3 ${serving}s)</div>`;
+  openModal('modal-add-food');
+}
+
 function demoFood(q){const ds=[{name:'Chicken Breast (cooked)',cals:165,p:31,c:0,f:3.6},{name:'White Rice (cooked)',cals:130,p:2.7,c:28,f:0.3},{name:'Whole Eggs',cals:155,p:13,c:1.1,f:11},{name:'Greek Yogurt (nonfat)',cals:59,p:10,c:3.6,f:0.4},{name:'Sweet Potato',cals:86,p:1.6,c:20,f:0.1},{name:'Oats (dry)',cals:389,p:17,c:66,f:7},{name:'Salmon (cooked)',cals:208,p:20,c:0,f:13},{name:'Broccoli',cals:34,p:2.8,c:7,f:0.4}].filter(d=>d.name.toLowerCase().includes(q.toLowerCase()));if(!ds.length)return'<div class="loading">No results found.</div>';return ds.map(d=>`<div class="food-result"><div class="food-result-img">🥗</div><div class="food-result-info"><div class="food-result-name">${d.name}</div><div class="food-result-macros">${d.cals} kcal/100g &nbsp;·&nbsp; P:<span>${d.p}g</span> C:<span>${d.c}g</span> F:<span>${d.f}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${d.name}',${d.cals},${d.p},${d.c},${d.f})">Add</button></div>`).join('');}
 
 // BARCODE
@@ -736,6 +785,18 @@ function prepareAddFood(id,name,cals,protein,carbs,fat){
 
 function updateAddPreview(){
   if(!pendingFood)return;
+  // Blueprint food — scale by amount
+  if(pendingFood._blueprintServing){
+    const amount=parseFloat(document.getElementById('add-food-amount').value)||1;
+    document.getElementById('add-food-macro-preview').innerHTML=
+      `<div style="font-size:11px;color:var(--gold);margin-bottom:8px;font-weight:700;">⭐ Blueprint Verified · ${amount} × ${pendingFood._blueprintServing}</div>`+
+      `<strong style="color:var(--white);font-size:15px;">${Math.round((pendingFood.cals||0)*amount)} kcal</strong>`+
+      `&nbsp;&nbsp; P: <strong style="color:var(--white)">${Math.round((pendingFood.protein||0)*amount*10)/10}g</strong>`+
+      `&nbsp; C: <strong style="color:var(--white)">${Math.round((pendingFood.carbs||0)*amount*10)/10}g</strong>`+
+      `&nbsp; F: <strong style="color:var(--white)">${Math.round((pendingFood.fat||0)*amount*10)/10}g</strong>`;
+    return;
+  }
+  // Regular USDA food
   const amount=parseFloat(document.getElementById('add-food-amount').value)||1;
   const unit=document.getElementById('add-food-unit').value;
   const grams=amount*(UNIT_TO_GRAMS[unit]||1);
@@ -752,6 +813,28 @@ function updateAddPreview(){
 
 function confirmAddFood(){
   if(!pendingFood)return;
+  // Blueprint food — scale by amount × per-serving macros
+  if(pendingFood._blueprintServing){
+    const amount=parseFloat(document.getElementById('add-food-amount').value)||1;
+    dayData.meals.push({
+      name:pendingFood.name,
+      grams:Math.round((pendingFood.servingG||28.35)*amount),
+      servingLabel:amount===1?pendingFood._blueprintServing:`${amount} × ${pendingFood._blueprintServing}`,
+      calories:Math.round((pendingFood.cals||0)*amount),
+      protein:Math.round((pendingFood.protein||0)*amount*10)/10,
+      carbs:Math.round((pendingFood.carbs||0)*amount*10)/10,
+      fat:Math.round((pendingFood.fat||0)*amount*10)/10,
+      time:new Date().toISOString(),
+      blueprint:true
+    });
+    saveDay();closeModal('modal-add-food');renderMealLog();renderToday();
+    showToast('⭐ '+pendingFood.name+' added ✓');
+    pendingFood=null;
+    document.getElementById('food-search-input').value='';
+    document.getElementById('food-search-results').innerHTML='';
+    return;
+  }
+  // Regular USDA food
   const amount=parseFloat(document.getElementById('add-food-amount').value)||1;
   const unit=document.getElementById('add-food-unit').value;
   const grams=amount*(UNIT_TO_GRAMS[unit]||1);
@@ -1841,6 +1924,15 @@ function renderFlexMeals() {
       ⚠️ <strong style="color:var(--gold);">Reminder:</strong> This is a weekly treat, not a daily option. Stay disciplined the rest of the week and results will follow. 💪
     </div>
   `;
+}
+
+function togglePlanSection(id) {
+  const body = document.getElementById(`plan-section-body-${id}`);
+  const chev = document.getElementById(`plan-section-chev-${id}`);
+  if (!body) return;
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  chev.textContent = open ? '▼' : '▲';
 }
 
 function togglePlanCard(id) {
