@@ -288,6 +288,10 @@ select option{background:var(--dark);}
 <div class="stat-tile"><div class="lbl">Weight</div><div class="val" id="stat-weight">—</div><div class="unit">lbs today</div></div>
 </div>
 <div class="projection-banner" id="projection-banner"></div>
+<div id="weekly-balance-banner" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
+<div style="font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;">📊 This Week's Balance</div>
+<div style="display:flex;gap:10px;flex-wrap:wrap;" id="weekly-balance-pills"></div>
+</div>
 <div class="detail-card"><div class="detail-card-header" onclick="toggleDetail('detail-energy')"><h4>⚡ Energy Breakdown</h4><span class="chevron" id="chev-detail-energy">▼</span></div>
 <div class="detail-card-body" id="detail-energy">
 <div class="detail-line"><span>BMR</span><span class="val" id="de-bmr">—</span></div>
@@ -340,6 +344,41 @@ select option{background:var(--dark);}
 <!-- PROGRESS TAB -->
 <div class="panel" id="panel-progress">
 <div class="adherence-big"><div class="pct" id="adherence-pct">—%</div><div class="lbl">7-Day Macro Adherence</div></div>
+
+<!-- Weekly Balance Summary -->
+<div class="card" style="margin-bottom:12px;" id="weekly-balance-card">
+<div class="card-title">Weekly Energy Balance</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">
+<div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">Total Balance</div>
+<div style="font-size:24px;font-weight:900;" id="ws-total-balance">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:2px;">kcal this week</div>
+</div>
+<div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;">
+<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">Daily Average</div>
+<div style="font-size:24px;font-weight:900;" id="ws-daily-avg-bal">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:2px;">kcal/day</div>
+</div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+<div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;">
+<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">Projected</div>
+<div style="font-size:16px;font-weight:900;" id="ws-projected-lbs">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:2px;">lbs/week</div>
+</div>
+<div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;">
+<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">4-Week</div>
+<div style="font-size:16px;font-weight:900;" id="ws-projected-4wk">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:2px;">lbs projected</div>
+</div>
+<div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;">
+<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">Days Logged</div>
+<div style="font-size:16px;font-weight:900;color:var(--gold);" id="ws-days-logged">—</div>
+<div style="font-size:11px;color:var(--muted);margin-top:2px;">of 7</div>
+</div>
+</div>
+<div id="ws-balance-message" style="font-size:12px;color:var(--muted);line-height:1.6;padding:8px 12px;background:var(--black);border-radius:8px;"></div>
+</div>
 <div class="card" style="margin-bottom:12px;">
 <div class="card-title">Weekly Caloric Average</div>
 <div style="display:flex;align-items:flex-end;gap:8px;margin-bottom:8px;"><div style="font-size:40px;font-weight:900;font-family:'Anton',sans-serif;letter-spacing:-1px;" id="ws-weekly-avg">—</div><div style="font-size:13px;color:var(--muted);margin-bottom:6px;">kcal/day</div></div>
@@ -567,6 +606,8 @@ if(noM)pb.innerHTML=`<div class="proj-label">👇 How to get started</div><div c
 else if(zone==='deficit'){const lw=Math.abs(e.net*7/3500).toFixed(2),l4=Math.abs(e.net*28/3500).toFixed(1);pb.innerHTML=`<div class="proj-label">📉 Projected Fat Loss</div><div class="proj-val">${lw} lbs / week</div><div class="proj-sub">At this rate: ${l4} lbs in 4 weeks</div>`;}
 else if(zone==='surplus')pb.innerHTML=`<div class="proj-label">📈 Caloric Surplus</div><div class="proj-val">${Math.abs(e.net)} kcal over maintenance</div><div class="proj-sub">Adjust intake to hit your deficit target</div>`;
 else pb.innerHTML=`<div class="proj-label">⚖️ Maintenance Zone</div><div class="proj-val">±${Math.abs(e.net)} kcal from maintenance</div><div class="proj-sub">Within 100 kcal of target — well balanced</div>`;
+// Update weekly balance banner on Today tab
+updateWeeklyBalanceBanner();
 renderMacroBars();
 document.getElementById('stat-steps').textContent=(dayData.steps||0).toLocaleString();
 document.getElementById('stat-burned').textContent=e.totalBurned.toLocaleString();
@@ -712,6 +753,109 @@ function saveWater(){const v=parseInt(document.getElementById('water-input').val
 async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},weight:null,water:0};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},weight:d.weight||null,water:d.water||0}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},weight:null,water:0};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},weight:null,water:0};}renderToday();renderMealLog();}
 async function saveDay(){if(!CLIENT_ID||CLIENT_ID==='demo')return;try{await fsSet(`clients/${CLIENT_ID}/days/${currentDateKey}`,dayData);}catch(e){}}
 
+// ── WEEKLY BALANCE ──
+let weeklyBalanceCache = null;
+
+async function getWeeklyBalance() {
+  if (weeklyBalanceCache && Date.now() - weeklyBalanceCache.ts < 60000) return weeklyBalanceCache.data;
+  const bmr = calcBMR();
+  let totalNet = 0, daysLogged = 0;
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    let dayNet = 0, logged = false;
+    if (key === currentDateKey) {
+      const e = calcBal();
+      if (dayData.meals.length > 0) { dayNet = e.net; logged = true; }
+    } else if (CLIENT_ID && CLIENT_ID !== 'demo') {
+      try {
+        const dd = await fsGet(`clients/${CLIENT_ID}/days/${key}`);
+        if (dd && (dd.meals || []).length > 0) {
+          const consumed = (dd.meals || []).reduce((s, m) => s + (m.calories || 0), 0);
+          const wl = dd.weight || (clientProfile?.bmr_inputs?.weight_lbs || 160);
+          const sc = calcSCals(dd.steps || 0, wl);
+          const wc = (dd.workout || {}).calories || 0;
+          dayNet = (bmr + sc + wc) - consumed;
+          logged = true;
+        }
+      } catch(e) {}
+    }
+    if (logged) { totalNet += dayNet; daysLogged++; }
+  }
+  const data = { totalNet, daysLogged };
+  weeklyBalanceCache = { ts: Date.now(), data };
+  return data;
+}
+
+async function updateWeeklyBalanceBanner() {
+  const banner = document.getElementById('weekly-balance-banner');
+  const pills = document.getElementById('weekly-balance-pills');
+  if (!banner || !pills) return;
+  try {
+    const wb = await getWeeklyBalance();
+    if (wb.daysLogged === 0) { banner.style.display = 'none'; return; }
+    banner.style.display = 'block';
+    const zone = getZone(Math.round(wb.totalNet / wb.daysLogged));
+    const projLbs = Math.abs(wb.totalNet / 3500).toFixed(2);
+    const zoneColor = zone === 'deficit' ? 'var(--green)' : zone === 'surplus' ? 'var(--red)' : 'var(--gold)';
+    const zoneLabel = zone === 'deficit' ? '📉 Deficit' : zone === 'surplus' ? '📈 Surplus' : '⚖️ Maintenance';
+    pills.innerHTML = `
+      <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex:1;text-align:center;">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Zone</div>
+        <div style="font-size:12px;font-weight:800;color:${zoneColor};">${zoneLabel}</div>
+      </div>
+      <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex:1;text-align:center;">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Week Total</div>
+        <div style="font-size:12px;font-weight:800;color:${zoneColor};">${wb.totalNet>=0?'+':''}${wb.totalNet.toLocaleString()} kcal</div>
+      </div>
+      <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex:1;text-align:center;">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Projected</div>
+        <div style="font-size:12px;font-weight:800;color:${zoneColor};">${zone==='maintenance'?'±0':(zone==='deficit'?'-':'+')+projLbs} lbs</div>
+      </div>
+      <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex:1;text-align:center;">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Days</div>
+        <div style="font-size:12px;font-weight:800;color:var(--white);">${wb.daysLogged}/7</div>
+      </div>`;
+  } catch(e) { banner.style.display = 'none'; }
+}
+
+function updateProgressWeeklyBalance(history) {
+  const bmr = calcBMR();
+  const wl = clientProfile?.bmr_inputs?.weight_lbs || 160;
+  let totalNet = 0, daysLogged = 0;
+  history.forEach(h => {
+    if (h.calories > 0) {
+      const burned = bmr + calcSCals(h.steps || 0, wl);
+      totalNet += burned - h.calories;
+      daysLogged++;
+    }
+  });
+  const card = document.getElementById('weekly-balance-card');
+  if (daysLogged === 0) { card.style.display = 'none'; return; }
+  card.style.display = '';
+  const avg = Math.round(totalNet / daysLogged);
+  const zone = getZone(avg);
+  const projLbs = Math.abs(totalNet / 3500);
+  const zoneColor = zone === 'deficit' ? 'var(--green)' : zone === 'surplus' ? 'var(--red)' : 'var(--gold)';
+  const sign = zone === 'deficit' ? '-' : zone === 'surplus' ? '+' : '±';
+  document.getElementById('ws-total-balance').textContent = (totalNet >= 0 ? '+' : '') + totalNet.toLocaleString() + ' kcal';
+  document.getElementById('ws-total-balance').style.color = zoneColor;
+  document.getElementById('ws-daily-avg-bal').textContent = (avg >= 0 ? '+' : '') + avg.toLocaleString();
+  document.getElementById('ws-daily-avg-bal').style.color = zoneColor;
+  document.getElementById('ws-projected-lbs').textContent = sign + projLbs.toFixed(2);
+  document.getElementById('ws-projected-lbs').style.color = zoneColor;
+  document.getElementById('ws-projected-4wk').textContent = sign + (projLbs * 4).toFixed(1);
+  document.getElementById('ws-projected-4wk').style.color = zoneColor;
+  document.getElementById('ws-days-logged').textContent = daysLogged;
+  const msgs = {
+    deficit: `🔥 You're in a caloric deficit this week — great work! On track to lose ~${projLbs.toFixed(2)} lbs this week, ~${(projLbs * 4).toFixed(1)} lbs over 4 weeks.`,
+    surplus: `📈 You're in a caloric surplus this week. Reduce daily intake or increase activity to return to a fat loss deficit.`,
+    maintenance: `⚖️ You're right at maintenance this week. Push into a slight deficit to continue progressing toward your goals.`
+  };
+  document.getElementById('ws-balance-message').textContent = msgs[zone];
+  document.getElementById('ws-balance-message').style.color = zoneColor;
+}
+
 // PROGRESS
 let charts={},chartJsLoaded=false;
 function loadChartJS(){return new Promise((res,rej)=>{if(chartJsLoaded||window.Chart){chartJsLoaded=true;res();return;}const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';s.onload=()=>{chartJsLoaded=true;res();};s.onerror=rej;document.head.appendChild(s);});}
@@ -734,6 +878,7 @@ if(isZ&&ld>0){zb.style.display='block';const hT=clientProfile.macros_high?.calor
 document.getElementById('ws-avg-steps').textContent=Math.round(history.reduce((s,h)=>s+h.steps,0)/7).toLocaleString()||'—';
 document.getElementById('ws-avg-protein').textContent=ld>0?Math.round(history.reduce((s,h)=>s+h.protein,0)/ld)+'g':'—';
 document.getElementById('ws-checkins').textContent=clientProfile?.checkin_streak||0;
+updateProgressWeeklyBalance(history);
 const cd={responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:11}},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#888',font:{size:11}},grid:{color:'#2a2a2a'}}}};
 const calDs=[{data:history.map(h=>h.calories||null),borderColor:'#4caf76',backgroundColor:'rgba(76,175,118,0.1)',tension:0.3,fill:true,spanGaps:true,label:'Calories'}];
 if(isZ){calDs.push({data:history.map(()=>clientProfile.macros_high?.calories||null),borderColor:'rgba(201,168,76,0.5)',borderDash:[4,4],pointRadius:0,label:'High target'});calDs.push({data:history.map(()=>clientProfile.macros_low?.calories||null),borderColor:'rgba(76,143,224,0.5)',borderDash:[4,4],pointRadius:0,label:'Low target'});}
@@ -765,7 +910,53 @@ const sp=document.getElementById('spoonacular-results');
 const cacheKey=`smn_recipes_${Math.round(rem.protein/10)*10}_${Math.round(rem.calories/100)*100}`;
 const cached=localStorage.getItem(cacheKey);
 if(cached){try{const d=JSON.parse(cached);if(d.ts&&Date.now()-d.ts<3600000){sp.innerHTML=renderSpoonacularCards(d.results);return;}}catch(e){}}
-try{const url=`https://api.spoonacular.com/recipes/findByNutrients?minProtein=${Math.max(20,rem.protein-30)}&maxProtein=${rem.protein+20}&maxCalories=${rem.calories+100}&minCalories=${Math.max(100,rem.calories-200)}&number=4&apiKey=${SPOONACULAR_API_KEY}`;const r=await fetch(url);if(!r.ok)throw new Error('API error');const data=await r.json();localStorage.setItem(cacheKey,JSON.stringify({ts:Date.now(),results:data}));sp.innerHTML=renderSpoonacularCards(data);}catch(e){sp.innerHTML='<div class="loading">Could not load recipes. Try again later.</div>';}
+try{
+  const url=`https://api.spoonacular.com/recipes/findByNutrients?minProtein=${Math.max(20,rem.protein-30)}&maxProtein=${rem.protein+20}&maxCalories=${rem.calories+100}&minCalories=${Math.max(100,rem.calories-200)}&number=4&apiKey=${SPOONACULAR_API_KEY}`;
+  const r=await fetch(url);
+  if(!r.ok)throw new Error('API error');
+  const data=await r.json();
+  if(!data?.length)throw new Error('No results');
+  localStorage.setItem(cacheKey,JSON.stringify({ts:Date.now(),results:data}));
+  sp.innerHTML=renderSpoonacularCards(data);
+}catch(e){sp.innerHTML=renderFallbackRecipes(rem);}
+}
+
+function renderFallbackRecipes(rem){
+  const all=[
+    {title:'Grilled Chicken & Rice Bowl',emoji:'🍗',calories:520,protein:'48g',carbs:'52g',fat:'8g',desc:'Grilled chicken breast over white rice with steamed broccoli and a drizzle of olive oil.'},
+    {title:'Salmon with Sweet Potato',emoji:'🐟',calories:480,protein:'42g',carbs:'38g',fat:'14g',desc:'Baked salmon fillet with roasted sweet potato and asparagus.'},
+    {title:'Turkey & Veggie Stir Fry',emoji:'🥘',calories:410,protein:'44g',carbs:'28g',fat:'10g',desc:'Lean ground turkey stir fried with bell peppers, broccoli, and low-sodium soy sauce over rice.'},
+    {title:'Egg White Omelette',emoji:'🍳',calories:280,protein:'32g',carbs:'10g',fat:'8g',desc:'Egg white omelette stuffed with spinach, mushrooms, and a small amount of feta cheese.'},
+    {title:'Protein Oats Bowl',emoji:'🥣',calories:450,protein:'36g',carbs:'56g',fat:'8g',desc:'Oats cooked with protein powder, topped with blueberries and almond butter.'},
+    {title:'Tuna Salad Wrap',emoji:'🌯',calories:390,protein:'40g',carbs:'32g',fat:'9g',desc:'Canned tuna mixed with Greek yogurt, celery, and mustard wrapped in a whole wheat tortilla.'},
+    {title:'Chicken & Veggie Soup',emoji:'🍲',calories:320,protein:'38g',carbs:'24g',fat:'6g',desc:'Lean chicken breast simmered with carrots, celery, onion, and low-sodium chicken broth.'},
+    {title:'Greek Yogurt Parfait',emoji:'🫙',calories:340,protein:'28g',carbs:'38g',fat:'6g',desc:'Nonfat Greek yogurt layered with mixed berries, granola, and a drizzle of honey.'},
+  ];
+  // Pick 4 that roughly match remaining calories
+  const sorted=all.sort((a,b)=>Math.abs(a.calories-(rem.calories/2))-Math.abs(b.calories-(rem.calories/2)));
+  const picks=sorted.slice(0,4);
+  return`
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">
+      📋 <strong style="color:var(--gold);">Blueprint Suggestions</strong> — Daily recipe limit reached. These curated meals match your macro targets.
+    </div>
+    ${picks.map(r=>`
+      <div class="recipe-card">
+        <div class="recipe-card-body">
+          <div class="recipe-card-name">${r.emoji} ${r.title}</div>
+          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6;">${r.desc}</div>
+          <div class="recipe-card-macros">
+            <div class="recipe-macro"><span>${r.calories}</span>kcal</div>
+            <div class="recipe-macro"><span>${r.protein}</span>protein</div>
+            <div class="recipe-macro"><span>${r.carbs}</span>carbs</div>
+            <div class="recipe-macro"><span>${r.fat}</span>fat</div>
+          </div>
+          <div class="recipe-card-actions" style="margin-top:10px;">
+            <button class="btn btn-gold btn-sm" onclick="addRecipeToLog('${r.title}',${r.calories},${parseInt(r.protein)},${parseInt(r.carbs)},${parseInt(r.fat)})">Add to Log</button>
+          </div>
+        </div>
+      </div>
+    `).join('')}
+  `;
 }
 
 function renderSpoonacularCards(recipes){if(!recipes?.length)return'<div class="loading">No matching recipes found.</div>';return recipes.map(r=>`<div class="recipe-card"><img class="recipe-card-img" src="${r.image||''}" onerror="this.style.display='none'" alt="${r.title}"><div class="recipe-card-body"><div class="recipe-card-name">${r.title}</div><div class="recipe-card-macros"><div class="recipe-macro"><span>${r.calories||'—'}</span>kcal</div><div class="recipe-macro"><span>${r.protein||'—'}</span>protein</div><div class="recipe-macro"><span>${r.carbs||'—'}</span>carbs</div><div class="recipe-macro"><span>${r.fat||'—'}</span>fat</div></div><div class="recipe-card-actions"><button class="btn btn-outline btn-sm" onclick="viewRecipeDetail(${r.id},'${r.title.replace(/'/g,"\\'")}')">View Recipe</button><button class="btn btn-gold btn-sm" onclick="addRecipeToLog('${r.title.replace(/'/g,"\\'")}',${r.calories||0},${parseInt(r.protein)||0},${parseInt(r.carbs)||0},${parseInt(r.fat)||0})">Add to Log</button></div></div></div>`).join('');}
