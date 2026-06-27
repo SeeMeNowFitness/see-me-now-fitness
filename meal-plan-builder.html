@@ -645,21 +645,63 @@ function removeFood(mi,fi){meals[mi].foods.splice(fi,1);renderMeals();updateTota
 // ── USDA SEARCH ──
 function debounceSearch(mi){clearTimeout(searchTimers[mi]);const q=document.getElementById(`fsearch-${mi}`)?.value?.trim();if(!q||q.length<2){document.getElementById(`fresults-${mi}`).innerHTML='';return;}searchTimers[mi]=setTimeout(()=>searchFood(mi),500);}
 
+let builderBPCache = null;
+
+async function getBuilderBlueprintFoods() {
+  if (builderBPCache) return builderBPCache;
+  // Use in-memory list if already loaded
+  if (blueprintFoods.length > 0) { builderBPCache = blueprintFoods; return builderBPCache; }
+  try {
+    if (!db) return [];
+    const snap = await db.collection('blueprint_foods').get();
+    builderBPCache = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(f => f.name);
+    return builderBPCache;
+  } catch(e) { return []; }
+}
+
 async function searchFood(mi){
   const q=document.getElementById(`fsearch-${mi}`)?.value?.trim();if(!q)return;
   const el=document.getElementById(`fresults-${mi}`);
-  el.innerHTML='<div class="loading-inline">Searching USDA database…</div>';
+  el.innerHTML='<div class="loading-inline">Searching…</div>';
+
+  // Check Blueprint Foods first
+  const bpFoods = await getBuilderBlueprintFoods();
+  const bpMatches = bpFoods.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
+
+  const bpHtml = bpMatches.map(f => `
+    <div class="food-result-row" style="border-color:var(--gold-d);background:rgba(201,168,76,0.04);">
+      <div class="fr-name" style="color:var(--gold);">⭐ ${f.name} <span style="font-size:9px;background:rgba(201,168,76,0.15);color:var(--gold);padding:2px 5px;border-radius:4px;font-weight:800;">BLUEPRINT</span></div>
+      <div class="fr-macros">${f.cals} kcal / ${f.serving} · P:${f.protein}g C:${f.carbs}g F:${f.fat}g</div>
+      <button class="fr-add" onclick="addBlueprintFoodToMeal(${mi},'${f.name.replace(/'/g,"\\'")}',${f.cals},${f.protein},${f.carbs},${f.fat},'${f.serving}')">+ Add</button>
+    </div>`).join('');
+
   try{
     const r=await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=5&api_key=${USDA_KEY}`);
     const d=await r.json();
-    if(!d.foods?.length){el.innerHTML='<div class="loading-inline">No results found.</div>';return;}
-    el.innerHTML=d.foods.map(f=>{
+    const usdaHtml = (d.foods||[]).map(f=>{
       const n={};
       (f.foodNutrients||[]).forEach(x=>{if(x.nutrientName==='Energy')n.calories=Math.round(x.value||0);if(x.nutrientName==='Protein')n.protein=Math.round(x.value||0);if(x.nutrientName==='Carbohydrate, by difference')n.carbs=Math.round(x.value||0);if(x.nutrientName==='Total lipid (fat)')n.fat=Math.round(x.value||0);});
       const nm=f.description.length>45?f.description.slice(0,45)+'…':f.description;
       return`<div class="food-result-row"><div class="fr-name">${nm}</div><div class="fr-macros">${n.calories||0} kcal/100g · P:${n.protein||0}g C:${n.carbs||0}g F:${n.fat||0}g</div><button class="fr-add" onclick="addFoodToMeal(${mi},'${f.description.replace(/'/g,"\\'")}',${n.calories||0},${n.protein||0},${n.carbs||0},${n.fat||0})">+ Add</button></div>`;
     }).join('');
-  }catch(e){el.innerHTML='<div class="loading-inline" style="color:var(--red);">Search failed.</div>';}
+
+    const divider = bpMatches.length && d.foods?.length
+      ? `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);padding:6px 0 2px;">USDA Database</div>`
+      : '';
+
+    el.innerHTML = bpHtml + divider + usdaHtml || '<div class="loading-inline">No results found.</div>';
+  }catch(e){
+    el.innerHTML = bpHtml || '<div class="loading-inline" style="color:var(--red);">Search failed.</div>';
+  }
+}
+
+function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving) {
+  meals[mi].foods.push({ name:`⭐ ${name}`, amount: serving, cals, protein, carbs, fat, blueprint: true });
+  document.getElementById(`fresults-${mi}`).innerHTML='';
+  document.getElementById(`fsearch-${mi}`).value='';
+  renderMeals(); updateTotals();
+  const body=document.getElementById(`meal-body-${mi}`);
+  if(body){body.style.display='block';document.getElementById(`chev-meal-${mi}`).textContent='▲';}
 }
 
 function addFoodToMeal(mi,name,cals,protein,carbs,fat){
