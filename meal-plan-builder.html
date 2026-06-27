@@ -613,13 +613,32 @@ function renderMeals(){
               <div></div>
             </div>
             ${meal.foods.map((food,fi)=>`
-              <div class="food-in-meal">
-                <div class="fim-name">${food.name}</div>
-                <input type="text" value="${food.amount||'100g'}" onchange="meals[${mi}].foods[${fi}].amount=this.value;updateTotals();">
-                <input type="number" value="${food.protein}" onchange="meals[${mi}].foods[${fi}].protein=parseFloat(this.value)||0;recalcFoodCals(${mi},${fi});updateTotals();">
-                <input type="number" value="${food.carbs}" onchange="meals[${mi}].foods[${fi}].carbs=parseFloat(this.value)||0;recalcFoodCals(${mi},${fi});updateTotals();">
-                <input type="number" value="${food.fat}" onchange="meals[${mi}].foods[${fi}].fat=parseFloat(this.value)||0;recalcFoodCals(${mi},${fi});updateTotals();">
-                <div class="fim-val">${food.cals}</div>
+              <div class="food-in-meal" id="food-row-${mi}-${fi}" style="display:grid;grid-template-columns:1fr ${food.blueprint?'80px':'60px 80px'} 50px 50px 50px 60px 36px;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
+                <div>
+                  <div class="fim-name">${food.name}</div>
+                  ${food.blueprint?`<div style="font-size:10px;color:var(--gold);">per ${food.serving}</div>`:''}
+                </div>
+                ${food.blueprint ? `
+                  <input type="number" value="${parseFloat(food.amount)||1}" min="0.5" step="0.5" placeholder="qty"
+                    onchange="const q=parseFloat(this.value)||1;meals[${mi}].foods[${fi}].amount=String(q);meals[${mi}].foods[${fi}].cals=Math.round(meals[${mi}].foods[${fi}].baseCals*q);meals[${mi}].foods[${fi}].protein=Math.round(meals[${mi}].foods[${fi}].baseProtein*q*10)/10;meals[${mi}].foods[${fi}].carbs=Math.round(meals[${mi}].foods[${fi}].baseCarbs*q*10)/10;meals[${mi}].foods[${fi}].fat=Math.round(meals[${mi}].foods[${fi}].baseFat*q*10)/10;renderMeals();updateTotals();"
+                    style="padding:6px 8px;font-size:12px;background:var(--dark);border:1px solid var(--gold-d);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
+                ` : `
+                  <input type="number" value="${parseFloat(food.amount)||100}" oninput="meals[${mi}].foods[${fi}].amount=this.value;const u=document.getElementById('unit-${mi}-${fi}').value;const g=parseFloat(this.value)*(BUILDER_UNITS[u]||1);const m=g/100;meals[${mi}].foods[${fi}].cals=Math.round(meals[${mi}].foods[${fi}]._baseCals*m);meals[${mi}].foods[${fi}].protein=Math.round(meals[${mi}].foods[${fi}]._baseProtein*m*10)/10;meals[${mi}].foods[${fi}].carbs=Math.round(meals[${mi}].foods[${fi}]._baseCarbs*m*10)/10;meals[${mi}].foods[${fi}].fat=Math.round(meals[${mi}].foods[${fi}]._baseFat*m*10)/10;renderMeals();updateTotals();"
+                    style="padding:6px 8px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
+                  <select id="unit-${mi}-${fi}" onchange="const u=this.value;const amt=parseFloat(document.querySelector('#food-row-${mi}-${fi} input[type=number]').value)||100;const g=amt*(BUILDER_UNITS[u]||1);const m=g/100;meals[${mi}].foods[${fi}].cals=Math.round(meals[${mi}].foods[${fi}]._baseCals*m);meals[${mi}].foods[${fi}].protein=Math.round(meals[${mi}].foods[${fi}]._baseProtein*m*10)/10;meals[${mi}].foods[${fi}].carbs=Math.round(meals[${mi}].foods[${fi}]._baseCarbs*m*10)/10;meals[${mi}].foods[${fi}].fat=Math.round(meals[${mi}].foods[${fi}]._baseFat*m*10)/10;renderMeals();updateTotals();"
+                    style="padding:6px 4px;font-size:11px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;">
+                    <option value="g" ${(food.unit||'g')==='g'?'selected':''}>g</option>
+                    <option value="oz" ${(food.unit||'')==='oz'?'selected':''}>oz</option>
+                    <option value="cup" ${(food.unit||'')==='cup'?'selected':''}>cup</option>
+                    <option value="tbsp" ${(food.unit||'')==='tbsp'?'selected':''}>tbsp</option>
+                    <option value="tsp" ${(food.unit||'')==='tsp'?'selected':''}>tsp</option>
+                    <option value="ml" ${(food.unit||'')==='ml'?'selected':''}>ml</option>
+                  </select>
+                `}
+                <div class="fim-val" style="text-align:center;color:var(--muted);">${food.protein}g</div>
+                <div class="fim-val" style="text-align:center;color:var(--muted);">${food.carbs}g</div>
+                <div class="fim-val" style="text-align:center;color:var(--muted);">${food.fat}g</div>
+                <div class="fim-val" style="text-align:center;color:var(--white);font-weight:700;">${food.cals}</div>
                 <button class="fim-delete" onclick="removeFood(${mi},${fi})">✕</button>
               </div>
             `).join('')}
@@ -696,7 +715,20 @@ async function searchFood(mi){
 }
 
 function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving) {
-  meals[mi].foods.push({ name:`⭐ ${name}`, amount: serving, cals, protein, carbs, fat, blueprint: true });
+  meals[mi].foods.push({ 
+    name: `⭐ ${name}`, 
+    amount: '1', 
+    serving: serving,
+    cals: cals, 
+    protein: protein, 
+    carbs: carbs, 
+    fat: fat,
+    baseCals: cals,
+    baseProtein: protein,
+    baseCarbs: carbs,
+    baseFat: fat,
+    blueprint: true 
+  });
   document.getElementById(`fresults-${mi}`).innerHTML='';
   document.getElementById(`fsearch-${mi}`).value='';
   renderMeals(); updateTotals();
@@ -704,8 +736,13 @@ function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving) {
   if(body){body.style.display='block';document.getElementById(`chev-meal-${mi}`).textContent='▲';}
 }
 
+const BUILDER_UNITS = {g:1, oz:28.3495, cup:240, tbsp:15, tsp:5, ml:1};
+
 function addFoodToMeal(mi,name,cals,protein,carbs,fat){
-  meals[mi].foods.push({name,amount:'100g',cals,protein,carbs,fat});
+  meals[mi].foods.push({
+    name, amount:'100', unit:'g', cals, protein, carbs, fat,
+    _baseCals: cals, _baseProtein: protein, _baseCarbs: carbs, _baseFat: fat
+  });
   document.getElementById(`fresults-${mi}`).innerHTML='';
   document.getElementById(`fsearch-${mi}`).value='';
   renderMeals();updateTotals();
