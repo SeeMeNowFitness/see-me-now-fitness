@@ -697,15 +697,23 @@ async function searchUSDA(q) {
   const bpFoods = await getBlueprintFoods();
   const bpMatches = bpFoods.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
 
-  const bpHtml = bpMatches.map(f => `
+  const bpHtml = bpMatches.map(f => {
+    const cals = parseFloat(f.cals) || 0;
+    const protein = parseFloat(f.protein) || 0;
+    const carbs = parseFloat(f.carbs) || 0;
+    const fat = parseFloat(f.fat) || 0;
+    const serving = f.serving || '1 serving';
+    const servingG = parseFloat(f.servingG) || 28.35;
+    return `
     <div class="food-result" style="border-color:var(--gold-dim);background:rgba(201,168,76,0.04);">
       <div class="food-result-img" style="font-size:18px;">⭐</div>
       <div class="food-result-info">
         <div class="food-result-name" style="color:var(--gold);">${f.name} <span style="font-size:9px;background:rgba(201,168,76,0.15);color:var(--gold);padding:2px 5px;border-radius:4px;font-weight:800;letter-spacing:0.04em;">BLUEPRINT</span></div>
-        <div class="food-result-macros">${f.cals} kcal / ${f.serving} &nbsp;·&nbsp; P:<span>${f.protein}g</span> C:<span>${f.carbs}g</span> F:<span>${f.fat}g</span></div>
+        <div class="food-result-macros">${cals} kcal / ${serving} &nbsp;·&nbsp; P:<span>${protein}g</span> C:<span>${carbs}g</span> F:<span>${fat}g</span></div>
       </div>
-      <button class="food-result-add" onclick="prepareBlueprintFood('${f.name.replace(/'/g,"\\'")}',${f.cals},${f.protein},${f.carbs},${f.fat},'${f.serving}',${f.servingG||28.35})">Add</button>
-    </div>`).join('');
+      <button class="food-result-add" onclick="prepareBlueprintFood('${f.name.replace(/'/g,"\\'")}',${cals},${protein},${carbs},${fat},'${serving}',${servingG})">Add</button>
+    </div>`;
+  }).join('');
 
   try {
     const r = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=12&api_key=${USDA_KEY}`);
@@ -747,6 +755,12 @@ async function searchUSDA(q) {
 }
 
 function prepareBlueprintFood(name, cals, protein, carbs, fat, serving, servingG) {
+  // Ensure all values are numbers
+  cals = parseFloat(cals) || 0;
+  protein = parseFloat(protein) || 0;
+  carbs = parseFloat(carbs) || 0;
+  fat = parseFloat(fat) || 0;
+  servingG = parseFloat(servingG) || 28.35;
   pendingFood = { name, cals, protein, carbs, fat, servingG, _blueprintServing: serving };
   document.getElementById('add-food-title').textContent = '⭐ ' + name;
   document.getElementById('add-food-amount').value = 1;
