@@ -623,9 +623,9 @@ function renderMeals(){
                     onchange="const q=parseFloat(this.value)||1;meals[${mi}].foods[${fi}].amount=String(q);meals[${mi}].foods[${fi}].cals=Math.round(meals[${mi}].foods[${fi}].baseCals*q);meals[${mi}].foods[${fi}].protein=Math.round(meals[${mi}].foods[${fi}].baseProtein*q*10)/10;meals[${mi}].foods[${fi}].carbs=Math.round(meals[${mi}].foods[${fi}].baseCarbs*q*10)/10;meals[${mi}].foods[${fi}].fat=Math.round(meals[${mi}].foods[${fi}].baseFat*q*10)/10;renderMeals();updateTotals();"
                     style="padding:6px 8px;font-size:12px;background:var(--dark);border:1px solid var(--gold-d);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
                 ` : `
-                  <input type="number" value="${parseFloat(food.amount)||100}" oninput="meals[${mi}].foods[${fi}].amount=this.value;const u=document.getElementById('unit-${mi}-${fi}').value;const g=parseFloat(this.value)*(BUILDER_UNITS[u]||1);const m=g/100;meals[${mi}].foods[${fi}].cals=Math.round(meals[${mi}].foods[${fi}]._baseCals*m);meals[${mi}].foods[${fi}].protein=Math.round(meals[${mi}].foods[${fi}]._baseProtein*m*10)/10;meals[${mi}].foods[${fi}].carbs=Math.round(meals[${mi}].foods[${fi}]._baseCarbs*m*10)/10;meals[${mi}].foods[${fi}].fat=Math.round(meals[${mi}].foods[${fi}]._baseFat*m*10)/10;renderMeals();updateTotals();"
+                  <input type="number" value="${parseFloat(food.amount)||100}" id="amt-${mi}-${fi}" oninput="updateMealFoodCalc(${mi},${fi})"
                     style="padding:6px 8px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
-                  <select id="unit-${mi}-${fi}" onchange="const u=this.value;const amt=parseFloat(document.querySelector('#food-row-${mi}-${fi} input[type=number]').value)||100;const g=amt*(BUILDER_UNITS[u]||1);const m=g/100;meals[${mi}].foods[${fi}].cals=Math.round(meals[${mi}].foods[${fi}]._baseCals*m);meals[${mi}].foods[${fi}].protein=Math.round(meals[${mi}].foods[${fi}]._baseProtein*m*10)/10;meals[${mi}].foods[${fi}].carbs=Math.round(meals[${mi}].foods[${fi}]._baseCarbs*m*10)/10;meals[${mi}].foods[${fi}].fat=Math.round(meals[${mi}].foods[${fi}]._baseFat*m*10)/10;renderMeals();updateTotals();"
+                  <select id="unit-${mi}-${fi}" onchange="updateMealFoodCalc(${mi},${fi})"
                     style="padding:6px 4px;font-size:11px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;">
                     <option value="g" ${(food.unit||'g')==='g'?'selected':''}>g</option>
                     <option value="oz" ${(food.unit||'')==='oz'?'selected':''}>oz</option>
@@ -653,6 +653,33 @@ function renderMeals(){
       </div>
     </div>
   `).join('');
+}
+
+function updateMealFoodCalc(mi, fi) {
+  const amtEl = document.getElementById(`amt-${mi}-${fi}`);
+  const unitEl = document.getElementById(`unit-${mi}-${fi}`);
+  if (!amtEl || !unitEl) return;
+  const amt = parseFloat(amtEl.value) || 100;
+  const unit = unitEl.value;
+  const grams = amt * (BUILDER_UNITS[unit] || 1);
+  const mult = grams / 100;
+  const food = meals[mi].foods[fi];
+  food.amount = String(amt);
+  food.unit = unit;
+  food.cals = Math.round((food._baseCals || 0) * mult);
+  food.protein = Math.round((food._baseProtein || 0) * mult * 10) / 10;
+  food.carbs = Math.round((food._baseCarbs || 0) * mult * 10) / 10;
+  food.fat = Math.round((food._baseFat || 0) * mult * 10) / 10;
+  // Update display values in-place without re-rendering
+  const row = document.getElementById(`food-row-${mi}-${fi}`);
+  if (row) {
+    const vals = row.querySelectorAll('.fim-val');
+    if (vals[0]) vals[0].textContent = food.protein + 'g';
+    if (vals[1]) vals[1].textContent = food.carbs + 'g';
+    if (vals[2]) vals[2].textContent = food.fat + 'g';
+    if (vals[3]) vals[3].textContent = food.cals;
+  }
+  updateTotals();
 }
 
 function toggleMealCard(mi){const body=document.getElementById(`meal-body-${mi}`);const chev=document.getElementById(`chev-meal-${mi}`);const open=body.style.display==='block';body.style.display=open?'none':'block';chev.textContent=open?'▼':'▲';}
