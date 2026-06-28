@@ -635,6 +635,8 @@ function calcBal(){const bmr=calcBMR(),wl=dayData.weight||(clientProfile?.bmr_in
 let currentDayType='high';
 function setDayType(t){
   currentDayType=t;
+  // DEBUG - remove after testing
+  alert(`Day: ${t}\ntracking_method: ${clientProfile?.tracking_method}\nmacros_high calories: ${clientProfile?.macros_high?.calories}\nmacros_low calories: ${clientProfile?.macros_low?.calories}`);
   const h=document.getElementById('zz-high'),l=document.getElementById('zz-low');
   if(t==='high'){
     h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
