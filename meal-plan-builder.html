@@ -138,10 +138,11 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <input type="text" id="plan-notes" placeholder="e.g. Follow this on training days">
 </div>
 </div>
-<div id="zigzag-load-btns" style="display:none;margin-top:10px;display:flex;gap:8px;">
+<div id="zigzag-load-btns" style="display:none;margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
   <button class="btn btn-outline btn-sm" onclick="loadPlanByType('high_day')">Load 🔥 High Day Plan</button>
   <button class="btn btn-outline btn-sm" onclick="loadPlanByType('low_day')">Load ❄️ Low Day Plan</button>
   <button class="btn btn-outline btn-sm" onclick="loadPlanByType('standard')">Load Standard Plan</button>
+  <button class="btn btn-sm" style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid var(--gold-d);" onclick="copyCurrentToOtherDay()">📋 Copy Current to Other Day</button>
 </div>
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">Zig Zag Day Focus Labels <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(optional — shows on client's Today tab)</span></div>
 <div class="grid-2">
@@ -840,6 +841,37 @@ function toggleZigzagFocusFields() {
     const hasMultiple = (selectedClient.meal_plan ? 1 : 0) + (selectedClient.meal_plan_high ? 1 : 0) + (selectedClient.meal_plan_low ? 1 : 0) > 1 || isZigzag;
     loadBtns.style.display = hasMultiple ? 'flex' : 'none';
   }
+}
+
+function copyCurrentToOtherDay() {
+  if (!selectedClient) return;
+  const currentType = document.getElementById('plan-type').value;
+  if (currentType === 'standard') {
+    alert('Switch Plan Type to High Day or Low Day first, then copy.');
+    return;
+  }
+  const targetType = currentType === 'high_day' ? 'low_day' : 'high_day';
+  const targetLabel = targetType === 'high_day' ? '🔥 High Day' : '❄️ Low Day';
+  const currentLabel = currentType === 'high_day' ? '🔥 High Day' : '❄️ Low Day';
+
+  if (!confirm(`Copy current ${currentLabel} meals to ${targetLabel}?\n\nThe ${targetLabel} plan will be pre-filled with the same foods and portions. You can then adjust amounts before saving.`)) return;
+
+  // Deep copy current meals into the other day's slot on selectedClient
+  const copiedPlan = meals.map(meal => ({
+    name: meal.name,
+    time: meal.time,
+    foods: meal.foods.map(f => ({ ...f }))
+  }));
+
+  // Store in memory on selectedClient so it can be loaded
+  if (targetType === 'high_day') selectedClient.meal_plan_high = copiedPlan;
+  else selectedClient.meal_plan_low = copiedPlan;
+
+  // Switch to the target day and load
+  document.getElementById('plan-type').value = targetType;
+  toggleZigzagFocusFields();
+  loadExistingPlan(copiedPlan);
+  showToast(`✓ Copied to ${targetLabel} — adjust portions and 💾 Save`);
 }
 
 function loadPlanByType(type) {
