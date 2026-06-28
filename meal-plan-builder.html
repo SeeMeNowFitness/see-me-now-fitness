@@ -138,7 +138,7 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <input type="text" id="plan-notes" placeholder="e.g. Follow this on training days">
 </div>
 </div>
-<div id="zigzag-load-btns" style="display:none;margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+<div id="zigzag-load-btns" style="display:none;margin-top:10px;gap:8px;flex-wrap:wrap;">
   <button class="btn btn-outline btn-sm" onclick="loadPlanByType('high_day')">Load 🔥 High Day Plan</button>
   <button class="btn btn-outline btn-sm" onclick="loadPlanByType('low_day')">Load ❄️ Low Day Plan</button>
   <button class="btn btn-outline btn-sm" onclick="loadPlanByType('standard')">Load Standard Plan</button>
@@ -2343,7 +2343,7 @@ async function savePlan() {
       const snap = await db.collection('clients').doc(selectedClient.id).get();
       if (snap.exists) {
         selectedClient = { id: snap.id, ...snap.data() };
-        toggleZigzagFocusFields();
+        if (document.getElementById('zigzag-focus-fields')) toggleZigzagFocusFields();
       }
     }
     setTimeout(() => { status.style.display = 'none'; }, 4000);
