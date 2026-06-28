@@ -635,8 +635,6 @@ function calcBal(){const bmr=calcBMR(),wl=dayData.weight||(clientProfile?.bmr_in
 let currentDayType='high';
 function setDayType(t){
   currentDayType=t;
-  // DEBUG - remove after testing
-  alert(`Day: ${t}\ntracking_method: ${clientProfile?.tracking_method}\nmacros_high calories: ${clientProfile?.macros_high?.calories}\nmacros_low calories: ${clientProfile?.macros_low?.calories}`);
   const h=document.getElementById('zz-high'),l=document.getElementById('zz-low');
   if(t==='high'){
     h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
@@ -646,6 +644,17 @@ function setDayType(t){
     h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
   }
   renderToday();
+  // Sync My Plan tab toggle
+  currentPlanDay = t === 'high' ? 'nonleg' : 'leg';
+  const nonleg = document.getElementById('plan-nonleg');
+  const leg = document.getElementById('plan-leg');
+  if (t === 'high') {
+    if(nonleg) nonleg.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+    if(leg) leg.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+  } else {
+    if(leg) leg.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--blue);color:var(--white);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+    if(nonleg) nonleg.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+  }
   // Also update plan summary and meal plan if on My Plan tab
   if(document.getElementById('plan-summary-pills')) renderPlanSummary();
   if(document.getElementById('plan-meal-content')) renderMealPlan();
@@ -1230,16 +1239,33 @@ let currentPlanDay = 'nonleg';
 
 function setPlanDay(day) {
   currentPlanDay = day;
+  // Sync with zigzag day type
+  const dayType = day === 'nonleg' ? 'high' : 'low';
+  currentDayType = dayType;
+  // Update Today tab toggle buttons too
+  const zzHigh = document.getElementById('zz-high');
+  const zzLow = document.getElementById('zz-low');
+  if (zzHigh && zzLow) {
+    if (dayType === 'high') {
+      zzHigh.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
+      zzLow.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
+    } else {
+      zzLow.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--blue);color:var(--white);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
+      zzHigh.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
+    }
+  }
+  // Update Plan tab toggle buttons
   const nonleg = document.getElementById('plan-nonleg');
   const leg = document.getElementById('plan-leg');
   if (day === 'nonleg') {
-    nonleg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
-    leg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+    if(nonleg) nonleg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+    if(leg) leg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
   } else {
-    leg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--blue);color:var(--white);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
-    nonleg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+    if(leg) leg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--blue);color:var(--white);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
+    if(nonleg) nonleg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
   }
   renderPlanTab();
+  renderToday();
 }
 
 // Default workout templates
