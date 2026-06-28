@@ -127,7 +127,7 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 </div>
 <div class="field">
 <label>Plan Type</label>
-<select id="plan-type">
+<select id="plan-type" onchange="toggleZigzagFocusFields()">
 <option value="standard">Standard</option>
 <option value="high_day">High Day</option>
 <option value="low_day">Low Day</option>
@@ -643,14 +643,10 @@ function onClientSelect(){
   if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
   // Load flex meals
   if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;document.getElementById('flex-section').style.display='block';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));renderFlexMeals();}
-  // Show zigzag focus fields if client uses zigzag
-  if(selectedClient.tracking_method==='zigzag'){
-    document.getElementById('zigzag-focus-fields').style.display='block';
-    document.getElementById('high-day-focus').value=selectedClient.high_day_focus||'';
-    document.getElementById('low-day-focus').value=selectedClient.low_day_focus||'';
-  } else {
-    document.getElementById('zigzag-focus-fields').style.display='none';
-  }
+  // Show zigzag focus fields if client uses zigzag or plan type is high/low
+  document.getElementById('high-day-focus').value = selectedClient.high_day_focus || '';
+  document.getElementById('low-day-focus').value = selectedClient.low_day_focus || '';
+  toggleZigzagFocusFields();
   // Load workout plan
   if(selectedClient.workout_plan){
     workoutPlan=JSON.parse(JSON.stringify(selectedClient.workout_plan));
@@ -808,6 +804,12 @@ function updateMealFoodCalc(mi, fi) {
     if (vals[3]) vals[3].textContent = food.cals;
   }
   updateTotals();
+}
+
+function toggleZigzagFocusFields() {
+  const planType = document.getElementById('plan-type').value;
+  const isZigzag = selectedClient?.tracking_method === 'zigzag' || planType === 'high_day' || planType === 'low_day';
+  document.getElementById('zigzag-focus-fields').style.display = isZigzag ? 'block' : 'none';
 }
 
 function toggleMealCard(mi){
