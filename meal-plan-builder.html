@@ -760,7 +760,7 @@ function updateBlueprintFoodCalcUnit(mi, fi) {
   const amt = parseFloat(amtEl.value) || 1;
   const unit = unitEl.value;
   const food = meals[mi].foods[fi];
-  const servingG = parseFloat(food.servingG) || 28.35;
+  const servingG = parseFloat(food.servingG) || 1;
   // Get grams based on selected unit
   const unitG = unit === 'piece' ? servingG : (BUILDER_UNITS[unit] || 1);
   const grams = amt * unitG;
@@ -880,25 +880,39 @@ async function searchFood(mi){
   }
 }
 
-function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving) {
-  const servingG = arguments[7] || 28.35;
+function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving, servingG) {
+  cals = parseFloat(cals) || 0;
+  protein = parseFloat(protein) || 0;
+  carbs = parseFloat(carbs) || 0;
+  fat = parseFloat(fat) || 0;
+  servingG = parseFloat(servingG) || 1;
+
   // Determine default unit from serving string
   let defaultUnit = 'g';
-  if (serving.includes('oz')) defaultUnit = 'oz';
-  else if (serving.includes('tsp')) defaultUnit = 'tsp';
-  else if (serving.includes('tbsp')) defaultUnit = 'tbsp';
-  else if (serving.includes('cup')) defaultUnit = 'cup';
-  else if (serving.includes('ml')) defaultUnit = 'ml';
-  else if (serving.includes('egg') || serving.includes('banana') || serving.includes('medium') || serving.includes('scoop') || serving.includes('piece')) defaultUnit = 'piece';
+  let defaultAmt = servingG; // default to exact serving size in grams
+  if (serving.includes('oz')) { defaultUnit = 'oz'; defaultAmt = 1; }
+  else if (serving.includes('tsp')) { defaultUnit = 'tsp'; defaultAmt = 1; }
+  else if (serving.includes('tbsp')) { defaultUnit = 'tbsp'; defaultAmt = 1; }
+  else if (serving.includes('cup')) { defaultUnit = 'cup'; defaultAmt = 1; }
+  else if (serving.includes('ml')) { defaultUnit = 'ml'; defaultAmt = servingG; }
+  else if (serving.includes('egg') || serving.includes('banana') || serving.includes('medium') || serving.includes('scoop') || serving.includes('piece')) {
+    defaultUnit = 'piece'; defaultAmt = 1;
+  }
 
   meals[mi].foods.push({ 
     name: `⭐ ${name}`, 
-    amount: '1', 
+    amount: String(defaultAmt), 
     unit: defaultUnit,
     serving: serving,
-    servingG: parseFloat(servingG),
-    cals: cals, protein: protein, carbs: carbs, fat: fat,
-    baseCals: cals, baseProtein: protein, baseCarbs: carbs, baseFat: fat,
+    servingG: servingG,
+    cals: Math.round(cals * (defaultAmt * (defaultUnit === 'g' ? 1 : (BUILDER_UNITS[defaultUnit] || servingG)) / servingG) * 10) / 10 || cals,
+    protein: Math.round(protein * 10) / 10,
+    carbs: Math.round(carbs * 10) / 10,
+    fat: Math.round(fat * 10) / 10,
+    baseCals: cals,
+    baseProtein: protein,
+    baseCarbs: carbs,
+    baseFat: fat,
     blueprint: true 
   });
   document.getElementById(`fresults-${mi}`).innerHTML='';
@@ -1623,7 +1637,7 @@ const DEFAULT_BLUEPRINT_FOODS = [
   // Carbs — per gram
   { name:'White Jasmine Rice (cooked)', serving:'1g', servingG:1, cals:1.1, protein:0.02, carbs:0.25, fat:0, category:'carb' },
   { name:'Oats (dry)', serving:'1g', servingG:1, cals:3.9, protein:0.17, carbs:0.66, fat:0.07, category:'carb' },
-  { name:'Steel Cut Oats (dry)', serving:'1g', servingG:1, cals:3.8, protein:0.13, carbs:0.68, fat:0.07, category:'carb' },
+  { name:'Steel Cut Oats', serving:'1g', servingG:1, cals:3.8, protein:0.13, carbs:0.68, fat:0.07, category:'carb' },
   { name:'Cinnamon (ground)', serving:'1g', servingG:1, cals:2.5, protein:0.04, carbs:0.8, fat:0.06, category:'carb' },
   // Carbs — both versions
   { name:'Sweet Potato (cooked, medium)', serving:'1 medium', servingG:130, cals:103, protein:2, carbs:24, fat:0, category:'carb' },
