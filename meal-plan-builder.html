@@ -579,6 +579,9 @@ function initMeals(count){const names=MEAL_NAMES[count]||MEAL_NAMES[5];const tim
 function onMealCountChange(){initMeals(parseInt(document.getElementById('meal-count').value));}
 function clearPlan(){if(!confirm('Clear all meals?'))return;initMeals(parseInt(document.getElementById('meal-count').value));}
 
+// Track which meals are open
+let openMeals = new Set();
+
 function renderMeals(){
   const container=document.getElementById('meals-container');
   container.innerHTML=meals.map((meal,mi)=>`
@@ -587,10 +590,10 @@ function renderMeals(){
         <h4>🍽 ${meal.name}</h4>
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:12px;color:var(--gold);font-weight:700;" id="meal-cal-badge-${mi}">${getMealCals(mi)} kcal</span>
-          <span style="color:var(--muted);font-size:12px;" id="chev-meal-${mi}">▼</span>
+          <span style="color:var(--muted);font-size:12px;" id="chev-meal-${mi}">${openMeals.has(mi)?'▲':'▼'}</span>
         </div>
       </div>
-      <div class="meal-card-body" id="meal-body-${mi}" style="display:none;">
+      <div class="meal-card-body" id="meal-body-${mi}" style="display:${openMeals.has(mi)?'block':'none'};">
         <div class="grid-2" style="margin-bottom:12px;">
           <div class="field" style="margin-bottom:0;"><label>Meal Name</label><input type="text" value="${meal.name}" oninput="meals[${mi}].name=this.value;this.closest('.meal-builder-card').querySelector('h4').textContent='🍽 '+this.value;"></div>
           <div class="field" style="margin-bottom:0;"><label>Time</label><input type="text" value="${meal.time}" oninput="meals[${mi}].time=this.value;"></div>
@@ -603,42 +606,49 @@ function renderMeals(){
         <div id="fresults-${mi}" class="food-results"></div>
         ${meal.foods.length?`
           <div style="margin-top:8px;">
-            <div class="food-in-meal" style="padding-bottom:4px;">
+            <div style="display:grid;grid-template-columns:1fr 140px 50px 50px 50px 60px 60px 36px;gap:6px;padding-bottom:4px;">
               <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Food</div>
               <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.04em;">Amount</div>
               <div style="font-size:10px;color:var(--muted);text-align:center;">P(g)</div>
               <div style="font-size:10px;color:var(--muted);text-align:center;">C(g)</div>
               <div style="font-size:10px;color:var(--muted);text-align:center;">F(g)</div>
               <div style="font-size:10px;color:var(--muted);text-align:center;">kcal</div>
+              <div style="font-size:10px;color:var(--muted);text-align:center;">Order</div>
               <div></div>
             </div>
             ${meal.foods.map((food,fi)=>`
-              <div class="food-in-meal" id="food-row-${mi}-${fi}" style="display:grid;grid-template-columns:1fr ${food.blueprint?'80px':'60px 80px'} 50px 50px 50px 60px 36px;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
+              <div id="food-row-${mi}-${fi}" style="display:grid;grid-template-columns:1fr 140px 50px 50px 50px 60px 60px 36px;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;">
                 <div>
                   <div class="fim-name">${food.name}</div>
                   ${food.blueprint?`<div style="font-size:10px;color:var(--gold);">per ${food.serving}</div>`:''}
                 </div>
                 ${food.blueprint ? `
                   <input type="number" value="${parseFloat(food.amount)||1}" min="0.5" step="0.5" placeholder="qty"
-                    onchange="const q=parseFloat(this.value)||1;meals[${mi}].foods[${fi}].amount=String(q);meals[${mi}].foods[${fi}].cals=Math.round(meals[${mi}].foods[${fi}].baseCals*q);meals[${mi}].foods[${fi}].protein=Math.round(meals[${mi}].foods[${fi}].baseProtein*q*10)/10;meals[${mi}].foods[${fi}].carbs=Math.round(meals[${mi}].foods[${fi}].baseCarbs*q*10)/10;meals[${mi}].foods[${fi}].fat=Math.round(meals[${mi}].foods[${fi}].baseFat*q*10)/10;renderMeals();updateTotals();"
+                    onchange="updateBlueprintFoodCalc(${mi},${fi},this.value)"
                     style="padding:6px 8px;font-size:12px;background:var(--dark);border:1px solid var(--gold-d);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
                 ` : `
-                  <input type="number" value="${parseFloat(food.amount)||100}" id="amt-${mi}-${fi}" oninput="updateMealFoodCalc(${mi},${fi})"
-                    style="padding:6px 8px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
-                  <select id="unit-${mi}-${fi}" onchange="updateMealFoodCalc(${mi},${fi})"
-                    style="padding:6px 4px;font-size:11px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;">
-                    <option value="g" ${(food.unit||'g')==='g'?'selected':''}>g</option>
-                    <option value="oz" ${(food.unit||'')==='oz'?'selected':''}>oz</option>
-                    <option value="cup" ${(food.unit||'')==='cup'?'selected':''}>cup</option>
-                    <option value="tbsp" ${(food.unit||'')==='tbsp'?'selected':''}>tbsp</option>
-                    <option value="tsp" ${(food.unit||'')==='tsp'?'selected':''}>tsp</option>
-                    <option value="ml" ${(food.unit||'')==='ml'?'selected':''}>ml</option>
-                  </select>
+                  <div style="display:flex;gap:4px;">
+                    <input type="number" value="${parseFloat(food.amount)||100}" id="amt-${mi}-${fi}" oninput="updateMealFoodCalc(${mi},${fi})"
+                      style="padding:6px 6px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:60px;text-align:center;flex-shrink:0;">
+                    <select id="unit-${mi}-${fi}" onchange="updateMealFoodCalc(${mi},${fi})"
+                      style="padding:6px 4px;font-size:11px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;flex:1;">
+                      <option value="g" ${(food.unit||'g')==='g'?'selected':''}>g</option>
+                      <option value="oz" ${food.unit==='oz'?'selected':''}>oz</option>
+                      <option value="cup" ${food.unit==='cup'?'selected':''}>cup</option>
+                      <option value="tbsp" ${food.unit==='tbsp'?'selected':''}>tbsp</option>
+                      <option value="tsp" ${food.unit==='tsp'?'selected':''}>tsp</option>
+                      <option value="ml" ${food.unit==='ml'?'selected':''}>ml</option>
+                    </select>
+                  </div>
                 `}
                 <div class="fim-val" style="text-align:center;color:var(--muted);">${food.protein}g</div>
                 <div class="fim-val" style="text-align:center;color:var(--muted);">${food.carbs}g</div>
                 <div class="fim-val" style="text-align:center;color:var(--muted);">${food.fat}g</div>
                 <div class="fim-val" style="text-align:center;color:var(--white);font-weight:700;">${food.cals}</div>
+                <div style="display:flex;flex-direction:column;gap:2px;align-items:center;">
+                  <button onclick="moveFoodUp(${mi},${fi})" ${fi===0?'disabled':''} style="background:none;border:1px solid var(--border);color:${fi===0?'var(--border)':'var(--muted)'};border-radius:4px;padding:2px 6px;font-size:11px;cursor:${fi===0?'default':'pointer'};">↑</button>
+                  <button onclick="moveFoodDown(${mi},${fi})" ${fi===meal.foods.length-1?'disabled':''} style="background:none;border:1px solid var(--border);color:${fi===meal.foods.length-1?'var(--border)':'var(--muted)'};border-radius:4px;padding:2px 6px;font-size:11px;cursor:${fi===meal.foods.length-1?'default':'pointer'};">↓</button>
+                </div>
                 <button class="fim-delete" onclick="removeFood(${mi},${fi})">✕</button>
               </div>
             `).join('')}
@@ -682,11 +692,48 @@ function updateMealFoodCalc(mi, fi) {
   updateTotals();
 }
 
-function toggleMealCard(mi){const body=document.getElementById(`meal-body-${mi}`);const chev=document.getElementById(`chev-meal-${mi}`);const open=body.style.display==='block';body.style.display=open?'none':'block';chev.textContent=open?'▼':'▲';}
+function toggleMealCard(mi){
+  if(openMeals.has(mi)){openMeals.delete(mi);}else{openMeals.add(mi);}
+  renderMeals();
+}
+
+function moveFoodUp(mi,fi){
+  if(fi===0)return;
+  const foods=meals[mi].foods;
+  [foods[fi-1],foods[fi]]=[foods[fi],foods[fi-1]];
+  renderMeals();updateTotals();
+}
+
+function moveFoodDown(mi,fi){
+  const foods=meals[mi].foods;
+  if(fi>=foods.length-1)return;
+  [foods[fi],foods[fi+1]]=[foods[fi+1],foods[fi]];
+  renderMeals();updateTotals();
+}
+
+function updateBlueprintFoodCalc(mi,fi,val){
+  const q=parseFloat(val)||1;
+  const food=meals[mi].foods[fi];
+  food.amount=String(q);
+  food.cals=Math.round((food.baseCals||food._baseCals||0)*q);
+  food.protein=Math.round((food.baseProtein||food._baseProtein||0)*q*10)/10;
+  food.carbs=Math.round((food.baseCarbs||food._baseCarbs||0)*q*10)/10;
+  food.fat=Math.round((food.baseFat||food._baseFat||0)*q*10)/10;
+  // Update in place
+  const row=document.getElementById(`food-row-${mi}-${fi}`);
+  if(row){
+    const vals=row.querySelectorAll('.fim-val');
+    if(vals[0])vals[0].textContent=food.protein+'g';
+    if(vals[1])vals[1].textContent=food.carbs+'g';
+    if(vals[2])vals[2].textContent=food.fat+'g';
+    if(vals[3])vals[3].textContent=food.cals;
+  }
+  updateTotals();
+}
 function getMealCals(mi){return meals[mi].foods.reduce((s,f)=>s+(f.cals||0),0);}
 function getMealMacro(mi,key){return Math.round(meals[mi].foods.reduce((s,f)=>s+(f[key]||0),0));}
 function recalcFoodCals(mi,fi){const f=meals[mi].foods[fi];f.cals=Math.round((f.protein||0)*4+(f.carbs||0)*4+(f.fat||0)*9);}
-function removeFood(mi,fi){meals[mi].foods.splice(fi,1);renderMeals();updateTotals();const body=document.getElementById(`meal-body-${mi}`);if(body){body.style.display='block';document.getElementById(`chev-meal-${mi}`).textContent='▲';}}
+function removeFood(mi,fi){meals[mi].foods.splice(fi,1);openMeals.add(mi);renderMeals();updateTotals();}
 
 // ── USDA SEARCH ──
 function debounceSearch(mi){clearTimeout(searchTimers[mi]);const q=document.getElementById(`fsearch-${mi}`)?.value?.trim();if(!q||q.length<2){document.getElementById(`fresults-${mi}`).innerHTML='';return;}searchTimers[mi]=setTimeout(()=>searchFood(mi),500);}
@@ -746,21 +793,14 @@ function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving) {
     name: `⭐ ${name}`, 
     amount: '1', 
     serving: serving,
-    cals: cals, 
-    protein: protein, 
-    carbs: carbs, 
-    fat: fat,
-    baseCals: cals,
-    baseProtein: protein,
-    baseCarbs: carbs,
-    baseFat: fat,
+    cals: cals, protein: protein, carbs: carbs, fat: fat,
+    baseCals: cals, baseProtein: protein, baseCarbs: carbs, baseFat: fat,
     blueprint: true 
   });
   document.getElementById(`fresults-${mi}`).innerHTML='';
   document.getElementById(`fsearch-${mi}`).value='';
+  openMeals.add(mi);
   renderMeals(); updateTotals();
-  const body=document.getElementById(`meal-body-${mi}`);
-  if(body){body.style.display='block';document.getElementById(`chev-meal-${mi}`).textContent='▲';}
 }
 
 const BUILDER_UNITS = {g:1, oz:28.3495, cup:240, tbsp:15, tsp:5, ml:1};
@@ -772,9 +812,8 @@ function addFoodToMeal(mi,name,cals,protein,carbs,fat){
   });
   document.getElementById(`fresults-${mi}`).innerHTML='';
   document.getElementById(`fsearch-${mi}`).value='';
+  openMeals.add(mi);
   renderMeals();updateTotals();
-  const body=document.getElementById(`meal-body-${mi}`);
-  if(body){body.style.display='block';document.getElementById(`chev-meal-${mi}`).textContent='▲';}
 }
 
 function updateTotals(){
