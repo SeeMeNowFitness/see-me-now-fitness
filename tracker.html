@@ -1181,14 +1181,14 @@ try{
 
 function renderFallbackRecipes(rem){
   const all=[
-    {title:'Grilled Chicken & Rice Bowl',emoji:'🍗',calories:520,protein:'48g',carbs:'52g',fat:'8g',desc:'Grilled chicken breast over white rice with steamed broccoli and a drizzle of olive oil.'},
-    {title:'Salmon with Sweet Potato',emoji:'🐟',calories:480,protein:'42g',carbs:'38g',fat:'14g',desc:'Baked salmon fillet with roasted sweet potato and asparagus.'},
-    {title:'Turkey & Veggie Stir Fry',emoji:'🥘',calories:410,protein:'44g',carbs:'28g',fat:'10g',desc:'Lean ground turkey stir fried with bell peppers, broccoli, and low-sodium soy sauce over rice.'},
-    {title:'Egg White Omelette',emoji:'🍳',calories:280,protein:'32g',carbs:'10g',fat:'8g',desc:'Egg white omelette stuffed with spinach, mushrooms, and a small amount of feta cheese.'},
-    {title:'Protein Oats Bowl',emoji:'🥣',calories:450,protein:'36g',carbs:'56g',fat:'8g',desc:'Oats cooked with protein powder, topped with blueberries and almond butter.'},
-    {title:'Tuna Salad Wrap',emoji:'🌯',calories:390,protein:'40g',carbs:'32g',fat:'9g',desc:'Canned tuna mixed with Greek yogurt, celery, and mustard wrapped in a whole wheat tortilla.'},
-    {title:'Chicken & Veggie Soup',emoji:'🍲',calories:320,protein:'38g',carbs:'24g',fat:'6g',desc:'Lean chicken breast simmered with carrots, celery, onion, and low-sodium chicken broth.'},
-    {title:'Greek Yogurt Parfait',emoji:'🫙',calories:340,protein:'28g',carbs:'38g',fat:'6g',desc:'Nonfat Greek yogurt layered with mixed berries, granola, and a drizzle of honey.'},
+    {title:'Grilled Chicken & Rice Bowl',emoji:'🍗',calories:520,protein:'48g',carbs:'52g',fat:'8g',desc:'Grilled chicken breast over white rice with steamed broccoli and a drizzle of olive oil.',img:'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80'},
+    {title:'Salmon with Sweet Potato',emoji:'🐟',calories:480,protein:'42g',carbs:'38g',fat:'14g',desc:'Baked salmon fillet with roasted sweet potato and asparagus.',img:'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&q=80'},
+    {title:'Turkey & Veggie Stir Fry',emoji:'🥘',calories:410,protein:'44g',carbs:'28g',fat:'10g',desc:'Lean ground turkey stir fried with bell peppers, broccoli, and low-sodium soy sauce over rice.',img:'https://images.unsplash.com/photo-1543339494-b4cd4f7ba686?w=400&q=80'},
+    {title:'Egg White Omelette',emoji:'🍳',calories:280,protein:'32g',carbs:'10g',fat:'8g',desc:'Egg white omelette stuffed with spinach, mushrooms, and a small amount of feta cheese.',img:'https://images.unsplash.com/photo-1510693206972-df098062cb71?w=400&q=80'},
+    {title:'Protein Oats Bowl',emoji:'🥣',calories:450,protein:'36g',carbs:'56g',fat:'8g',desc:'Oats cooked with protein powder, topped with blueberries and almond butter.',img:'https://images.unsplash.com/photo-1495214783159-3503fd1b572d?w=400&q=80'},
+    {title:'Tuna Salad Wrap',emoji:'🌯',calories:390,protein:'40g',carbs:'32g',fat:'9g',desc:'Canned tuna mixed with Greek yogurt, celery, and mustard wrapped in a whole wheat tortilla.',img:'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400&q=80'},
+    {title:'Chicken & Veggie Soup',emoji:'🍲',calories:320,protein:'38g',carbs:'24g',fat:'6g',desc:'Lean chicken breast simmered with carrots, celery, onion, and low-sodium chicken broth.',img:'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80'},
+    {title:'Greek Yogurt Parfait',emoji:'🫙',calories:340,protein:'28g',carbs:'38g',fat:'6g',desc:'Nonfat Greek yogurt layered with mixed berries, granola, and a drizzle of honey.',img:'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80'},
   ];
   // Pick 4 that roughly match remaining calories
   const sorted=all.sort((a,b)=>Math.abs(a.calories-(rem.calories/2))-Math.abs(b.calories-(rem.calories/2)));
@@ -1199,9 +1199,10 @@ function renderFallbackRecipes(rem){
     </div>
     ${picks.map(r=>`
       <div class="recipe-card">
+        <img class="recipe-card-img" src="${r.img}" onerror="this.style.display='none'" alt="${r.title}">
         <div class="recipe-card-body">
           <div class="recipe-card-name">${r.emoji} ${r.title}</div>
-          <div style="font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6;">${r.desc}</div>
+          <div class="recipe-desc" style="display:none;font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6;">${r.desc}</div>
           <div class="recipe-card-macros">
             <div class="recipe-macro"><span>${r.calories}</span>kcal</div>
             <div class="recipe-macro"><span>${r.protein}</span>protein</div>
@@ -1209,6 +1210,7 @@ function renderFallbackRecipes(rem){
             <div class="recipe-macro"><span>${r.fat}</span>fat</div>
           </div>
           <div class="recipe-card-actions" style="margin-top:10px;">
+            <button class="btn btn-outline btn-sm" onclick="this.closest('.recipe-card').querySelector('.recipe-desc').style.display=this.closest('.recipe-card').querySelector('.recipe-desc').style.display==='none'?'block':'none';this.textContent=this.textContent==='View Details'?'Hide Details':'View Details';">View Details</button>
             <button class="btn btn-gold btn-sm" onclick="addRecipeToLog('${r.title}',${r.calories},${parseInt(r.protein)},${parseInt(r.carbs)},${parseInt(r.fat)})">Add to Log</button>
           </div>
         </div>
