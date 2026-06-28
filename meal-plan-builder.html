@@ -263,7 +263,7 @@ Enable Flex Dieting for this client
 <div style="margin-top:32px;padding-top:24px;border-top:2px solid var(--border);">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
   <div>
-    <div style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.06em;text-transform:uppercase;">⭐ Blueprint Foods</div>
+    <div style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.06em;text-transform:uppercase;">👑 See Me Now Foods</div>
     <div style="font-size:12px;color:var(--muted);margin-top:4px;">Global library — shows up first in every client's food search with a ⭐ badge. Add once, works for all clients.</div>
   </div>
   <button class="btn btn-outline btn-sm" onclick="toggleBlueprintFoods()">Show / Hide</button>
@@ -271,7 +271,7 @@ Enable Flex Dieting for this client
 
 <div id="blueprint-foods-section" style="display:none;margin-top:16px;">
   <div style="background:rgba(201,168,76,0.06);border:1px solid var(--gold-d);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7;">
-    💡 <strong style="color:var(--gold);">How it works:</strong> Foods you add here appear at the top of every client's food search with a ⭐ Blueprint Verified badge. Set the serving size to whatever makes sense (1oz, 1g, 1 egg, 1 scoop) and clients just type how many of that unit they had.
+    💡 <strong style="color:var(--gold);">How it works:</strong> Foods you add here appear at the top of every client's food search with a 👑 See Me Now Verified badge. Set the serving size to whatever makes sense (1oz, 1g, 1 egg, 1 scoop) and clients just type how many of that unit they had.
   </div>
 
   <div id="blueprint-foods-list"></div>
@@ -855,7 +855,7 @@ async function searchFood(mi){
 
   const bpHtml = bpMatches.map(f => `
     <div class="food-result-row" style="border-color:var(--gold-d);background:rgba(201,168,76,0.04);">
-      <div class="fr-name" style="color:var(--gold);">⭐ ${f.name} <span style="font-size:9px;background:rgba(201,168,76,0.15);color:var(--gold);padding:2px 5px;border-radius:4px;font-weight:800;">BLUEPRINT</span></div>
+      <div class="fr-name" style="color:var(--gold);">👑 ${f.name} <span style="font-size:9px;background:rgba(201,168,76,0.15);color:var(--gold);padding:2px 5px;border-radius:4px;font-weight:800;">SEE ME NOW</span></div>
       <div class="fr-macros">${f.cals} kcal / ${f.serving} · P:${f.protein}g C:${f.carbs}g F:${f.fat}g</div>
       <button class="fr-add" onclick="addBlueprintFoodToMeal(${mi},'${f.name.replace(/'/g,"\\'")}',${f.cals},${f.protein},${f.carbs},${f.fat},'${f.serving}',${f.servingG||28.35})">+ Add</button>
     </div>`).join('');
