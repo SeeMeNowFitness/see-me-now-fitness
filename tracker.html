@@ -1255,22 +1255,48 @@ try{
 
 function renderFallbackRecipes(rem){
   const all=[
-    {title:'Grilled Chicken & Rice Bowl',emoji:'🍗',calories:520,protein:'48g',carbs:'52g',fat:'8g',desc:'Grilled chicken breast over white jasmine rice with steamed broccoli and a drizzle of olive oil. High protein, clean carbs — a Blueprint staple.',img:'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80'},
-    {title:'Baked Salmon & Sweet Potato',emoji:'🐟',calories:480,protein:'42g',carbs:'38g',fat:'14g',desc:'Baked Atlantic salmon with roasted sweet potato and asparagus. Rich in omega-3s and quality carbs for recovery.',img:'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&q=80'},
-    {title:'Ground Turkey Stir Fry',emoji:'🥘',calories:410,protein:'44g',carbs:'28g',fat:'10g',desc:'Lean ground turkey stir fried with bell peppers, broccoli, and low-sodium soy sauce over cauliflower rice.',img:'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400&q=80'},
-    {title:'Egg White Omelette',emoji:'🍳',calories:280,protein:'32g',carbs:'10g',fat:'8g',desc:'Egg white omelette stuffed with baby spinach, mushrooms, and a small amount of feta. Low calorie, high protein breakfast.',img:'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&q=80'},
-    {title:'Protein Oats Bowl',emoji:'🥣',calories:450,protein:'36g',carbs:'56g',fat:'8g',desc:'Steel cut oats cooked with whey protein isolate, topped with blueberries and a drizzle of natural peanut butter.',img:'https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=400&q=80'},
-    {title:'Tuna & Avocado Wrap',emoji:'🌯',calories:390,protein:'40g',carbs:'32g',fat:'9g',desc:'Canned albacore tuna mixed with avocado, celery, and Greek yogurt wrapped in a whole wheat tortilla.',img:'https://images.unsplash.com/photo-1600335895229-6e75511892c8?w=400&q=80'},
-    {title:'Chicken Veggie Soup',emoji:'🍲',calories:320,protein:'38g',carbs:'24g',fat:'6g',desc:'Lean chicken breast simmered with carrots, celery, onion, and low-sodium broth. Perfect for rest days.',img:'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80'},
-    {title:'Greek Yogurt Parfait',emoji:'🫙',calories:340,protein:'28g',carbs:'38g',fat:'6g',desc:'Nonfat Greek yogurt layered with mixed berries, granola, and a drizzle of honey. Great post-workout snack.',img:'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80'},
+    {title:'Grilled Chicken & Rice Bowl',emoji:'🍗',calories:520,protein:'48g',carbs:'52g',fat:'8g',
+     desc:'Grilled chicken breast over white jasmine rice with steamed broccoli and a drizzle of olive oil. High protein, clean carbs — a Blueprint staple.',
+     img:'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80',
+     steps:['Season chicken breast with salt, pepper, garlic powder, and paprika.','Grill or pan-sear over medium-high heat for 6-7 minutes per side until internal temp reaches 165°F.','While chicken rests, cook jasmine rice according to package directions (1 cup dry yields ~3 cups cooked).','Steam broccoli for 4-5 minutes until tender-crisp.','Slice chicken and serve over rice with broccoli. Drizzle with 1 tsp olive oil.']},
+    {title:'Baked Salmon & Sweet Potato',emoji:'🐟',calories:480,protein:'42g',carbs:'38g',fat:'14g',
+     desc:'Baked Atlantic salmon with roasted sweet potato and asparagus. Rich in omega-3s and quality carbs for recovery.',
+     img:'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&q=80',
+     steps:['Preheat oven to 400°F. Dice sweet potato into 1-inch cubes and toss with olive oil, salt, and pepper.','Roast sweet potato on a baking sheet for 20 minutes.','Season salmon with lemon juice, garlic, salt, and pepper.','Add salmon and asparagus to the pan with sweet potato. Bake 12-15 minutes until salmon flakes easily.','Serve together. Optional: top with fresh herbs or a squeeze of lemon.']},
+    {title:'Ground Turkey Stir Fry',emoji:'🥘',calories:410,protein:'44g',carbs:'28g',fat:'10g',
+     desc:'Lean ground turkey stir fried with bell peppers, broccoli, and low-sodium soy sauce over cauliflower rice.',
+     img:'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400&q=80',
+     steps:['Cook cauliflower rice in a pan with a little oil for 5 minutes. Set aside.','Brown ground turkey in a large pan over medium-high heat, breaking it up as it cooks.','Add sliced bell peppers and broccoli florets. Cook 4-5 minutes until tender.','Add 2 tbsp low-sodium soy sauce, 1 tsp sesame oil, minced garlic, and ginger. Toss to coat.','Serve over cauliflower rice. Garnish with green onions.']},
+    {title:'Egg White Omelette',emoji:'🍳',calories:280,protein:'32g',carbs:'10g',fat:'8g',
+     desc:'Egg white omelette stuffed with baby spinach, mushrooms, and a small amount of feta. Low calorie, high protein breakfast.',
+     img:'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&q=80',
+     steps:['Whisk 6 egg whites with a pinch of salt and pepper.','Sauté sliced mushrooms and baby spinach in a non-stick pan with a little olive oil spray until wilted.','Remove veggies and pour egg whites into the pan over medium heat.','Once edges set, add veggies and crumbled feta to one half.','Fold omelette over and cook 1 more minute. Serve immediately.']},
+    {title:'Protein Oats Bowl',emoji:'🥣',calories:450,protein:'36g',carbs:'56g',fat:'8g',
+     desc:'Steel cut oats cooked with whey protein isolate, topped with blueberries and a drizzle of natural peanut butter.',
+     img:'https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=400&q=80',
+     steps:['Cook 1/2 cup steel cut oats in 1.5 cups water over medium heat for 15-20 minutes, stirring occasionally.','Remove from heat and let cool slightly (important — adding protein to boiling liquid can clump it).','Stir in 1 scoop whey protein isolate and mix thoroughly.','Top with 1/2 cup fresh blueberries and 1 tbsp natural peanut butter.','Optional: add cinnamon and a drizzle of honey.']},
+    {title:'Tuna & Avocado Wrap',emoji:'🌯',calories:390,protein:'40g',carbs:'32g',fat:'9g',
+     desc:'Canned albacore tuna mixed with avocado, celery, and Greek yogurt wrapped in a whole wheat tortilla.',
+     img:'https://images.unsplash.com/photo-1600335895229-6e75511892c8?w=400&q=80',
+     steps:['Drain 2 cans of albacore tuna packed in water.','Mix tuna with 1/4 mashed avocado, 2 tbsp nonfat Greek yogurt, diced celery, and a squeeze of lemon.','Season with salt, pepper, and a pinch of garlic powder.','Lay mixture on a whole wheat tortilla with spinach leaves and sliced tomato.','Roll tightly and slice in half. Serve immediately or wrap for meal prep.']},
+    {title:'Chicken Veggie Soup',emoji:'🍲',calories:320,protein:'38g',carbs:'24g',fat:'6g',
+     desc:'Lean chicken breast simmered with carrots, celery, onion, and low-sodium broth. Perfect for rest days.',
+     img:'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80',
+     steps:['Dice 2 chicken breasts and sauté in a large pot with olive oil spray over medium-high heat until lightly browned.','Add diced onion, carrots, and celery. Cook 3-4 minutes until softened.','Pour in 4 cups low-sodium chicken broth and bring to a boil.','Reduce heat and simmer 20-25 minutes. Add salt, pepper, thyme, and bay leaf.','Optional: add zucchini or spinach in the last 5 minutes. Remove bay leaf before serving.']},
+    {title:'Greek Yogurt Parfait',emoji:'🫙',calories:340,protein:'28g',carbs:'38g',fat:'6g',
+     desc:'Nonfat Greek yogurt layered with mixed berries, granola, and a drizzle of honey. Great post-workout snack.',
+     img:'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80',
+     steps:['Start with a base of 1 cup nonfat plain Greek yogurt in a bowl or jar.','Add a layer of mixed berries (strawberries, blueberries, raspberries).','Sprinkle 1/4 cup low-sugar granola on top.','Drizzle with 1 tsp raw honey.','Optional: add a sprinkle of cinnamon or chopped nuts for extra flavor and healthy fats.']},
   ];
   const sorted=all.sort((a,b)=>Math.abs(a.calories-(rem.calories/2))-Math.abs(b.calories-(rem.calories/2)));
   const picks=sorted.slice(0,4);
+  // Store picks globally for modal access
+  window._fallbackPicks = picks;
   return`
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">
       📋 <strong style="color:var(--gold);">Blueprint Suggestions</strong> — Curated meals that match your remaining macros.
     </div>
-    ${picks.map(r=>`
+    ${picks.map((r,idx)=>`
       <div class="recipe-card">
         <img class="recipe-card-img" src="${r.img}" onerror="this.style.display='none'" alt="${r.title}" style="width:100%;height:160px;object-fit:cover;border-radius:12px 12px 0 0;">
         <div class="recipe-card-body">
@@ -1282,8 +1308,8 @@ function renderFallbackRecipes(rem){
             <div class="recipe-macro"><span>${r.fat}</span>fat</div>
           </div>
           <div class="recipe-card-actions" style="margin-top:10px;">
-            <button class="btn btn-outline btn-sm" onclick="viewFallbackRecipe('${r.title.replace(/'/g,"\\'")}','${r.desc.replace(/'/g,"\\'")}','${r.img}',${r.calories},'${r.protein}','${r.carbs}','${r.fat}')">View Recipe</button>
-            <button class="btn btn-gold btn-sm" onclick="addRecipeToLog('${r.title}',${r.calories},${parseInt(r.protein)},${parseInt(r.carbs)},${parseInt(r.fat)})">Add to Log</button>
+            <button class="btn btn-outline btn-sm" onclick="viewFallbackRecipe(${idx})">View Recipe</button>
+            <button class="btn btn-gold btn-sm" onclick="addRecipeToLog('${r.title.replace(/'/g,"\\'")}',${r.calories},${parseInt(r.protein)},${parseInt(r.carbs)},${parseInt(r.fat)})">Add to Log</button>
           </div>
         </div>
       </div>
@@ -1295,31 +1321,40 @@ function renderSpoonacularCards(recipes){if(!recipes?.length)return'<div class="
 
 async function viewRecipeDetail(id,title){const el=document.getElementById('recipe-detail-body');el.innerHTML='<div class="loading">Loading recipe…</div>';openModal('modal-recipe-detail');try{const r=await fetch(`https://api.spoonacular.com/recipes/${id}/information?apiKey=${SPOONACULAR_API_KEY}`);const d=await r.json();const steps=(d.analyzedInstructions?.[0]?.steps||[]);el.innerHTML=`<h3>${d.title}</h3>${d.image?`<img src="${d.image}" style="width:100%;border-radius:12px;margin:12px 0;" alt="${d.title}">`:''}<div style="margin-bottom:16px;"><div class="card-title" style="margin-bottom:8px;">Ingredients</div>${(d.extendedIngredients||[]).map(i=>`<span class="ingredient-pill">${i.original}</span>`).join('')}</div>${steps.length?`<div class="card-title" style="margin-bottom:12px;">Instructions</div>${steps.map((s,i)=>`<div class="recipe-step"><div class="recipe-step-num">${i+1}</div><div class="recipe-step-text">${s.step}</div></div>`).join('')}`:''}`;} catch(e){el.innerHTML='<div class="loading">Could not load recipe details.</div>';}}
 
-function viewFallbackRecipe(title, desc, img, calories, protein, carbs, fat) {
+function viewFallbackRecipe(idx) {
+  const r = window._fallbackPicks?.[idx];
+  if (!r) return;
   const el = document.getElementById('recipe-detail-body');
   el.innerHTML = `
-    ${img ? `<img src="${img}" style="width:100%;border-radius:12px;margin-bottom:16px;object-fit:cover;max-height:200px;" alt="${title}" onerror="this.style.display='none'">` : ''}
-    <h3 style="margin-bottom:12px;">${title}</h3>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+    ${r.img ? `<img src="${r.img}" style="width:100%;border-radius:12px;margin-bottom:16px;object-fit:cover;max-height:200px;" alt="${r.title}" onerror="this.style.display='none'">` : ''}
+    <h3 style="margin-bottom:12px;">${r.emoji} ${r.title}</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
       <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;flex:1;">
         <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;">Calories</div>
-        <div style="font-size:18px;font-weight:900;color:var(--white);">${calories}</div>
+        <div style="font-size:18px;font-weight:900;color:var(--white);">${r.calories}</div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;flex:1;">
         <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;">Protein</div>
-        <div style="font-size:18px;font-weight:900;color:var(--white);">${protein}</div>
+        <div style="font-size:18px;font-weight:900;color:var(--white);">${r.protein}</div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;flex:1;">
         <div style="font-size:10px;color:var(--blue);font-weight:700;text-transform:uppercase;">Carbs</div>
-        <div style="font-size:18px;font-weight:900;color:var(--white);">${carbs}</div>
+        <div style="font-size:18px;font-weight:900;color:var(--white);">${r.carbs}</div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;flex:1;">
         <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;">Fat</div>
-        <div style="font-size:18px;font-weight:900;color:var(--white);">${fat}</div>
+        <div style="font-size:18px;font-weight:900;color:var(--white);">${r.fat}</div>
       </div>
     </div>
-    <div style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:20px;">${desc}</div>
-    <button class="btn btn-gold" style="width:100%;" onclick="addRecipeToLog('${title.replace(/'/g,"\\'")}',${calories},${parseInt(protein)},${parseInt(carbs)},${parseInt(fat)})">Add to Log</button>
+    <div style="font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:20px;">${r.desc}</div>
+    <div style="font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:12px;">Instructions</div>
+    ${r.steps.map((step, i) => `
+      <div style="display:flex;gap:12px;margin-bottom:14px;align-items:flex-start;">
+        <div style="min-width:28px;height:28px;border-radius:50%;background:var(--gold);color:var(--black);font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center;">${i+1}</div>
+        <div style="font-size:13px;color:var(--white);line-height:1.6;padding-top:4px;">${step}</div>
+      </div>
+    `).join('')}
+    <button class="btn btn-gold" style="width:100%;margin-top:8px;" onclick="addRecipeToLog('${r.title.replace(/'/g,"\\'")}',${r.calories},${parseInt(r.protein)},${parseInt(r.carbs)},${parseInt(r.fat)})">Add to Log</button>
   `;
   openModal('modal-recipe-detail');
 }
