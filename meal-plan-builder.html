@@ -285,6 +285,29 @@ Enable Flex Dieting for this client
 </div>
 </div>
 
+<!-- SUPPLEMENTS DATABASE (Global) -->
+<div style="margin-top:32px;padding-top:24px;border-top:2px solid var(--border);">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+  <div>
+    <div style="font-size:18px;font-weight:800;color:var(--gold);letter-spacing:0.06em;text-transform:uppercase;">💊 Supplements Database</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:4px;">Global database — supplement benefits auto-fill when building any client plan. Add once, available for all clients. Serving size is set per client.</div>
+  </div>
+  <button class="btn btn-outline btn-sm" onclick="toggleSuppDatabase()">Show / Hide</button>
+</div>
+<div id="supp-database-section" style="display:none;margin-top:16px;">
+  <div style="background:rgba(201,168,76,0.06);border:1px solid var(--gold-d);border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:12px;color:var(--muted);line-height:1.7;">
+    💡 <strong style="color:var(--gold);">How it works:</strong> Add supplements and their benefits here. When you type a supplement name in Section 4, the benefit auto-fills instantly. Serving size is intentionally blank — you set that per client.
+  </div>
+  <div id="supp-database-list"></div>
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-outline btn-sm" onclick="addSuppDatabaseRow()">+ Add Supplement</button>
+    <button class="btn btn-outline btn-sm" onclick="loadSuppDatabaseFromFirestore()">↺ Reload from Saved</button>
+    <button class="btn btn-gold btn-sm" onclick="saveSuppDatabase()" style="margin-left:auto;">💾 Save Database</button>
+  </div>
+  <div id="supp-db-save-status" style="display:none;font-size:13px;font-weight:700;color:var(--green);margin-top:10px;"></div>
+</div>
+</div>
+
 </div>
 
 <script>
@@ -295,7 +318,34 @@ const MEAL_NAMES={3:['Meal 1 — Breakfast','Meal 2 — Lunch','Meal 3 — Dinne
 const MEAL_TIMES={3:['7:00 AM','12:00 PM','7:00 PM'],4:['7:00 AM','12:00 PM','4:00 PM','7:00 PM'],5:['7:00 AM','10:00 AM','1:00 PM','4:00 PM','7:00 PM'],6:['7:00 AM','10:00 AM','1:00 PM','4:00 PM','6:30 PM','9:00 PM']};
 
 // ── SUPPLEMENT DATA ──
-const SUPP_BENEFITS={'Whey Protein':'Supports muscle repair and growth after training','Casein Protein':'Slow-digesting protein ideal for overnight recovery','Creatine Monohydrate':'Increases strength, power output, and muscle volume','Pre-Workout':'Boosts energy, focus, and workout performance','BCAAs':'Reduces muscle breakdown during training','Glutamine':'Supports gut health and muscle recovery','Multivitamin':'Fills micronutrient gaps to support overall health','Fish Oil':'Reduces inflammation, supports joints and heart health','Vitamin D3':'Supports immune function, bone health, and testosterone','Magnesium':'Improves sleep quality and reduces muscle cramps','Zinc':'Supports testosterone production and immune health','Vitamin C':'Antioxidant supporting immune function and collagen','Iron':'Essential for oxygen transport and energy production','Probiotics':'Supports gut health and nutrient absorption','Collagen':'Supports joint health and connective tissue','Ashwagandha':'Reduces cortisol and supports stress management','Melatonin':'Improves sleep quality and overnight recovery','CLA':'May support fat loss and lean muscle preservation','L-Carnitine':'Supports fat metabolism and energy production','Beta-Alanine':'Buffers lactic acid, delays fatigue during intense training'};
+const SUPP_BENEFITS={
+  'Whey Protein Isolate':'Fast-absorbing protein to support muscle repair and growth after training. Take within 30 minutes post-workout.',
+  'Creatine Monohydrate':'Increases strength, power output, and muscle volume. Supports ATP regeneration during high-intensity training.',
+  'Pre-Workout':'Boosts energy, focus, and workout performance. Contains caffeine and performance-enhancing compounds.',
+  'BCAAs':'Reduces muscle breakdown during training. Supports recovery and reduces soreness.',
+  'Glutamine':'Supports gut health, immune function, and muscle recovery. Especially beneficial during contest prep.',
+  'Multivitamin':'Fills micronutrient gaps to support overall health, energy, and performance.',
+  'Fish Oil / Omega-3':'Reduces inflammation, supports joint health, heart health, and brain function.',
+  'Vitamin D3/K2':'D3 supports immune function, bone health, and testosterone. K2 directs calcium to bones, not arteries. Best taken together.',
+  'Magnesium Glycinate':'Highly bioavailable form of magnesium. Improves sleep quality, reduces muscle cramps, and supports recovery.',
+  'ZMA':'Zinc, Magnesium, and B6 complex. Supports testosterone production, deep sleep, and muscle recovery. Take before bed.',
+  'Revive Cortisol Support':'Helps regulate cortisol levels to reduce stress, support fat loss, and improve recovery. Contains adaptogens.',
+  'Turmeric / Curcumin':'Powerful anti-inflammatory and antioxidant. Supports joint health and reduces exercise-induced inflammation.',
+  'Beet Root Powder':'Increases nitric oxide production, improving blood flow, endurance, and pump during training.',
+  'Lion\'s Mane':'Supports cognitive function, focus, and nerve health. May improve mental clarity and reduce brain fog.',
+  'Ashwagandha':'Adaptogen that reduces cortisol, supports stress management, and may boost testosterone.',
+  'Probiotics':'Supports gut health, nutrient absorption, and immune function.',
+  'Collagen Peptides':'Supports joint health, connective tissue, skin elasticity, and tendon strength.',
+  'Melatonin':'Improves sleep quality and overnight recovery. Start with lowest effective dose.',
+  'Vitamin C':'Antioxidant supporting immune function, collagen synthesis, and recovery.',
+  'Zinc':'Supports testosterone production, immune health, and protein synthesis.',
+  'L-Carnitine':'Supports fat metabolism and energy production. Most effective when taken before training.',
+  'Beta-Alanine':'Buffers lactic acid to delay fatigue during high-intensity training. May cause tingling sensation.',
+  'CLA':'May support fat loss and lean muscle preservation during a caloric deficit.',
+  'Iron':'Essential for oxygen transport and energy production. Only supplement if deficient.',
+  'Casein Protein':'Slow-digesting protein ideal for overnight recovery. Take before bed.',
+  'CoQ10':'Supports cellular energy production and heart health. Beneficial during intense training phases.',
+};
 const DEFAULT_SUPPLEMENTS=[{name:'Whey Protein',dose:'1 scoop (25g protein)',timing:'Post Workout',benefit:'Supports muscle repair and growth after training'},{name:'Creatine Monohydrate',dose:'5g',timing:'Daily — any time',benefit:'Increases strength, power output, and muscle volume'},{name:'Multivitamin',dose:'1 tablet',timing:'With breakfast',benefit:'Fills micronutrient gaps to support overall health'},{name:'Fish Oil',dose:'2 capsules',timing:'With meals',benefit:'Reduces inflammation, supports joints and heart health'},{name:'Vitamin D3',dose:'2000 IU',timing:'With breakfast',benefit:'Supports immune function, bone health, and testosterone'}];
 const TIMING_OPTIONS=['Pre Workout','Post Workout','With breakfast','With meals','Before bed','Daily — any time','Morning','Evening'];
 
@@ -553,6 +603,8 @@ async function initApp(){
   initMeals(5);
   initApprovedFoods('unknown');
   renderSupplements();
+  // Pre-load supplement database for auto-fill
+  loadSuppDatabaseFromFirestore();
 }
 
 async function loadClients(){
@@ -1618,6 +1670,128 @@ function toggleWDay(di) {
   const open = body.style.display === 'block';
   body.style.display = open ? 'none' : 'block';
   chev.textContent = open ? '▼' : '▲';
+}
+
+// ── SUPPLEMENTS DATABASE ──
+let suppDatabase = [];
+
+const DEFAULT_SUPP_DATABASE = [
+  { name:'Whey Protein Isolate', benefit:'Fast-absorbing protein to support muscle repair and growth. Take within 30 minutes post-workout.' },
+  { name:'Creatine Monohydrate', benefit:'Increases strength, power output, and muscle volume. Supports ATP regeneration during high-intensity training. Take daily.' },
+  { name:'Revive Cortisol Support', benefit:'Helps regulate cortisol levels to reduce stress, support fat loss, and improve recovery. Contains adaptogens.' },
+  { name:'Magnesium Glycinate', benefit:'Highly bioavailable magnesium. Improves sleep quality, reduces muscle cramps, and supports recovery. Take before bed.' },
+  { name:'ZMA', benefit:'Zinc, Magnesium, and B6 complex. Supports testosterone production, deep sleep, and muscle recovery. Take on an empty stomach before bed.' },
+  { name:'Vitamin D3/K2', benefit:'D3 supports immune function, bone health, and testosterone. K2 directs calcium to bones. Best taken with a meal containing fat.' },
+  { name:'Turmeric / Curcumin', benefit:'Powerful anti-inflammatory and antioxidant. Reduces exercise-induced inflammation and supports joint health.' },
+  { name:'Beet Root Powder', benefit:'Increases nitric oxide production, improving blood flow, endurance, and training pump. Take 30-60 min pre-workout.' },
+  { name:'Lion\'s Mane', benefit:'Supports cognitive function, focus, and nerve health. May improve mental clarity and reduce brain fog.' },
+  { name:'Fish Oil / Omega-3', benefit:'Reduces inflammation, supports joint health, heart health, and brain function. Take with meals.' },
+  { name:'Probiotics', benefit:'Supports gut health, nutrient absorption, and immune function. Take in the morning.' },
+  { name:'Collagen Peptides', benefit:'Supports joint health, connective tissue, skin elasticity, and tendon strength. Best taken with Vitamin C.' },
+  { name:'Ashwagandha', benefit:'Adaptogen that reduces cortisol, supports stress management, and may boost testosterone. Take in the morning or before bed.' },
+  { name:'Melatonin', benefit:'Improves sleep quality and overnight recovery. Start with the lowest effective dose (0.5-1mg).' },
+  { name:'Pre-Workout', benefit:'Boosts energy, focus, and workout performance. Contains caffeine and performance-enhancing compounds. Take 20-30 min before training.' },
+  { name:'BCAAs', benefit:'Reduces muscle breakdown during training. Supports recovery and reduces soreness. Sip during training.' },
+  { name:'Glutamine', benefit:'Supports gut health, immune function, and muscle recovery. Especially beneficial during contest prep.' },
+  { name:'Multivitamin', benefit:'Fills micronutrient gaps to support overall health, energy, and performance. Take with food.' },
+  { name:'Vitamin C', benefit:'Antioxidant supporting immune function, collagen synthesis, and recovery.' },
+  { name:'L-Carnitine', benefit:'Supports fat metabolism and energy production. Most effective when taken 30-60 min before training.' },
+  { name:'Beta-Alanine', benefit:'Buffers lactic acid to delay fatigue during high-intensity training. May cause harmless tingling sensation.' },
+  { name:'CoQ10', benefit:'Supports cellular energy production and heart health. Beneficial during intense training phases.' },
+];
+
+function toggleSuppDatabase() {
+  const el = document.getElementById('supp-database-section');
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+  if (el.style.display === 'block') loadSuppDatabaseFromFirestore();
+}
+
+async function loadSuppDatabaseFromFirestore() {
+  if (!db) { if (suppDatabase.length === 0) loadDefaultSuppDatabase(); return; }
+  try {
+    const snap = await db.collection('supplement_database').get();
+    if (!snap.empty) {
+      suppDatabase = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderSuppDatabase();
+      // Update SUPP_BENEFITS for auto-fill
+      suppDatabase.forEach(s => { if (s.name && s.benefit) SUPP_BENEFITS[s.name] = s.benefit; });
+      const status = document.getElementById('supp-db-save-status');
+      status.style.display = 'block';
+      status.textContent = `✓ Loaded ${suppDatabase.length} supplements from database`;
+      status.style.color = 'var(--green)';
+      setTimeout(() => { status.style.display = 'none'; }, 3000);
+    } else {
+      loadDefaultSuppDatabase();
+    }
+  } catch(e) { loadDefaultSuppDatabase(); }
+}
+
+function loadDefaultSuppDatabase() {
+  suppDatabase = DEFAULT_SUPP_DATABASE.map(s => ({ ...s }));
+  renderSuppDatabase();
+  suppDatabase.forEach(s => { SUPP_BENEFITS[s.name] = s.benefit; });
+}
+
+function addSuppDatabaseRow() {
+  suppDatabase.push({ name: '', benefit: '' });
+  renderSuppDatabase();
+}
+
+function removeSuppDatabaseEntry(i) {
+  suppDatabase.splice(i, 1);
+  renderSuppDatabase();
+}
+
+function renderSuppDatabase() {
+  const el = document.getElementById('supp-database-list');
+  if (!suppDatabase.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;">No supplements yet. Click "+ Add Supplement" or load defaults.</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:200px 1fr 30px;gap:8px;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border);">
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Supplement Name</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;">Benefits (auto-fills in client plan)</div>
+      <div></div>
+    </div>
+    ${suppDatabase.map((s, i) => `
+      <div style="display:grid;grid-template-columns:200px 1fr 30px;gap:8px;margin-bottom:8px;align-items:start;">
+        <input type="text" value="${s.name || ''}" placeholder="e.g. Creatine Monohydrate"
+          oninput="suppDatabase[${i}].name=this.value"
+          style="padding:8px 10px;font-size:12px;font-weight:700;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;">
+        <textarea rows="2" placeholder="Benefits shown to client…"
+          oninput="suppDatabase[${i}].benefit=this.value"
+          style="padding:8px 10px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--muted);outline:none;width:100%;resize:vertical;font-family:inherit;">${s.benefit || ''}</textarea>
+        <button onclick="removeSuppDatabaseEntry(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:4px 0;">✕</button>
+      </div>
+    `).join('')}
+  `;
+}
+
+async function saveSuppDatabase() {
+  const status = document.getElementById('supp-db-save-status');
+  status.style.display = 'block';
+  status.textContent = 'Saving…';
+  status.style.color = 'var(--muted)';
+  try {
+    if (!db) throw new Error('Firebase not connected');
+    const entries = suppDatabase.filter(s => s.name);
+    const existing = await db.collection('supplement_database').get();
+    for (const doc of existing.docs) await doc.ref.delete();
+    for (const s of entries) {
+      await db.collection('supplement_database').add({ name: s.name, benefit: s.benefit || '' });
+      SUPP_BENEFITS[s.name] = s.benefit || '';
+    }
+    // Refresh datalist in supplements section
+    const dl = document.getElementById('supp-list');
+    if (dl) dl.innerHTML = Object.keys(SUPP_BENEFITS).map(n => `<option value="${n}">`).join('');
+    status.textContent = `✓ ${entries.length} supplements saved — auto-fill updated for all clients!`;
+    status.style.color = 'var(--green)';
+    setTimeout(() => { status.style.display = 'none'; }, 4000);
+  } catch(e) {
+    status.textContent = '✕ Save failed: ' + e.message;
+    status.style.color = 'var(--red)';
+  }
 }
 
 // ── BLUEPRINT FOODS ──
