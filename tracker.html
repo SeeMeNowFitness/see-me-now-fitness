@@ -445,6 +445,18 @@ select option{background:var(--dark);}
 </div>
 
 <!-- WORKOUT PLAN -->
+<!-- MEAL PLAN SECTION -->
+<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
+<div onclick="togglePlanSection('meals')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Meal Plan</div>
+<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-meals">▼</span>
+</div>
+<div id="plan-section-body-meals" style="display:none;padding:0 8px 12px;">
+<div id="plan-meal-content"><div class="loading">Loading your meal plan…</div></div>
+</div>
+</div>
+
+<!-- WORKOUT SECTION -->
 <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
 <div onclick="togglePlanSection('workout')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
 <div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Today's Workout</div>
@@ -455,6 +467,7 @@ select option{background:var(--dark);}
 </div>
 </div>
 
+<!-- SUPPLEMENTS SECTION -->
 <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
 <div onclick="togglePlanSection('supplements')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
 <div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Supplements</div>
@@ -464,16 +477,29 @@ select option{background:var(--dark);}
 <div id="plan-supplements-content"><div class="loading">Loading supplements…</div></div>
 </div>
 </div>
-<div id="plan-meal-content"><div class="loading">Loading your meal plan…</div></div>
 
-<!-- APPROVED FOODS -->
-<div class="section-label">Approved Foods</div>
+<!-- APPROVED FOODS SECTION -->
+<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
+<div onclick="togglePlanSection('approvedfoods')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Approved Foods</div>
+<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-approvedfoods">▼</span>
+</div>
+<div id="plan-section-body-approvedfoods" style="display:none;padding:0 16px 16px;">
 <div id="plan-approved-foods-content"><div class="loading">Loading approved foods…</div></div>
+</div>
+</div>
 
-<!-- FLEX MEALS -->
+<!-- FLEX MEALS SECTION -->
 <div id="plan-flex-section" style="display:none;">
-<div class="section-label">⭐ Weekend Flex Meal</div>
+<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
+<div onclick="togglePlanSection('flexmeal')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">⭐ Weekend Flex Meal</div>
+<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-flexmeal">▼</span>
+</div>
+<div id="plan-section-body-flexmeal" style="display:none;padding:0 16px 16px;">
 <div id="plan-flex-content"></div>
+</div>
+</div>
 </div>
 
 </div>
@@ -1933,8 +1959,7 @@ function renderFlexMeals() {
   const section = document.getElementById('plan-flex-section');
   const el = document.getElementById('plan-flex-content');
   if (!profile.flex_enabled || !profile.flex_meals?.length) { section.style.display = 'none'; return; }
-  section.style.display = 'block';
-  el.innerHTML = `
+  section.style.display = 'block';  el.innerHTML = `
     <div style="background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.04));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
       <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:8px;">⭐ Choose ONE option to replace Meal 2 — ONE day of the weekend only</div>
       <div style="font-size:12px;color:var(--white);margin-bottom:4px;">✅ <strong>REPLACE</strong> — do not add on top of your plan</div>
