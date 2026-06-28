@@ -760,20 +760,21 @@ function updateBlueprintFoodCalcUnit(mi, fi) {
   const amt = parseFloat(amtEl.value) || 1;
   const unit = unitEl.value;
   const food = meals[mi].foods[fi];
-  // Get grams based on unit
-  const unitG = unit === 'piece' ? (food.servingG || 28.35) : (BUILDER_UNITS[unit] || 1);
+  const servingG = parseFloat(food.servingG) || 28.35;
+  // Get grams based on selected unit
+  const unitG = unit === 'piece' ? servingG : (BUILDER_UNITS[unit] || 1);
   const grams = amt * unitG;
-  // Scale from per-gram base values
-  const perGramCals = (food.baseCals || food._baseCals || 0) / (food.servingG || 28.35);
-  const perGramP = (food.baseProtein || food._baseProtein || 0) / (food.servingG || 28.35);
-  const perGramC = (food.baseCarbs || food._baseCarbs || 0) / (food.servingG || 28.35);
-  const perGramF = (food.baseFat || food._baseFat || 0) / (food.servingG || 28.35);
+  // Base macros are per-serving, so divide by servingG to get per-gram, then multiply by grams
+  const baseCals = parseFloat(food.baseCals || food._baseCals || food.cals) || 0;
+  const baseP = parseFloat(food.baseProtein || food._baseProtein || food.protein) || 0;
+  const baseC = parseFloat(food.baseCarbs || food._baseCarbs || food.carbs) || 0;
+  const baseF = parseFloat(food.baseFat || food._baseFat || food.fat) || 0;
   food.amount = String(amt);
   food.unit = unit;
-  food.cals = Math.round(perGramCals * grams);
-  food.protein = Math.round(perGramP * grams * 10) / 10;
-  food.carbs = Math.round(perGramC * grams * 10) / 10;
-  food.fat = Math.round(perGramF * grams * 10) / 10;
+  food.cals = Math.round((baseCals / servingG) * grams * 10) / 10;
+  food.protein = Math.round((baseP / servingG) * grams * 10) / 10;
+  food.carbs = Math.round((baseC / servingG) * grams * 10) / 10;
+  food.fat = Math.round((baseF / servingG) * grams * 10) / 10;
   // Update display in-place
   const row = document.getElementById(`food-row-${mi}-${fi}`);
   if (row) {
@@ -781,8 +782,9 @@ function updateBlueprintFoodCalcUnit(mi, fi) {
     if (vals[0]) vals[0].textContent = food.protein + 'g';
     if (vals[1]) vals[1].textContent = food.carbs + 'g';
     if (vals[2]) vals[2].textContent = food.fat + 'g';
-    if (vals[3]) vals[3].textContent = food.cals;
+    if (vals[3]) vals[3].textContent = Math.round(food.cals);
   }
+  food.cals = Math.round(food.cals);
   updateTotals();
 }
 
@@ -1621,7 +1623,7 @@ const DEFAULT_BLUEPRINT_FOODS = [
   // Carbs — per gram
   { name:'White Jasmine Rice (cooked)', serving:'1g', servingG:1, cals:1.1, protein:0.02, carbs:0.25, fat:0, category:'carb' },
   { name:'Oats (dry)', serving:'1g', servingG:1, cals:3.9, protein:0.17, carbs:0.66, fat:0.07, category:'carb' },
-  { name:'Steel Cut Oats (cooked)', serving:'1g', servingG:1, cals:0.71, protein:0.025, carbs:0.125, fat:0.012, category:'carb' },
+  { name:'Steel Cut Oats (dry)', serving:'1g', servingG:1, cals:3.8, protein:0.13, carbs:0.68, fat:0.07, category:'carb' },
   { name:'Cinnamon (ground)', serving:'1g', servingG:1, cals:2.5, protein:0.04, carbs:0.8, fat:0.06, category:'carb' },
   // Carbs — both versions
   { name:'Sweet Potato (cooked, medium)', serving:'1 medium', servingG:130, cals:103, protein:2, carbs:24, fat:0, category:'carb' },
