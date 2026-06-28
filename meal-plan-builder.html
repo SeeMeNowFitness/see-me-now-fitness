@@ -526,7 +526,26 @@ const BT_FOODS={
 const BT_DESCS={unknown:'Showing general Blueprint approved foods.',O:'🔴 Type O — High protein, lean meats, fish, vegetables. Limit grains and dairy.',A:'🟢 Type A — Plant-based proteins, poultry, and fish. Structured diet.',B:'🔵 Type B — Balanced omnivore. Lamb, fish, dairy, and most vegetables.',AB:'🟡 Type AB — Mix of A and B. Tofu, seafood, dairy, and greens.'};
 
 // ── LOGIN ──
-function checkLogin(){const pw=document.getElementById('pw-input').value;if(pw===ADMIN_PASSWORD){document.getElementById('login-screen').style.display='none';document.getElementById('app').style.display='block';initApp();}else{document.getElementById('login-error').style.display='block';}}
+function checkLogin(){
+  const pw=document.getElementById('pw-input').value;
+  if(pw===ADMIN_PASSWORD){
+    sessionStorage.setItem('smn_admin_auth','1');
+    showApp();
+  } else {
+    document.getElementById('login-error').style.display='block';
+  }
+}
+
+function showApp(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  initApp();
+}
+
+// Auto-login if session exists
+if(sessionStorage.getItem('smn_admin_auth')==='1'){
+  document.addEventListener('DOMContentLoaded', showApp);
+}
 
 async function initApp(){
   try{firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();}catch(e){}
@@ -570,7 +589,18 @@ function onClientSelect(){
 function loadExistingPlan(plan){
   const count=plan.length;
   document.getElementById('meal-count').value=Math.min(6,Math.max(3,count));
-  meals=plan.map(m=>({name:m.name,time:m.time,foods:m.foods.map(f=>({...f}))}));
+  meals=plan.map(m=>({
+    name:m.name,
+    time:m.time,
+    foods:m.foods.map(f=>({
+      ...f,
+      // Restore base macros for calculation
+      _baseCals: f._baseCals || f.cals || 0,
+      _baseProtein: f._baseProtein || f.protein || 0,
+      _baseCarbs: f._baseCarbs || f.carbs || 0,
+      _baseFat: f._baseFat || f.fat || 0,
+    }))
+  }));
   renderMeals();updateTotals();
 }
 
@@ -676,10 +706,11 @@ function updateMealFoodCalc(mi, fi) {
   const food = meals[mi].foods[fi];
   food.amount = String(amt);
   food.unit = unit;
-  food.cals = Math.round((food._baseCals || 0) * mult);
+  // Use base values (per 100g from USDA)
   food.protein = Math.round((food._baseProtein || 0) * mult * 10) / 10;
   food.carbs = Math.round((food._baseCarbs || 0) * mult * 10) / 10;
   food.fat = Math.round((food._baseFat || 0) * mult * 10) / 10;
+  food.cals = Math.round((food._baseCals || 0) * mult);
   // Update display values in-place without re-rendering
   const row = document.getElementById(`food-row-${mi}-${fi}`);
   if (row) {
@@ -732,7 +763,10 @@ function updateBlueprintFoodCalc(mi,fi,val){
 }
 function getMealCals(mi){return meals[mi].foods.reduce((s,f)=>s+(f.cals||0),0);}
 function getMealMacro(mi,key){return Math.round(meals[mi].foods.reduce((s,f)=>s+(f[key]||0),0));}
-function recalcFoodCals(mi,fi){const f=meals[mi].foods[fi];f.cals=Math.round((f.protein||0)*4+(f.carbs||0)*4+(f.fat||0)*9);}
+function recalcFoodCals(mi,fi){
+  const f=meals[mi].foods[fi];
+  f.cals=Math.round((f.protein||0)*4+(f.carbs||0)*4+(f.fat||0)*9);
+}
 function removeFood(mi,fi){meals[mi].foods.splice(fi,1);openMeals.add(mi);renderMeals();updateTotals();}
 
 // ── USDA SEARCH ──
@@ -1527,9 +1561,12 @@ const DEFAULT_BLUEPRINT_FOODS = [
   { name:'Egg White (large)', serving:'1 egg white', servingG:33, cals:17, protein:3.6, carbs:0.2, fat:0, category:'protein' },
   { name:'Whole Egg (large)', serving:'1 egg', servingG:50, cals:72, protein:6, carbs:0.4, fat:5, category:'protein' },
   { name:'NutraBio Whey Protein Isolate', serving:'1 scoop (30g)', servingG:30, cals:110, protein:25, carbs:2, fat:0, category:'protein' },
+  { name:'Whey Protein Isolate (generic)', serving:'1 scoop (30g)', servingG:30, cals:120, protein:25, carbs:2, fat:1, category:'protein' },
   // Carbs — per gram
   { name:'White Jasmine Rice (cooked)', serving:'1g', servingG:1, cals:1.1, protein:0.02, carbs:0.25, fat:0, category:'carb' },
   { name:'Oats (dry)', serving:'1g', servingG:1, cals:3.9, protein:0.17, carbs:0.66, fat:0.07, category:'carb' },
+  { name:'Steel Cut Oats (cooked)', serving:'1g', servingG:1, cals:0.71, protein:0.025, carbs:0.125, fat:0.012, category:'carb' },
+  { name:'Cinnamon (ground)', serving:'1g', servingG:1, cals:2.5, protein:0.04, carbs:0.8, fat:0.06, category:'carb' },
   // Carbs — both versions
   { name:'Sweet Potato (cooked, medium)', serving:'1 medium', servingG:130, cals:103, protein:2, carbs:24, fat:0, category:'carb' },
   { name:'Sweet Potato (cooked, by weight)', serving:'1g', servingG:1, cals:0.86, protein:0.02, carbs:0.2, fat:0, category:'carb' },
