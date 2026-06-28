@@ -273,13 +273,22 @@ select option{background:var(--dark);}
 <div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px;">Macros shown are sample targets</div>
 <div style="font-size:12px;color:var(--muted);line-height:1.6;">Your coach will send you a personal link with your real macro targets after your intake call.</div>
 </div>
+
+<!-- GREETING CARD -->
+<div id="greeting-card" style="background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.03));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:16px;margin-bottom:12px;display:none;">
+  <div id="greeting-time" style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;"></div>
+  <div id="greeting-name" style="font-family:'Anton',sans-serif;font-size:22px;letter-spacing:0.06em;color:var(--white);margin-bottom:10px;"></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;" id="greeting-pills"></div>
+  <div id="greeting-quote" style="font-size:12px;color:var(--muted);margin-top:12px;font-style:italic;border-top:1px solid var(--border);padding-top:10px;"></div>
+</div>
+
 <div id="zigzag-toggle" style="display:none;margin-bottom:12px;">
 <div style="display:flex;gap:8px;">
 <button id="zz-high" onclick="setDayType('high')" style="flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;">🔥 HIGH DAY</button>
 <button id="zz-low" onclick="setDayType('low')" style="flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;">❄️ LOW DAY</button>
 </div>
 </div>
-<div class="balance-hero"><div class="balance-zone" id="balance-zone-label">Calculating…</div><div class="balance-number" id="balance-number">—</div><div class="balance-label">kcal net balance</div><div class="balance-sub" id="balance-sub"></div></div>
+<div class="balance-hero"><div class="balance-zone" id="balance-zone-label">Calculating…</div><div class="balance-number" id="balance-number">—</div><div class="balance-label">energy balance</div><div class="balance-sub" id="balance-sub"></div></div>
 <div class="card"><div class="card-title">Macros Today</div><div id="macro-bars"></div></div>
 <div class="stat-grid">
 <div class="stat-tile"><div class="lbl">Steps</div><div class="val" id="stat-steps">—</div><div class="unit">today</div></div>
@@ -320,7 +329,7 @@ select option{background:var(--dark);}
 <div class="quick-btn" onclick="openModal('modal-weight')"><div class="icon">⚖️</div><div class="lbl">Log Weight</div></div>
 <div class="quick-btn" onclick="openModal('modal-water')"><div class="icon">💧</div><div class="lbl">Log Water</div></div>
 </div>
-<div class="section-label">Search & Add Food</div>
+<div class="section-label">Log Nutrition</div>
 <div style="display:flex;gap:6px;margin-bottom:10px;">
 <button id="filter-all" onclick="setFoodFilter('all')" style="flex:1;padding:7px;border-radius:8px;background:var(--gold);color:var(--black);border:none;font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.04em;">All</button>
 <button id="filter-cooked" onclick="setFoodFilter('cooked')" style="flex:1;padding:7px;border-radius:8px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-size:11px;font-weight:800;cursor:pointer;letter-spacing:0.04em;">🍳 Cooked</button>
@@ -608,6 +617,7 @@ async function loadClientProfile(){
 if(!CLIENT_ID||CLIENT_ID==='demo'){clientProfile={name:'Demo',tier:'lifestyle',macros:{protein:180,carbs:200,fat:60,calories:2020},bmr_inputs:{weight_lbs:180,height_cm:178,age:28,gender:'male'}};}
 else{try{clientProfile=(await fsGet(`clients/${CLIENT_ID}`))||defProfile();}catch(e){clientProfile=defProfile();}}
 applyTierUI();
+renderGreetingCard();
 }
 function defProfile(){return{name:'Client',tier:'tracker',macros:{protein:150,carbs:175,fat:55,calories:1795},bmr_inputs:{weight_lbs:160,height_cm:170,age:30,gender:'male'}};}
 function applyTierUI(){
@@ -662,13 +672,77 @@ function setDayType(t){
 function getMacros(){if(!clientProfile)return{protein:150,carbs:175,fat:55,calories:1795};if(clientProfile.tracking_method==='zigzag')return currentDayType==='high'?(clientProfile.macros_high||clientProfile.macros):(clientProfile.macros_low||clientProfile.macros);return clientProfile.macros||{protein:150,carbs:175,fat:55,calories:1795};}
 function getZone(n){return n>100?'deficit':(n>-100?'maintenance':'surplus');}
 
+// GREETING CARD
+const MOTIVATIONAL_QUOTES = [
+  "Consistency creates confidence.",
+  "Every rep, every meal — it all counts.",
+  "Progress over perfection.",
+  "Show up today. Your future self will thank you.",
+  "The body achieves what the mind believes.",
+  "Small steps every day lead to big results.",
+  "Trust the process. Trust the Blueprint.",
+  "Champions are built in the habits, not the highlights.",
+  "One decision at a time. Make it count.",
+  "Your discipline today is your transformation tomorrow.",
+  "Earn it. Every. Single. Day.",
+  "The work you put in now is building the version of you that's coming.",
+];
+
+function renderGreetingCard() {
+  const card = document.getElementById('greeting-card');
+  if (!clientProfile || !CLIENT_ID || CLIENT_ID === 'demo') { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  // Time-based greeting
+  const hour = new Date().getHours();
+  const timeLabel = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+  const firstName = (clientProfile.name || 'Champion').split(' ')[0];
+  document.getElementById('greeting-time').textContent = timeLabel;
+  document.getElementById('greeting-name').textContent = firstName + ' 👊';
+
+  // Focus pills
+  const m = getMacros();
+  const pills = [];
+
+  // Workout focus for today
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  if (clientProfile.workout_plan?.days?.length) {
+    const todayDay = clientProfile.workout_plan.days.find(d => d.day === today);
+    if (todayDay && todayDay.exercises.length > 0) {
+      pills.push({ icon: '💪', text: todayDay.label, color: 'var(--gold)' });
+    } else if (todayDay) {
+      pills.push({ icon: '😴', text: 'Rest Day', color: 'var(--muted)' });
+    }
+  } else if (clientProfile.tracking_method === 'zigzag') {
+    const focusLabel = currentDayType === 'high'
+      ? (clientProfile.high_day_focus || 'High Day')
+      : (clientProfile.low_day_focus || 'Low Day');
+    pills.push({ icon: currentDayType === 'high' ? '🔥' : '❄️', text: focusLabel, color: currentDayType === 'high' ? 'var(--gold)' : 'var(--blue)' });
+  }
+
+  // Protein target
+  pills.push({ icon: '🥩', text: `${m.protein}g Protein`, color: 'var(--green)' });
+
+  // Calories
+  pills.push({ icon: '⚡', text: `${m.calories} kcal`, color: 'var(--muted)' });
+
+  document.getElementById('greeting-pills').innerHTML = pills.map(p =>
+    `<div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:99px;padding:5px 10px;font-size:11px;font-weight:700;color:${p.color};">${p.icon} ${p.text}</div>`
+  ).join('');
+
+  // Random motivational quote
+  const quote = MOTIVATIONAL_QUOTES[new Date().getDay() % MOTIVATIONAL_QUOTES.length];
+  document.getElementById('greeting-quote').textContent = `"${quote}"`;
+}
+
 // RENDER TODAY
 function renderToday(){
 updateDateLabel();
+renderGreetingCard();
 const e=calcBal(),noM=dayData.meals.length===0,zone=getZone(e.net);
 const zl={deficit:'FAT LOSS DEFICIT',maintenance:'MAINTENANCE',surplus:'SURPLUS'};
 const ze=document.getElementById('balance-zone-label'),ne=document.getElementById('balance-number');
-if(noM){ze.textContent='START LOGGING';ze.className='balance-zone maintenance';ne.textContent='—';ne.className='balance-number maintenance';document.getElementById('balance-sub').innerHTML='Log your first meal to see your energy balance';}
+if(noM){ze.textContent="TODAY'S PROGRESS";ze.className='balance-zone maintenance';ne.textContent='—';ne.className='balance-number maintenance';document.getElementById('balance-sub').innerHTML='Log your first meal to start tracking your blueprint';}
 else{ze.textContent=zl[zone];ze.className='balance-zone '+zone;ne.textContent=(e.net>=0?'+':'')+Math.round(e.net);ne.className='balance-number '+zone;document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
 const pb=document.getElementById('projection-banner');
 if(noM)pb.innerHTML=`<div class="proj-label">👇 How to get started</div><div class="proj-val" style="font-size:15px;font-weight:700;">Tap Log → search a food → add it</div><div class="proj-sub">Your macros, deficit, and projections appear once you start logging.</div>`;
@@ -700,7 +774,7 @@ document.getElementById('macro-bars').innerHTML=items.map(i=>{const pct=Math.min
 function renderMealsTodayDetail(){const el=document.getElementById('meals-list-today');el.innerHTML=dayData.meals.length?dayData.meals.map(m=>`<div class="detail-line"><span>${m.name}</span><span class="val">${m.calories} kcal</span></div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0;">No meals logged today.</div>';}
 
 // LOG TAB
-function renderMealLog(){const el=document.getElementById('meal-log-list');if(!dayData.meals.length){el.innerHTML=`<div class="empty-state"><div class="icon">🍽</div><h4>Nothing logged yet</h4><p>Search above or tap a quick add to start tracking.</p></div>`;return;}el.innerHTML=dayData.meals.map((m,i)=>`<div class="meal-log-item"><div class="row-between"><div class="name">${m.name}${m.servingLabel?` <span style="font-size:11px;color:var(--muted);font-weight:400;">(${m.servingLabel})</span>`:''}</div><button class="delete-btn" onclick="deleteMeal(${i})">✕</button></div><div class="macros">${m.calories} kcal &nbsp;·&nbsp; ${m.protein}g P &nbsp;·&nbsp; ${m.carbs}g C &nbsp;·&nbsp; ${m.fat}g F</div></div>`).join('');}
+function renderMealLog(){const el=document.getElementById('meal-log-list');if(!dayData.meals.length){el.innerHTML=`<div class="empty-state"><div class="icon">🍽</div><h4>Your blueprint starts here</h4><p>Search above or tap a quick add to log your first meal.</p></div>`;return;}el.innerHTML=dayData.meals.map((m,i)=>`<div class="meal-log-item"><div class="row-between"><div class="name">${m.name}${m.servingLabel?` <span style="font-size:11px;color:var(--muted);font-weight:400;">(${m.servingLabel})</span>`:''}</div><button class="delete-btn" onclick="deleteMeal(${i})">✕</button></div><div class="macros">${m.calories} kcal &nbsp;·&nbsp; ${m.protein}g P &nbsp;·&nbsp; ${m.carbs}g C &nbsp;·&nbsp; ${m.fat}g F</div></div>`).join('');}
 function deleteMeal(i){dayData.meals.splice(i,1);saveDay();renderMealLog();renderToday();showToast('Meal removed');}
 
 // FOOD SEARCH
@@ -1181,28 +1255,26 @@ try{
 
 function renderFallbackRecipes(rem){
   const all=[
-    {title:'Grilled Chicken & Rice Bowl',emoji:'🍗',calories:520,protein:'48g',carbs:'52g',fat:'8g',desc:'Grilled chicken breast over white rice with steamed broccoli and a drizzle of olive oil.',img:'https://images.unsplash.com/photo-1512058564366-18510be2db19?w=400&q=80'},
-    {title:'Salmon with Sweet Potato',emoji:'🐟',calories:480,protein:'42g',carbs:'38g',fat:'14g',desc:'Baked salmon fillet with roasted sweet potato and asparagus.',img:'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&q=80'},
-    {title:'Turkey & Veggie Stir Fry',emoji:'🥘',calories:410,protein:'44g',carbs:'28g',fat:'10g',desc:'Lean ground turkey stir fried with bell peppers, broccoli, and low-sodium soy sauce over rice.',img:'https://images.unsplash.com/photo-1543339494-b4cd4f7ba686?w=400&q=80'},
-    {title:'Egg White Omelette',emoji:'🍳',calories:280,protein:'32g',carbs:'10g',fat:'8g',desc:'Egg white omelette stuffed with spinach, mushrooms, and a small amount of feta cheese.',img:'https://images.unsplash.com/photo-1510693206972-df098062cb71?w=400&q=80'},
-    {title:'Protein Oats Bowl',emoji:'🥣',calories:450,protein:'36g',carbs:'56g',fat:'8g',desc:'Oats cooked with protein powder, topped with blueberries and almond butter.',img:'https://images.unsplash.com/photo-1495214783159-3503fd1b572d?w=400&q=80'},
-    {title:'Tuna Salad Wrap',emoji:'🌯',calories:390,protein:'40g',carbs:'32g',fat:'9g',desc:'Canned tuna mixed with Greek yogurt, celery, and mustard wrapped in a whole wheat tortilla.',img:'https://images.unsplash.com/photo-1626700051175-6818013e1d4f?w=400&q=80'},
-    {title:'Chicken & Veggie Soup',emoji:'🍲',calories:320,protein:'38g',carbs:'24g',fat:'6g',desc:'Lean chicken breast simmered with carrots, celery, onion, and low-sodium chicken broth.',img:'https://images.unsplash.com/photo-1547592180-85f173990554?w=400&q=80'},
-    {title:'Greek Yogurt Parfait',emoji:'🫙',calories:340,protein:'28g',carbs:'38g',fat:'6g',desc:'Nonfat Greek yogurt layered with mixed berries, granola, and a drizzle of honey.',img:'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80'},
+    {title:'Grilled Chicken & Rice Bowl',emoji:'🍗',calories:520,protein:'48g',carbs:'52g',fat:'8g',desc:'Grilled chicken breast over white jasmine rice with steamed broccoli and a drizzle of olive oil. High protein, clean carbs — a Blueprint staple.',img:'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&q=80'},
+    {title:'Baked Salmon & Sweet Potato',emoji:'🐟',calories:480,protein:'42g',carbs:'38g',fat:'14g',desc:'Baked Atlantic salmon with roasted sweet potato and asparagus. Rich in omega-3s and quality carbs for recovery.',img:'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&q=80'},
+    {title:'Ground Turkey Stir Fry',emoji:'🥘',calories:410,protein:'44g',carbs:'28g',fat:'10g',desc:'Lean ground turkey stir fried with bell peppers, broccoli, and low-sodium soy sauce over cauliflower rice.',img:'https://images.unsplash.com/photo-1585032226651-759b368d7246?w=400&q=80'},
+    {title:'Egg White Omelette',emoji:'🍳',calories:280,protein:'32g',carbs:'10g',fat:'8g',desc:'Egg white omelette stuffed with baby spinach, mushrooms, and a small amount of feta. Low calorie, high protein breakfast.',img:'https://images.unsplash.com/photo-1525351484163-7529414344d8?w=400&q=80'},
+    {title:'Protein Oats Bowl',emoji:'🥣',calories:450,protein:'36g',carbs:'56g',fat:'8g',desc:'Steel cut oats cooked with whey protein isolate, topped with blueberries and a drizzle of natural peanut butter.',img:'https://images.unsplash.com/photo-1517673400267-0251440c45dc?w=400&q=80'},
+    {title:'Tuna & Avocado Wrap',emoji:'🌯',calories:390,protein:'40g',carbs:'32g',fat:'9g',desc:'Canned albacore tuna mixed with avocado, celery, and Greek yogurt wrapped in a whole wheat tortilla.',img:'https://images.unsplash.com/photo-1600335895229-6e75511892c8?w=400&q=80'},
+    {title:'Chicken Veggie Soup',emoji:'🍲',calories:320,protein:'38g',carbs:'24g',fat:'6g',desc:'Lean chicken breast simmered with carrots, celery, onion, and low-sodium broth. Perfect for rest days.',img:'https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400&q=80'},
+    {title:'Greek Yogurt Parfait',emoji:'🫙',calories:340,protein:'28g',carbs:'38g',fat:'6g',desc:'Nonfat Greek yogurt layered with mixed berries, granola, and a drizzle of honey. Great post-workout snack.',img:'https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400&q=80'},
   ];
-  // Pick 4 that roughly match remaining calories
   const sorted=all.sort((a,b)=>Math.abs(a.calories-(rem.calories/2))-Math.abs(b.calories-(rem.calories/2)));
   const picks=sorted.slice(0,4);
   return`
     <div style="font-size:11px;color:var(--muted);margin-bottom:12px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">
-      📋 <strong style="color:var(--gold);">Blueprint Suggestions</strong> — Daily recipe limit reached. These curated meals match your macro targets.
+      📋 <strong style="color:var(--gold);">Blueprint Suggestions</strong> — Curated meals that match your remaining macros.
     </div>
     ${picks.map(r=>`
       <div class="recipe-card">
-        <img class="recipe-card-img" src="${r.img}" onerror="this.style.display='none'" alt="${r.title}">
+        <img class="recipe-card-img" src="${r.img}" onerror="this.style.display='none'" alt="${r.title}" style="width:100%;height:160px;object-fit:cover;border-radius:12px 12px 0 0;">
         <div class="recipe-card-body">
           <div class="recipe-card-name">${r.emoji} ${r.title}</div>
-          <div class="recipe-desc" style="display:none;font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.6;">${r.desc}</div>
           <div class="recipe-card-macros">
             <div class="recipe-macro"><span>${r.calories}</span>kcal</div>
             <div class="recipe-macro"><span>${r.protein}</span>protein</div>
@@ -1210,7 +1282,7 @@ function renderFallbackRecipes(rem){
             <div class="recipe-macro"><span>${r.fat}</span>fat</div>
           </div>
           <div class="recipe-card-actions" style="margin-top:10px;">
-            <button class="btn btn-outline btn-sm" onclick="this.closest('.recipe-card').querySelector('.recipe-desc').style.display=this.closest('.recipe-card').querySelector('.recipe-desc').style.display==='none'?'block':'none';this.textContent=this.textContent==='View Details'?'Hide Details':'View Details';">View Details</button>
+            <button class="btn btn-outline btn-sm" onclick="viewFallbackRecipe('${r.title.replace(/'/g,"\\'")}','${r.desc.replace(/'/g,"\\'")}','${r.img}',${r.calories},'${r.protein}','${r.carbs}','${r.fat}')">View Recipe</button>
             <button class="btn btn-gold btn-sm" onclick="addRecipeToLog('${r.title}',${r.calories},${parseInt(r.protein)},${parseInt(r.carbs)},${parseInt(r.fat)})">Add to Log</button>
           </div>
         </div>
@@ -1222,6 +1294,35 @@ function renderFallbackRecipes(rem){
 function renderSpoonacularCards(recipes){if(!recipes?.length)return'<div class="loading">No matching recipes found.</div>';return recipes.map(r=>`<div class="recipe-card"><img class="recipe-card-img" src="${r.image||''}" onerror="this.style.display='none'" alt="${r.title}"><div class="recipe-card-body"><div class="recipe-card-name">${r.title}</div><div class="recipe-card-macros"><div class="recipe-macro"><span>${r.calories||'—'}</span>kcal</div><div class="recipe-macro"><span>${r.protein||'—'}</span>protein</div><div class="recipe-macro"><span>${r.carbs||'—'}</span>carbs</div><div class="recipe-macro"><span>${r.fat||'—'}</span>fat</div></div><div class="recipe-card-actions"><button class="btn btn-outline btn-sm" onclick="viewRecipeDetail(${r.id},'${r.title.replace(/'/g,"\\'")}')">View Recipe</button><button class="btn btn-gold btn-sm" onclick="addRecipeToLog('${r.title.replace(/'/g,"\\'")}',${r.calories||0},${parseInt(r.protein)||0},${parseInt(r.carbs)||0},${parseInt(r.fat)||0})">Add to Log</button></div></div></div>`).join('');}
 
 async function viewRecipeDetail(id,title){const el=document.getElementById('recipe-detail-body');el.innerHTML='<div class="loading">Loading recipe…</div>';openModal('modal-recipe-detail');try{const r=await fetch(`https://api.spoonacular.com/recipes/${id}/information?apiKey=${SPOONACULAR_API_KEY}`);const d=await r.json();const steps=(d.analyzedInstructions?.[0]?.steps||[]);el.innerHTML=`<h3>${d.title}</h3>${d.image?`<img src="${d.image}" style="width:100%;border-radius:12px;margin:12px 0;" alt="${d.title}">`:''}<div style="margin-bottom:16px;"><div class="card-title" style="margin-bottom:8px;">Ingredients</div>${(d.extendedIngredients||[]).map(i=>`<span class="ingredient-pill">${i.original}</span>`).join('')}</div>${steps.length?`<div class="card-title" style="margin-bottom:12px;">Instructions</div>${steps.map((s,i)=>`<div class="recipe-step"><div class="recipe-step-num">${i+1}</div><div class="recipe-step-text">${s.step}</div></div>`).join('')}`:''}`;} catch(e){el.innerHTML='<div class="loading">Could not load recipe details.</div>';}}
+
+function viewFallbackRecipe(title, desc, img, calories, protein, carbs, fat) {
+  const el = document.getElementById('recipe-detail-body');
+  el.innerHTML = `
+    ${img ? `<img src="${img}" style="width:100%;border-radius:12px;margin-bottom:16px;object-fit:cover;max-height:200px;" alt="${title}" onerror="this.style.display='none'">` : ''}
+    <h3 style="margin-bottom:12px;">${title}</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;flex:1;">
+        <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;">Calories</div>
+        <div style="font-size:18px;font-weight:900;color:var(--white);">${calories}</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;flex:1;">
+        <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;">Protein</div>
+        <div style="font-size:18px;font-weight:900;color:var(--white);">${protein}</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;flex:1;">
+        <div style="font-size:10px;color:var(--blue);font-weight:700;text-transform:uppercase;">Carbs</div>
+        <div style="font-size:18px;font-weight:900;color:var(--white);">${carbs}</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;flex:1;">
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;">Fat</div>
+        <div style="font-size:18px;font-weight:900;color:var(--white);">${fat}</div>
+      </div>
+    </div>
+    <div style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:20px;">${desc}</div>
+    <button class="btn btn-gold" style="width:100%;" onclick="addRecipeToLog('${title.replace(/'/g,"\\'")}',${calories},${parseInt(protein)},${parseInt(carbs)},${parseInt(fat)})">Add to Log</button>
+  `;
+  openModal('modal-recipe-detail');
+}
 
 function addBlueprintMealToLog(name,cal,p,c,f){dayData.meals.push({name,grams:0,servingLabel:'1 serving',calories:cal,protein:p,carbs:c,fat:f,time:new Date().toISOString()});saveDay();renderMealLog();renderToday();showToast(name+' added ✓');}
 function addRecipeToLog(name,cal,p,c,f){dayData.meals.push({name,grams:0,servingLabel:'1 serving',calories:cal,protein:p,carbs:c,fat:f,time:new Date().toISOString()});saveDay();renderMealLog();renderToday();closeModal('modal-recipe-detail');showToast(name+' added ✓');}
@@ -1597,7 +1698,7 @@ function renderCheckinBlock() {
     el.innerHTML = `
       <a href="https://www.seemenowfitness.com/blank-4" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(76,175,118,0.1),rgba(76,175,118,0.04));border:1px solid rgba(76,175,118,0.3);border-radius:var(--radius);padding:14px 16px;text-decoration:none;">
         <div>
-          <div style="font-size:13px;font-weight:800;color:var(--green);margin-bottom:3px;">📋 ${checkinDay} Check-In</div>
+          <div style="font-size:13px;font-weight:800;color:var(--green);margin-bottom:3px;">📋 Coach Check-In</div>
           <div style="font-size:12px;color:var(--muted);">Submit your progress update to Coach Charles</div>
         </div>
         <div style="background:var(--green);color:var(--black);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;white-space:nowrap;">Check In →</div>
