@@ -445,17 +445,6 @@ select option{background:var(--dark);}
 </div>
 
 <!-- WORKOUT PLAN -->
-<!-- MEAL PLAN SECTION -->
-<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
-<div onclick="togglePlanSection('meals')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
-<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Meal Plan</div>
-<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-meals">▼</span>
-</div>
-<div id="plan-section-body-meals" style="display:none;padding:0 8px 12px;">
-<div id="plan-meal-content"><div class="loading">Loading your meal plan…</div></div>
-</div>
-</div>
-
 <!-- WORKOUT SECTION -->
 <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
 <div onclick="togglePlanSection('workout')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
@@ -467,14 +456,14 @@ select option{background:var(--dark);}
 </div>
 </div>
 
-<!-- SUPPLEMENTS SECTION -->
+<!-- MEAL PLAN SECTION -->
 <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
-<div onclick="togglePlanSection('supplements')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
-<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Supplements</div>
-<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-supplements">▼</span>
+<div onclick="togglePlanSection('meals')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Meal Plan</div>
+<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-meals">▼</span>
 </div>
-<div id="plan-section-body-supplements" style="display:none;padding:0 16px 16px;">
-<div id="plan-supplements-content"><div class="loading">Loading supplements…</div></div>
+<div id="plan-section-body-meals" style="display:none;padding:0 8px 12px;">
+<div id="plan-meal-content"><div class="loading">Loading your meal plan…</div></div>
 </div>
 </div>
 
@@ -486,6 +475,17 @@ select option{background:var(--dark);}
 </div>
 <div id="plan-section-body-approvedfoods" style="display:none;padding:0 16px 16px;">
 <div id="plan-approved-foods-content"><div class="loading">Loading approved foods…</div></div>
+</div>
+</div>
+
+<!-- SUPPLEMENTS SECTION -->
+<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
+<div onclick="togglePlanSection('supplements')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Supplements</div>
+<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-supplements">▼</span>
+</div>
+<div id="plan-section-body-supplements" style="display:none;padding:0 16px 16px;">
+<div id="plan-supplements-content"><div class="loading">Loading supplements…</div></div>
 </div>
 </div>
 
@@ -2004,8 +2004,9 @@ function togglePlanCard(id) {
   const body = document.getElementById(id);
   const chev = document.getElementById('chev-' + id);
   if (!body) return;
-  body.classList.toggle('open');
-  if (chev) chev.classList.toggle('open');
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  if (chev) chev.textContent = open ? '▼' : '▲';
 }
 
 // AUTH / LOGIN
