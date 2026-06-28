@@ -2316,7 +2316,7 @@ async function savePlan() {
       const planField = planType === 'high_day' ? 'meal_plan_high'
                       : planType === 'low_day' ? 'meal_plan_low'
                       : 'meal_plan';
-      await db.collection('clients').doc(selectedClient.id).update({
+      await db.collection('clients').doc(selectedClient.id).set({
         [planField]: planData,
         meal_plan_updated: new Date().toISOString(),
         meal_plan_notes: document.getElementById('plan-notes').value,
@@ -2333,15 +2333,23 @@ async function savePlan() {
           template: document.getElementById('workout-template-select').value,
           days: workoutPlan.days
         } : null,
-      });
+      }, { merge: true });
     }
-    const typeLabel = planType === 'high_day' ? '🔥 High Day' : planType === 'low_day' ? '❄️ Low Day' : '';
     status.className = 'save-status success';
+    const typeLabel = planType === 'high_day' ? '🔥 High Day' : planType === 'low_day' ? '❄️ Low Day' : '';
     status.textContent = `✓ ${typeLabel} plan saved to ${selectedClient.name} — live in tracker!`;
+    // Refresh selectedClient in memory so load buttons work immediately
+    if (db) {
+      const snap = await db.collection('clients').doc(selectedClient.id).get();
+      if (snap.exists) {
+        selectedClient = { id: snap.id, ...snap.data() };
+        toggleZigzagFocusFields();
+      }
+    }
     setTimeout(() => { status.style.display = 'none'; }, 4000);
   } catch (e) {
     status.className = 'save-status error';
-    status.textContent = '✕ Save failed. Check connection.';
+    status.textContent = '✕ Save failed: ' + (e.message || e.code || 'Check connection.');
   }
 }
 </script>
