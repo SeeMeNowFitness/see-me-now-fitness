@@ -633,7 +633,20 @@ function calcSCals(s,lbs){return Math.round(s*lbs*0.0005);}
 function calcBal(){const bmr=calcBMR(),wl=dayData.weight||(clientProfile?.bmr_inputs?.weight_lbs||160),sc=calcSCals(dayData.steps||0,wl),wc=dayData.workout.calories||0,tb=bmr+sc+wc,tc=dayData.meals.reduce((s,m)=>s+(m.calories||0),0);return{bmr,stepCals:sc,workoutCals:wc,totalBurned:tb,totalConsumed:tc,net:tb-tc};}
 
 let currentDayType='high';
-function setDayType(t){currentDayType=t;const h=document.getElementById('zz-high'),l=document.getElementById('zz-low');if(t==='high'){h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';l.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';}else{l.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--blue);color:var(--white);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';}renderToday();}
+function setDayType(t){
+  currentDayType=t;
+  const h=document.getElementById('zz-high'),l=document.getElementById('zz-low');
+  if(t==='high'){
+    h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
+    l.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
+  } else {
+    l.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--blue);color:var(--white);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
+    h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
+  }
+  renderToday();
+  // Also update plan summary if on My Plan tab
+  if(document.getElementById('plan-summary-pills')) renderPlanSummary();
+}
 function getMacros(){if(!clientProfile)return{protein:150,carbs:175,fat:55,calories:1795};if(clientProfile.tracking_method==='zigzag')return currentDayType==='high'?(clientProfile.macros_high||clientProfile.macros):(clientProfile.macros_low||clientProfile.macros);return clientProfile.macros||{protein:150,carbs:175,fat:55,calories:1795};}
 function getZone(n){return n>100?'deficit':(n>-100?'maintenance':'surplus');}
 
