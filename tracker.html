@@ -706,9 +706,9 @@ async function searchUSDA(q) {
     const servingG = parseFloat(f.servingG) || 28.35;
     return `
     <div class="food-result" style="border-color:var(--gold-dim);background:rgba(201,168,76,0.04);">
-      <div class="food-result-img" style="font-size:18px;">👑</div>
+      <div class="food-result-img" style="font-size:18px;">⭐</div>
       <div class="food-result-info">
-        <div class="food-result-name" style="color:var(--gold);">${f.name} <span style="font-size:9px;background:rgba(201,168,76,0.15);color:var(--gold);padding:2px 5px;border-radius:4px;font-weight:800;letter-spacing:0.04em;">SEE ME NOW</span></div>
+        <div class="food-result-name" style="color:var(--gold);">${f.name} <span style="font-size:9px;background:rgba(201,168,76,0.15);color:var(--gold);padding:2px 5px;border-radius:4px;font-weight:800;letter-spacing:0.04em;">⭐ SEE ME NOW</span></div>
         <div class="food-result-macros">${cals} kcal / ${serving} &nbsp;·&nbsp; P:<span>${protein}g</span> C:<span>${carbs}g</span> F:<span>${fat}g</span></div>
       </div>
       <button class="food-result-add" onclick="prepareBlueprintFood('${f.name.replace(/'/g,"\\'")}',${cals},${protein},${carbs},${fat},'${serving}',${servingG})">Add</button>
@@ -853,7 +853,7 @@ function updateAddPreview(){
   };
   const label=unitLabels[unit]||`${Math.round(grams)}g`;
   const bpBadge = pendingFood._isBlueprint
-    ? `<div style="font-size:11px;color:var(--gold);margin-bottom:6px;font-weight:700;">👑 See Me Now Verified</div>`
+    ? `<div style="font-size:11px;color:var(--gold);margin-bottom:6px;font-weight:700;">⭐ See Me Now Verified</div>`
     : '';
   document.getElementById('add-food-macro-preview').innerHTML=
     bpBadge+
