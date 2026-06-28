@@ -887,17 +887,21 @@ function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving, se
   fat = parseFloat(fat) || 0;
   servingG = parseFloat(servingG) || 1;
 
-  // Determine default unit from serving string
   let defaultUnit = 'g';
-  let defaultAmt = servingG; // default to exact serving size in grams
+  let defaultAmt = 1; // default to 1 unit for everything
   if (serving.includes('oz')) { defaultUnit = 'oz'; defaultAmt = 1; }
   else if (serving.includes('tsp')) { defaultUnit = 'tsp'; defaultAmt = 1; }
   else if (serving.includes('tbsp')) { defaultUnit = 'tbsp'; defaultAmt = 1; }
   else if (serving.includes('cup')) { defaultUnit = 'cup'; defaultAmt = 1; }
-  else if (serving.includes('ml')) { defaultUnit = 'ml'; defaultAmt = servingG; }
+  else if (serving.includes('ml')) { defaultUnit = 'ml'; defaultAmt = 1; }
   else if (serving.includes('egg') || serving.includes('banana') || serving.includes('medium') || serving.includes('scoop') || serving.includes('piece')) {
     defaultUnit = 'piece'; defaultAmt = 1;
   }
+
+  // Calculate initial macros based on default amount
+  const unitMultiplier = defaultUnit === 'piece' ? servingG : (BUILDER_UNITS[defaultUnit] || 1);
+  const initialGrams = defaultAmt * unitMultiplier;
+  const scale = servingG === 1 ? initialGrams : (initialGrams / servingG);
 
   meals[mi].foods.push({ 
     name: `⭐ ${name}`, 
@@ -905,10 +909,10 @@ function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving, se
     unit: defaultUnit,
     serving: serving,
     servingG: servingG,
-    cals: Math.round(cals * (defaultAmt * (defaultUnit === 'g' ? 1 : (BUILDER_UNITS[defaultUnit] || servingG)) / servingG) * 10) / 10 || cals,
-    protein: Math.round(protein * 10) / 10,
-    carbs: Math.round(carbs * 10) / 10,
-    fat: Math.round(fat * 10) / 10,
+    cals: Math.round(cals * scale * 10) / 10,
+    protein: Math.round(protein * scale * 10) / 10,
+    carbs: Math.round(carbs * scale * 10) / 10,
+    fat: Math.round(fat * scale * 10) / 10,
     baseCals: cals,
     baseProtein: protein,
     baseCarbs: carbs,
