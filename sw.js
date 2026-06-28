@@ -1,7 +1,7 @@
 // ── See Me Now Fitness — Service Worker ──
 // Update this version number every time you upload a new tracker.html
 // Clients will automatically get the fresh version within seconds
-const CACHE_VERSION = 'smn-v34';
+const CACHE_VERSION = 'smn-v35';
 const CACHE_NAME = CACHE_VERSION;
 
 const PRECACHE_URLS = [
