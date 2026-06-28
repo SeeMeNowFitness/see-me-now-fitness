@@ -144,6 +144,7 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
   <button class="btn btn-outline btn-sm" onclick="loadPlanByType('standard')">Load Standard Plan</button>
   <button class="btn btn-sm" style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid var(--gold-d);" onclick="copyCurrentToOtherDay()">📋 Copy Current to Other Day</button>
 </div>
+<div id="zigzag-focus-fields" style="display:none;">
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">Zig Zag Day Focus Labels <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(optional — shows on client's Today tab)</span></div>
 <div class="grid-2">
 <div class="field" style="margin-bottom:0;">
@@ -834,12 +835,14 @@ function updateMealFoodCalc(mi, fi) {
 function toggleZigzagFocusFields() {
   const planType = document.getElementById('plan-type').value;
   const isZigzag = selectedClient?.tracking_method === 'zigzag' || planType === 'high_day' || planType === 'low_day';
-  document.getElementById('zigzag-focus-fields').style.display = isZigzag ? 'block' : 'none';
-  // Show load buttons if client has multiple plan types
+  const focusFields = document.getElementById('zigzag-focus-fields');
   const loadBtns = document.getElementById('zigzag-load-btns');
-  if(loadBtns && selectedClient) {
-    const hasMultiple = (selectedClient.meal_plan ? 1 : 0) + (selectedClient.meal_plan_high ? 1 : 0) + (selectedClient.meal_plan_low ? 1 : 0) > 1 || isZigzag;
-    loadBtns.style.display = hasMultiple ? 'flex' : 'none';
+  if (focusFields) focusFields.style.display = isZigzag ? 'block' : 'none';
+  if (loadBtns && selectedClient) {
+    const hasAny = !!(selectedClient.meal_plan || selectedClient.meal_plan_high || selectedClient.meal_plan_low);
+    loadBtns.style.display = (isZigzag && hasAny) ? 'flex' : 'none';
+  } else if (loadBtns) {
+    loadBtns.style.display = 'none';
   }
 }
 
