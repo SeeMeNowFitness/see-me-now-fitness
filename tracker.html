@@ -755,23 +755,53 @@ async function searchUSDA(q) {
 }
 
 function prepareBlueprintFood(name, cals, protein, carbs, fat, serving, servingG) {
-  // Ensure all values are numbers
   cals = parseFloat(cals) || 0;
   protein = parseFloat(protein) || 0;
   carbs = parseFloat(carbs) || 0;
   fat = parseFloat(fat) || 0;
   servingG = parseFloat(servingG) || 28.35;
-  pendingFood = { name, cals, protein, carbs, fat, servingG, _blueprintServing: serving };
+  // Store per-gram macros so unit dropdown scales correctly
+  const perGram = {
+    cals: cals / servingG,
+    protein: protein / servingG,
+    carbs: carbs / servingG,
+    fat: fat / servingG,
+  };
+  pendingFood = {
+    name,
+    // Store per-100g values so the standard updateAddPreview works
+    cals: perGram.cals * 100,
+    protein: perGram.protein * 100,
+    carbs: perGram.carbs * 100,
+    fat: perGram.fat * 100,
+    servingG,
+    _blueprintServing: serving,
+    _isBlueprint: true,
+  };
   document.getElementById('add-food-title').textContent = '⭐ ' + name;
-  document.getElementById('add-food-amount').value = 1;
-  document.getElementById('add-food-unit').value = 'g';
-  document.getElementById('add-food-macro-preview').innerHTML = `
-    <div style="font-size:11px;color:var(--gold);margin-bottom:8px;font-weight:700;">⭐ Blueprint Verified · Per ${serving}</div>
-    <strong style="color:var(--white);font-size:15px;">${cals} kcal</strong>
-    &nbsp;&nbsp; P: <strong style="color:var(--white)">${protein}g</strong>
-    &nbsp; C: <strong style="color:var(--white)">${carbs}g</strong>
-    &nbsp; F: <strong style="color:var(--white)">${fat}g</strong>
-    <div style="font-size:11px;color:var(--muted);margin-top:6px;">Change amount above to scale macros (e.g. type 3 for 3 ${serving}s)</div>`;
+  // Default to the natural serving unit
+  if (serving.includes('oz')) {
+    document.getElementById('add-food-amount').value = 1;
+    document.getElementById('add-food-unit').value = 'oz';
+  } else if (serving.includes('tsp')) {
+    document.getElementById('add-food-amount').value = 1;
+    document.getElementById('add-food-unit').value = 'tsp';
+  } else if (serving.includes('tbsp')) {
+    document.getElementById('add-food-amount').value = 1;
+    document.getElementById('add-food-unit').value = 'tbsp';
+  } else if (serving.includes('cup')) {
+    document.getElementById('add-food-amount').value = 1;
+    document.getElementById('add-food-unit').value = 'cup';
+  } else if (serving.includes('scoop') || serving.includes('egg') || serving.includes('banana') || serving.includes('medium')) {
+    document.getElementById('add-food-amount').value = 1;
+    document.getElementById('add-food-unit').value = 'piece';
+    // Override piece gram weight to match this food's servingG
+    pendingFood._pieceOverride = servingG;
+  } else {
+    document.getElementById('add-food-amount').value = servingG;
+    document.getElementById('add-food-unit').value = 'g';
+  }
+  updateAddPreview();
   openModal('modal-add-food');
 }
 
@@ -799,76 +829,72 @@ function prepareAddFood(id,name,cals,protein,carbs,fat){
 
 function updateAddPreview(){
   if(!pendingFood)return;
-  // Blueprint food — scale by amount
-  if(pendingFood._blueprintServing){
-    const amount=parseFloat(document.getElementById('add-food-amount').value)||1;
-    document.getElementById('add-food-macro-preview').innerHTML=
-      `<div style="font-size:11px;color:var(--gold);margin-bottom:8px;font-weight:700;">⭐ Blueprint Verified · ${amount} × ${pendingFood._blueprintServing}</div>`+
-      `<strong style="color:var(--white);font-size:15px;">${Math.round((pendingFood.cals||0)*amount)} kcal</strong>`+
-      `&nbsp;&nbsp; P: <strong style="color:var(--white)">${Math.round((pendingFood.protein||0)*amount*10)/10}g</strong>`+
-      `&nbsp; C: <strong style="color:var(--white)">${Math.round((pendingFood.carbs||0)*amount*10)/10}g</strong>`+
-      `&nbsp; F: <strong style="color:var(--white)">${Math.round((pendingFood.fat||0)*amount*10)/10}g</strong>`;
-    return;
-  }
-  // Regular USDA food
   const amount=parseFloat(document.getElementById('add-food-amount').value)||1;
   const unit=document.getElementById('add-food-unit').value;
-  const grams=amount*(UNIT_TO_GRAMS[unit]||1);
+  // Use piece override if set (for egg whites, scoops etc)
+  const unitGrams = unit === 'piece' && pendingFood._pieceOverride
+    ? pendingFood._pieceOverride
+    : (UNIT_TO_GRAMS[unit]||1);
+  const grams=amount*unitGrams;
   const mult=grams/100;
-  const unitLabels={g:`${Math.round(grams)}g`,oz:`${amount} oz (${Math.round(grams)}g)`,cup:`${amount} cup${amount!==1?'s':''} (${Math.round(grams)}g)`,tbsp:`${amount} tbsp (${Math.round(grams)}g)`,tsp:`${amount} tsp (${Math.round(grams)}g)`,piece:`${amount} piece${amount!==1?'s':''} (~${Math.round(grams)}g)`,scoop:`${amount} scoop${amount!==1?'s':''} (~${Math.round(grams)}g)`,ml:`${Math.round(amount)}ml`,fl_oz:`${amount} fl oz (${Math.round(grams)}ml)`,l:`${amount}L (${Math.round(grams)}ml)`};
+  const unitLabels={
+    g:`${Math.round(grams)}g`,
+    oz:`${amount} oz (${Math.round(grams)}g)`,
+    cup:`${amount} cup${amount!==1?'s':''} (${Math.round(grams)}g)`,
+    tbsp:`${amount} tbsp (${Math.round(grams)}g)`,
+    tsp:`${amount} tsp (${Math.round(grams)}g)`,
+    piece:pendingFood._pieceOverride
+      ?`${amount} × ${pendingFood._blueprintServing||'piece'} (~${Math.round(grams)}g)`
+      :`${amount} piece${amount!==1?'s':''} (~${Math.round(grams)}g)`,
+    scoop:`${amount} scoop${amount!==1?'s':''} (~${Math.round(grams)}g)`,
+    ml:`${Math.round(amount)}ml`,
+    fl_oz:`${amount} fl oz (${Math.round(grams)}ml)`,
+    l:`${amount}L (${Math.round(grams)}ml)`
+  };
   const label=unitLabels[unit]||`${Math.round(grams)}g`;
+  const bpBadge = pendingFood._isBlueprint
+    ? `<div style="font-size:11px;color:var(--gold);margin-bottom:6px;font-weight:700;">⭐ Blueprint Verified</div>`
+    : '';
   document.getElementById('add-food-macro-preview').innerHTML=
+    bpBadge+
     `<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Serving: ${label}</div>`+
     `<strong style="color:var(--white);font-size:15px;">${Math.round((pendingFood.cals||0)*mult)} kcal</strong>`+
-    `&nbsp;&nbsp; P: <strong style="color:var(--white)">${Math.round((pendingFood.protein||0)*mult)}g</strong>`+
-    `&nbsp; C: <strong style="color:var(--white)">${Math.round((pendingFood.carbs||0)*mult)}g</strong>`+
-    `&nbsp; F: <strong style="color:var(--white)">${Math.round((pendingFood.fat||0)*mult)}g</strong>`;
+    `&nbsp;&nbsp; P: <strong style="color:var(--white)">${Math.round((pendingFood.protein||0)*mult*10)/10}g</strong>`+
+    `&nbsp; C: <strong style="color:var(--white)">${Math.round((pendingFood.carbs||0)*mult*10)/10}g</strong>`+
+    `&nbsp; F: <strong style="color:var(--white)">${Math.round((pendingFood.fat||0)*mult*10)/10}g</strong>`;
 }
 
 function confirmAddFood(){
   if(!pendingFood)return;
-  // Blueprint food — scale by amount × per-serving macros
-  if(pendingFood._blueprintServing){
-    const amount=parseFloat(document.getElementById('add-food-amount').value)||1;
-    dayData.meals.push({
-      name:pendingFood.name,
-      grams:Math.round((pendingFood.servingG||28.35)*amount),
-      servingLabel:amount===1?pendingFood._blueprintServing:`${amount} × ${pendingFood._blueprintServing}`,
-      calories:Math.round((pendingFood.cals||0)*amount),
-      protein:Math.round((pendingFood.protein||0)*amount*10)/10,
-      carbs:Math.round((pendingFood.carbs||0)*amount*10)/10,
-      fat:Math.round((pendingFood.fat||0)*amount*10)/10,
-      time:new Date().toISOString(),
-      blueprint:true
-    });
-    saveDay();closeModal('modal-add-food');renderMealLog();renderToday();
-    showToast('⭐ '+pendingFood.name+' added ✓');
-    pendingFood=null;
-    document.getElementById('food-search-input').value='';
-    document.getElementById('food-search-results').innerHTML='';
-    return;
-  }
-  // Regular USDA food
   const amount=parseFloat(document.getElementById('add-food-amount').value)||1;
   const unit=document.getElementById('add-food-unit').value;
-  const grams=amount*(UNIT_TO_GRAMS[unit]||1);
+  const unitGrams = unit === 'piece' && pendingFood._pieceOverride
+    ? pendingFood._pieceOverride
+    : (UNIT_TO_GRAMS[unit]||1);
+  const grams=amount*unitGrams;
   const mult=grams/100;
-  const unitLabels={g:`${Math.round(grams)}g`,oz:`${amount} oz`,cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,piece:`${amount} piece${amount!==1?'s':''}`,scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`,fl_oz:`${amount} fl oz`,l:`${amount}L`};
+  const unitLabels={
+    g:`${Math.round(grams)}g`,oz:`${amount} oz`,
+    cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,
+    piece:pendingFood._pieceOverride?`${amount} × ${pendingFood._blueprintServing||'piece'}`:`${amount} piece${amount!==1?'s':''}`,
+    scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`,fl_oz:`${amount} fl oz`,l:`${amount}L`
+  };
   dayData.meals.push({
     name:pendingFood.name,
     grams:Math.round(grams),
     servingLabel:unitLabels[unit]||`${Math.round(grams)}g`,
     calories:Math.round((pendingFood.cals||0)*mult),
-    protein:Math.round((pendingFood.protein||0)*mult),
-    carbs:Math.round((pendingFood.carbs||0)*mult),
-    fat:Math.round((pendingFood.fat||0)*mult),
-    time:new Date().toISOString()
+    protein:Math.round((pendingFood.protein||0)*mult*10)/10,
+    carbs:Math.round((pendingFood.carbs||0)*mult*10)/10,
+    fat:Math.round((pendingFood.fat||0)*mult*10)/10,
+    time:new Date().toISOString(),
+    blueprint:pendingFood._isBlueprint||false
   });
   saveDay();
   closeModal('modal-add-food');
   renderMealLog();
   renderToday();
-  showToast(pendingFood.name+' added ✓');
+  showToast((pendingFood._isBlueprint?'⭐ ':'')+pendingFood.name+' added ✓');
   pendingFood=null;
   document.getElementById('food-search-input').value='';
   document.getElementById('food-search-results').innerHTML='';
