@@ -1701,9 +1701,10 @@ function renderBlueprintFoods() {
     return `
       <div style="margin-bottom:16px;">
         <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:${BF_COLORS[cat]};margin-bottom:8px;">${BF_CATEGORIES[cat]} (${foods.length})</div>
-        <div style="display:grid;grid-template-columns:1.8fr 100px 55px 55px 55px 55px 80px 30px;gap:6px;margin-bottom:4px;">
+        <div style="display:grid;grid-template-columns:1.8fr 80px 60px 55px 55px 55px 55px 80px 30px;gap:6px;margin-bottom:4px;">
           <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Food Name</div>
           <div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Serving</div>
+          <div style="font-size:10px;color:var(--muted);text-align:center;">G/serving</div>
           <div style="font-size:10px;color:var(--muted);text-align:center;">kcal</div>
           <div style="font-size:10px;color:var(--muted);text-align:center;">P(g)</div>
           <div style="font-size:10px;color:var(--muted);text-align:center;">C(g)</div>
@@ -1712,9 +1713,10 @@ function renderBlueprintFoods() {
           <div></div>
         </div>
         ${foods.map(f => `
-          <div style="display:grid;grid-template-columns:1.8fr 100px 55px 55px 55px 55px 80px 30px;gap:6px;margin-bottom:6px;align-items:center;">
+          <div style="display:grid;grid-template-columns:1.8fr 80px 60px 55px 55px 55px 55px 80px 30px;gap:6px;margin-bottom:6px;align-items:center;">
             <input type="text" value="${f.name}" placeholder="Food name" oninput="blueprintFoods[${f._idx}].name=this.value" style="padding:7px 8px;font-size:12px;font-weight:700;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;">
             <input type="text" value="${f.serving}" placeholder="e.g. 1 oz" oninput="blueprintFoods[${f._idx}].serving=this.value" style="padding:7px 8px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;">
+            <input type="number" value="${f.servingG}" step="0.01" oninput="blueprintFoods[${f._idx}].servingG=parseFloat(this.value)||1" style="padding:7px 6px;font-size:12px;background:var(--dark);border:1px solid ${f.servingG===28.35?'var(--red)':'var(--border)'};border-radius:6px;color:${f.servingG===28.35?'var(--red)':'var(--white)'};outline:none;width:100%;text-align:center;" title="Grams per serving — set to 1 for per-gram foods">
             <input type="number" value="${f.cals}" step="0.1" oninput="blueprintFoods[${f._idx}].cals=parseFloat(this.value)||0" style="padding:7px 6px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
             <input type="number" value="${f.protein}" step="0.01" oninput="blueprintFoods[${f._idx}].protein=parseFloat(this.value)||0" style="padding:7px 6px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
             <input type="number" value="${f.carbs}" step="0.01" oninput="blueprintFoods[${f._idx}].carbs=parseFloat(this.value)||0" style="padding:7px 6px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
