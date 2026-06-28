@@ -138,7 +138,11 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <input type="text" id="plan-notes" placeholder="e.g. Follow this on training days">
 </div>
 </div>
-<div id="zigzag-focus-fields" style="display:none;margin-top:12px;">
+<div id="zigzag-load-btns" style="display:none;margin-top:10px;display:flex;gap:8px;">
+  <button class="btn btn-outline btn-sm" onclick="loadPlanByType('high_day')">Load 🔥 High Day Plan</button>
+  <button class="btn btn-outline btn-sm" onclick="loadPlanByType('low_day')">Load ❄️ Low Day Plan</button>
+  <button class="btn btn-outline btn-sm" onclick="loadPlanByType('standard')">Load Standard Plan</button>
+</div>
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">Zig Zag Day Focus Labels <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(optional — shows on client's Today tab)</span></div>
 <div class="grid-2">
 <div class="field" style="margin-bottom:0;">
@@ -655,7 +659,27 @@ function onClientSelect(){
     document.getElementById('workout-template-preview').style.display='block';
     renderWorkoutDays();
   }
-  if(selectedClient.meal_plan){if(confirm('This client already has a meal plan. Load it for editing?')){loadExistingPlan(selectedClient.meal_plan);}}
+  if(selectedClient.meal_plan || selectedClient.meal_plan_high || selectedClient.meal_plan_low){
+    const hasHigh = !!selectedClient.meal_plan_high;
+    const hasLow = !!selectedClient.meal_plan_low;
+    const hasStandard = !!selectedClient.meal_plan;
+    const plans = [];
+    if(hasStandard) plans.push('Standard');
+    if(hasHigh) plans.push('🔥 High Day');
+    if(hasLow) plans.push('❄️ Low Day');
+    if(plans.length > 0) {
+      const choice = confirm(`This client has existing plans (${plans.join(', ')}). Load one for editing?\n\nClick OK to load, then choose which type from the Plan Type dropdown.`);
+      if(choice) {
+        // Default load standard, or high if no standard
+        const planToLoad = selectedClient.meal_plan || selectedClient.meal_plan_high || selectedClient.meal_plan_low;
+        if(planToLoad) loadExistingPlan(planToLoad);
+        // Set plan type accordingly
+        if(!selectedClient.meal_plan && selectedClient.meal_plan_high) document.getElementById('plan-type').value = 'high_day';
+        else if(!selectedClient.meal_plan && !selectedClient.meal_plan_high && selectedClient.meal_plan_low) document.getElementById('plan-type').value = 'low_day';
+        toggleZigzagFocusFields();
+      }
+    }
+  }
 }
 
 function loadExistingPlan(plan){
@@ -810,6 +834,31 @@ function toggleZigzagFocusFields() {
   const planType = document.getElementById('plan-type').value;
   const isZigzag = selectedClient?.tracking_method === 'zigzag' || planType === 'high_day' || planType === 'low_day';
   document.getElementById('zigzag-focus-fields').style.display = isZigzag ? 'block' : 'none';
+  // Show load buttons if client has multiple plan types
+  const loadBtns = document.getElementById('zigzag-load-btns');
+  if(loadBtns && selectedClient) {
+    const hasMultiple = (selectedClient.meal_plan ? 1 : 0) + (selectedClient.meal_plan_high ? 1 : 0) + (selectedClient.meal_plan_low ? 1 : 0) > 1 || isZigzag;
+    loadBtns.style.display = hasMultiple ? 'flex' : 'none';
+  }
+}
+
+function loadPlanByType(type) {
+  if(!selectedClient) return;
+  const planMap = { high_day: selectedClient.meal_plan_high, low_day: selectedClient.meal_plan_low, standard: selectedClient.meal_plan };
+  const plan = planMap[type];
+  if(!plan) { alert(`No ${type.replace('_', ' ')} plan saved for this client yet.`); return; }
+  loadExistingPlan(plan);
+  document.getElementById('plan-type').value = type;
+  toggleZigzagFocusFields();
+  showToast(`✓ ${type === 'high_day' ? '🔥 High Day' : type === 'low_day' ? '❄️ Low Day' : 'Standard'} plan loaded`);
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #4caf76;color:#4caf76;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
 }
 
 function toggleMealCard(mi){
@@ -2222,6 +2271,7 @@ function renderFlexMeals() {
 // ── SAVE (updated to include flex meals) ──
 async function savePlan() {
   if (!selectedClient) { alert('Please select a client first.'); return; }
+  const planType = document.getElementById('plan-type').value;
   const planData = meals.map(meal => ({
     name: meal.name, time: meal.time,
     foods: meal.foods.map(f => ({ name: f.name, amount: f.amount || '100g', protein: f.protein || 0, carbs: f.carbs || 0, fat: f.fat || 0, cals: f.cals || 0 }))
@@ -2230,11 +2280,15 @@ async function savePlan() {
   status.style.display = 'inline'; status.className = 'save-status'; status.textContent = 'Saving…';
   try {
     if (db) {
+      // Determine which field to save to based on plan type
+      const planField = planType === 'high_day' ? 'meal_plan_high'
+                      : planType === 'low_day' ? 'meal_plan_low'
+                      : 'meal_plan';
       await db.collection('clients').doc(selectedClient.id).update({
-        meal_plan: planData,
+        [planField]: planData,
         meal_plan_updated: new Date().toISOString(),
         meal_plan_notes: document.getElementById('plan-notes').value,
-        meal_plan_type: document.getElementById('plan-type').value,
+        meal_plan_type: planType,
         supplements: supplements.filter(s => s.name),
         approved_foods: approvedFoods,
         blood_type: document.getElementById('blood-type-select').value,
@@ -2249,8 +2303,9 @@ async function savePlan() {
         } : null,
       });
     }
+    const typeLabel = planType === 'high_day' ? '🔥 High Day' : planType === 'low_day' ? '❄️ Low Day' : '';
     status.className = 'save-status success';
-    status.textContent = `✓ Saved to ${selectedClient.name} — live in their tracker now!`;
+    status.textContent = `✓ ${typeLabel} plan saved to ${selectedClient.name} — live in tracker!`;
     setTimeout(() => { status.style.display = 'none'; }, 4000);
   } catch (e) {
     status.className = 'save-status error';

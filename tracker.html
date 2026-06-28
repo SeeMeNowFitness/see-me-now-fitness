@@ -644,8 +644,9 @@ function setDayType(t){
     h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
   }
   renderToday();
-  // Also update plan summary if on My Plan tab
+  // Also update plan summary and meal plan if on My Plan tab
   if(document.getElementById('plan-summary-pills')) renderPlanSummary();
+  if(document.getElementById('plan-meal-content')) renderMealPlan();
 }
 function getMacros(){if(!clientProfile)return{protein:150,carbs:175,fat:55,calories:1795};if(clientProfile.tracking_method==='zigzag')return currentDayType==='high'?(clientProfile.macros_high||clientProfile.macros):(clientProfile.macros_low||clientProfile.macros);return clientProfile.macros||{protein:150,carbs:175,fat:55,calories:1795};}
 function getZone(n){return n>100?'deficit':(n>-100?'maintenance':'surplus');}
@@ -1834,7 +1835,18 @@ function renderWorkoutDayCard(template) {
 function renderMealPlan() {
   const el = document.getElementById('plan-meal-content');
   const profile = clientProfile || {};
-  const assignedMeals = profile.meal_plan;
+  const isZigzag = profile.tracking_method === 'zigzag';
+
+  // Pick the right meal plan based on day type
+  let assignedMeals;
+  if (isZigzag) {
+    assignedMeals = currentDayType === 'high'
+      ? (profile.meal_plan_high || profile.meal_plan)
+      : (profile.meal_plan_low || profile.meal_plan);
+  } else {
+    assignedMeals = profile.meal_plan;
+  }
+
   const meals = assignedMeals || DEFAULT_MEAL_PLAN;
   const isTemplate = !assignedMeals;
 
