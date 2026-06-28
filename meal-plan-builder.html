@@ -278,7 +278,7 @@ Enable Flex Dieting for this client
 
   <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
     <button class="btn btn-outline btn-sm" onclick="addBlueprintFoodRow()">+ Add Custom Food</button>
-    <button class="btn btn-outline btn-sm" onclick="loadDefaultBlueprintFoods()">Load SMN Defaults (21 foods)</button>
+    <button class="btn btn-outline btn-sm" onclick="loadBlueprintFoodsFromFirestore()">↺ Reload from Saved</button>
     <button class="btn btn-gold btn-sm" onclick="saveBlueprintFoods()" style="margin-left:auto;">💾 Save Blueprint Foods</button>
   </div>
   <div id="bf-save-status" style="display:none;font-size:13px;font-weight:700;color:var(--green);margin-top:10px;"></div>
@@ -1586,7 +1586,7 @@ const BF_COLORS = { protein:'var(--gold)', carb:'var(--blue)', fat:'var(--orange
 function toggleBlueprintFoods() {
   const el = document.getElementById('blueprint-foods-section');
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
-  if (el.style.display === 'block' && blueprintFoods.length === 0) loadBlueprintFoodsFromFirestore();
+  if (el.style.display === 'block') loadBlueprintFoodsFromFirestore();
 }
 
 function loadDefaultBlueprintFoods() {
@@ -1677,7 +1677,14 @@ async function loadBlueprintFoodsFromFirestore() {
           category: data.category || 'protein',
         };
       });
+      builderBPCache = blueprintFoods; // update search cache too
       renderBlueprintFoods();
+      // Update the save status to show count
+      const status = document.getElementById('bf-save-status');
+      status.style.display = 'block';
+      status.textContent = `✓ Loaded ${blueprintFoods.length} Blueprint Foods from Firestore`;
+      status.style.color = 'var(--green)';
+      setTimeout(() => { status.style.display = 'none'; }, 3000);
     } else {
       loadDefaultBlueprintFoods();
     }
