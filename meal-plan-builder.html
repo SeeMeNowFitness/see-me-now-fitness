@@ -234,6 +234,9 @@ Enable Flex Dieting for this client
       <option value="ppl">Push / Pull / Legs (PPL)</option>
       <option value="ppl_shoulders">PPL + Shoulders on Leg Day</option>
       <option value="physique">Men's Physique</option>
+      <option value="classic">Classic Physique</option>
+      <option value="bodybuilding">Bodybuilding</option>
+      <option value="figure">Figure</option>
       <option value="glute">Glute Focus</option>
       <option value="bikini">Bikini</option>
       <option value="wellness">Wellness</option>
@@ -1412,6 +1415,158 @@ const WORKOUT_TEMPLATES = {
       { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Full Recovery', exercises: [] },
     ]
   },
+  classic: {
+    name: 'Your Blueprint Classic Physique Program',
+    days: [
+      { day: 'Monday', label: 'Chest & Shoulders', icon: '🏆', focus: 'Chest · Shoulders · Serratus', exercises: [
+        { name: 'Barbell Bench Press', sets: 5, reps: '6-8', rest: '120s', tip: 'Classic physique demands a full, thick chest. Drive every rep with intention.' },
+        { name: 'Incline Barbell Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Upper chest fullness is critical for the classic look from the side.' },
+        { name: 'Dumbbell Flyes', sets: 3, reps: '12-15', rest: '60s', tip: 'Full stretch at the bottom for maximum pec development.' },
+        { name: 'Overhead Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Shoulder pressing is essential for the classic V-taper.' },
+        { name: 'Lateral Raises', sets: 4, reps: '15-20', rest: '45s', tip: 'Wide, capped shoulders define the classic physique silhouette.' },
+        { name: 'Cable Crossovers', sets: 3, reps: '12-15', rest: '60s', tip: 'Finish with detail work for the inner chest separation judges look for.' },
+      ]},
+      { day: 'Tuesday', label: 'Back & Biceps', icon: '🏋️', focus: 'Width · Thickness · Biceps', exercises: [
+        { name: 'Deadlifts', sets: 4, reps: '5-6', rest: '180s', tip: 'Classic physique is built on the deadlift. Back thickness wins shows.' },
+        { name: 'Wide Grip Pull-Ups', sets: 4, reps: '8-10', rest: '90s', tip: 'Lat width creates the V-taper that separates classic from open.' },
+        { name: 'Barbell Rows', sets: 4, reps: '8-10', rest: '90s', tip: 'Middle back thickness for a complete rear pose.' },
+        { name: 'Lat Pulldowns', sets: 3, reps: '10-12', rest: '60s', tip: 'Drive elbows down and squeeze hard at the bottom.' },
+        { name: 'Seated Cable Rows', sets: 3, reps: '12-15', rest: '60s', tip: 'Full stretch and hard squeeze — build that mind-muscle connection.' },
+        { name: 'Barbell Curls', sets: 4, reps: '8-10', rest: '60s', tip: 'Peak bicep development is highly visible in classic mandatory poses.' },
+        { name: 'Hammer Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Brachialis thickness adds fullness to the arm from every angle.' },
+      ]},
+      { day: 'Wednesday', label: 'Legs', icon: '🦵', focus: 'Quads · Hamstrings · Calves', exercises: [
+        { name: 'Barbell Squats', sets: 5, reps: '6-8', rest: '120s', tip: 'Classic physique requires proportional legs — squat heavy and consistently.' },
+        { name: 'Leg Press', sets: 4, reps: '10-12', rest: '90s', tip: 'Volume work after squats for overall quad size.' },
+        { name: 'Romanian Deadlifts', sets: 4, reps: '10-12', rest: '90s', tip: 'Hamstring fullness completes the leg development for rear poses.' },
+        { name: 'Leg Extensions', sets: 3, reps: '15-20', rest: '45s', tip: 'Quad sweep and separation — essential for side and front poses.' },
+        { name: 'Leg Curls', sets: 3, reps: '12-15', rest: '60s', tip: 'Hamstring detail visible in rear mandatory poses.' },
+        { name: 'Standing Calf Raises', sets: 5, reps: '15-20', rest: '45s', tip: 'Classic physique judges score calves heavily. Never skip.' },
+      ]},
+      { day: 'Thursday', label: 'Rest Day', icon: '😴', focus: 'Recovery · Posing Practice', exercises: [] },
+      { day: 'Friday', label: 'Chest & Triceps', icon: '💪', focus: 'Chest · Triceps · Detail', exercises: [
+        { name: 'Dumbbell Bench Press', sets: 4, reps: '10-12', rest: '90s', tip: 'More ROM than barbell — feel the full stretch and squeeze.' },
+        { name: 'Pec Deck / Machine Flyes', sets: 4, reps: '12-15', rest: '60s', tip: 'Inner chest detail and separation — judges see this in front poses.' },
+        { name: 'Dips', sets: 3, reps: '10-12', rest: '60s', tip: 'Lower chest fullness and tricep tie-in. Lean forward slightly.' },
+        { name: 'Skull Crushers', sets: 4, reps: '10-12', rest: '60s', tip: 'Tricep mass for that horseshoe look in side chest poses.' },
+        { name: 'Tricep Pushdowns', sets: 3, reps: '12-15', rest: '45s', tip: 'Isolation for the lower tricep — visible in every pose.' },
+        { name: 'Overhead Tricep Extension', sets: 3, reps: '12-15', rest: '45s', tip: 'Long head activation for complete tricep development.' },
+      ]},
+      { day: 'Saturday', label: 'Shoulders & Arms', icon: '💥', focus: 'Shoulders · Biceps · Triceps', exercises: [
+        { name: 'Seated Dumbbell Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Full shoulder pressing to maintain the capped look on stage.' },
+        { name: 'Lateral Raises', sets: 5, reps: '15-20', rest: '45s', tip: 'The most important upper body exercise for the classic physique look.' },
+        { name: 'Rear Delt Flyes', sets: 4, reps: '15-20', rest: '45s', tip: 'Complete shoulder development — judges see you from every angle.' },
+        { name: 'Barbell Curls', sets: 4, reps: '8-10', rest: '60s', tip: 'Strict form — classic physique biceps are a judging focal point.' },
+        { name: 'Concentration Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Peak bicep isolation — the classic bicep flex is iconic.' },
+        { name: 'Posing Practice', sets: 1, reps: '15-20 min', rest: '—', tip: 'Classic physique judging is heavily influenced by posing. Practice every session.' },
+      ]},
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
+    ]
+  },
+  bodybuilding: {
+    name: 'Your Blueprint Bodybuilding Program',
+    days: [
+      { day: 'Monday', label: 'Chest', icon: '💪', focus: 'Chest · Upper · Lower · Inner', exercises: [
+        { name: 'Barbell Bench Press', sets: 5, reps: '6-8', rest: '120s', tip: 'The foundation of chest development. Progress this lift over time.' },
+        { name: 'Incline Barbell Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Upper chest is the most visible from the front — prioritize this.' },
+        { name: 'Decline Dumbbell Press', sets: 3, reps: '10-12', rest: '90s', tip: 'Lower chest fullness and the pec-ab tie-in that judges look for.' },
+        { name: 'Cable Flyes', sets: 4, reps: '12-15', rest: '60s', tip: 'Inner chest separation and detail — visible in every front pose.' },
+        { name: 'Pec Deck', sets: 3, reps: '12-15', rest: '60s', tip: 'Squeeze and hold at peak contraction for maximum chest activation.' },
+        { name: 'Dips', sets: 3, reps: '10-12', rest: '60s', tip: 'Lower chest and tricep tie-in. Essential for complete chest development.' },
+      ]},
+      { day: 'Tuesday', label: 'Back', icon: '🏋️', focus: 'Width · Thickness · Detail', exercises: [
+        { name: 'Deadlifts', sets: 5, reps: '5', rest: '180s', tip: 'No exercise builds back thickness like the deadlift. This is non-negotiable.' },
+        { name: 'Wide Grip Pull-Ups', sets: 4, reps: '8-10', rest: '90s', tip: 'Lat width for the V-taper that defines bodybuilding aesthetics.' },
+        { name: 'T-Bar Rows', sets: 4, reps: '8-10', rest: '90s', tip: 'Mid-back thickness — essential for the rear double bicep pose.' },
+        { name: 'Lat Pulldowns', sets: 4, reps: '10-12', rest: '60s', tip: 'Lat development from a different angle than pull-ups.' },
+        { name: 'Seated Cable Rows', sets: 3, reps: '12-15', rest: '60s', tip: 'Lower lat development for the complete back sweep.' },
+        { name: 'Single Arm Dumbbell Rows', sets: 3, reps: '10-12 each', rest: '60s', tip: 'Unilateral work for symmetry and balance between sides.' },
+        { name: 'Face Pulls', sets: 3, reps: '15-20', rest: '45s', tip: 'Rear delt and rotator cuff health — never skip for longevity.' },
+      ]},
+      { day: 'Wednesday', label: 'Legs', icon: '🦵', focus: 'Quads · Hamstrings · Glutes · Calves', exercises: [
+        { name: 'Barbell Squats', sets: 5, reps: '6-8', rest: '120s', tip: 'Bodybuilding requires fully developed legs. Squat heavy, squat deep.' },
+        { name: 'Hack Squats', sets: 4, reps: '10-12', rest: '90s', tip: 'Quad sweep development — critical for side and front poses.' },
+        { name: 'Leg Press', sets: 4, reps: '12-15', rest: '90s', tip: 'Volume loading after squats for overall quad mass.' },
+        { name: 'Romanian Deadlifts', sets: 4, reps: '10-12', rest: '90s', tip: 'Hamstring size and detail for rear mandatory poses.' },
+        { name: 'Leg Curls', sets: 4, reps: '12-15', rest: '60s', tip: 'Full ROM — pause at peak contraction for maximum hamstring activation.' },
+        { name: 'Leg Extensions', sets: 4, reps: '15-20', rest: '45s', tip: 'Quad separation and detail — visible in every lower body pose.' },
+        { name: 'Standing Calf Raises', sets: 6, reps: '15-20', rest: '30s', tip: 'Calves are judged heavily in bodybuilding. Never neglect them.' },
+        { name: 'Seated Calf Raises', sets: 4, reps: '20-25', rest: '30s', tip: 'Hits the soleus for complete calf development.' },
+      ]},
+      { day: 'Thursday', label: 'Shoulders', icon: '🔱', focus: 'Front · Side · Rear Delts', exercises: [
+        { name: 'Barbell Overhead Press', sets: 5, reps: '6-8', rest: '90s', tip: 'Shoulder mass is everything in bodybuilding. Press heavy.' },
+        { name: 'Dumbbell Lateral Raises', sets: 5, reps: '15-20', rest: '45s', tip: 'Side delt width — the most important muscle for stage presence.' },
+        { name: 'Arnold Press', sets: 4, reps: '10-12', rest: '60s', tip: 'Hits all three delt heads in one movement — named for a reason.' },
+        { name: 'Front Raises', sets: 3, reps: '12-15', rest: '45s', tip: 'Front delt fullness visible in most front mandatory poses.' },
+        { name: 'Rear Delt Flyes', sets: 4, reps: '15-20', rest: '45s', tip: 'Complete shoulder development from all angles on stage.' },
+        { name: 'Cable Lateral Raises', sets: 3, reps: '15-20', rest: '45s', tip: 'Constant tension throughout — better for delt isolation than dumbbells.' },
+        { name: 'Shrugs', sets: 4, reps: '12-15', rest: '60s', tip: 'Trap development completes the upper body for bodybuilding.' },
+      ]},
+      { day: 'Friday', label: 'Arms', icon: '💥', focus: 'Biceps · Triceps · Forearms', exercises: [
+        { name: 'Barbell Curls', sets: 4, reps: '8-10', rest: '60s', tip: 'The foundation of bicep mass. Strict form, full range of motion.' },
+        { name: 'Incline Dumbbell Curls', sets: 3, reps: '10-12', rest: '60s', tip: 'Long head stretch for peak bicep development.' },
+        { name: 'Hammer Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Brachialis and brachioradialis for complete arm thickness.' },
+        { name: 'Cable Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Constant tension for the full range — great for peak contraction.' },
+        { name: 'Close Grip Bench Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Tricep mass builder. Triceps make up 2/3 of arm size.' },
+        { name: 'Skull Crushers', sets: 4, reps: '10-12', rest: '60s', tip: 'Long head activation for that horseshoe shape in every pose.' },
+        { name: 'Tricep Pushdowns', sets: 3, reps: '12-15', rest: '45s', tip: 'Lateral head detail — visible in every arm pose.' },
+        { name: 'Overhead Tricep Extension', sets: 3, reps: '12-15', rest: '45s', tip: 'Complete tricep development for full arm size.' },
+      ]},
+      { day: 'Saturday', label: 'Weak Point & Posing', icon: '🎯', focus: 'Lagging Muscles · Posing · Cardio', exercises: [
+        { name: 'Weak Point Training', sets: 4, reps: '10-15', rest: '60s', tip: 'Focus on your most underdeveloped muscle group this session.' },
+        { name: 'Posing Practice', sets: 1, reps: '20-30 min', rest: '—', tip: 'Mandatory poses, transitions, and symmetry round. Posing wins shows.' },
+        { name: 'Cardio', sets: 1, reps: '20-30 min', rest: '—', tip: 'Steady state cardio for conditioning. Adjust duration based on stage proximity.' },
+      ]},
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Full Recovery', exercises: [] },
+    ]
+  },
+  figure: {
+    name: 'Your Blueprint Figure Program',
+    days: [
+      { day: 'Monday', label: 'Shoulders & Back', icon: '🔱', focus: 'Shoulders · Back Width · Symmetry', exercises: [
+        { name: 'Overhead Press', sets: 4, reps: '10-12', rest: '60s', tip: 'Figure requires strong, capped shoulders — the cornerstone of the division.' },
+        { name: 'Lateral Raises', sets: 5, reps: '15-20', rest: '45s', tip: 'Side delt width creates the X-frame that figure judges score highest.' },
+        { name: 'Wide Grip Pull-Ups', sets: 4, reps: '8-10', rest: '90s', tip: 'Lat width for the V-taper that distinguishes figure from bikini.' },
+        { name: 'Lat Pulldowns', sets: 4, reps: '10-12', rest: '60s', tip: 'Back development is more important in figure than any other womens division.' },
+        { name: 'Rear Delt Flyes', sets: 4, reps: '15-20', rest: '45s', tip: 'Complete shoulder development — figure is judged from all angles.' },
+        { name: 'Seated Cable Rows', sets: 3, reps: '12-15', rest: '60s', tip: 'Mid-back thickness for a complete rear pose.' },
+      ]},
+      { day: 'Tuesday', label: 'Glutes & Hamstrings', icon: '🍑', focus: 'Glutes · Hamstrings · Posterior Chain', exercises: [
+        { name: 'Hip Thrusts', sets: 5, reps: '10-12', rest: '90s', tip: 'Figure requires more glute development than bikini — load this movement.' },
+        { name: 'Romanian Deadlifts', sets: 4, reps: '10-12', rest: '90s', tip: 'Hamstring fullness and separation is visible in rear mandatory poses.' },
+        { name: 'Sumo Deadlifts', sets: 4, reps: '8-10', rest: '90s', tip: 'Hip and glute width for the figure silhouette.' },
+        { name: 'Leg Curls', sets: 4, reps: '12-15', rest: '60s', tip: 'Hamstring detail — figure has stricter conditioning standards than bikini.' },
+        { name: 'Cable Kickbacks', sets: 3, reps: '15-20 each', rest: '45s', tip: 'Glute isolation and peak development.' },
+        { name: 'Reverse Hyperextensions', sets: 3, reps: '15-20', rest: '60s', tip: 'Posterior chain development without lower back compression.' },
+      ]},
+      { day: 'Wednesday', label: 'Chest & Triceps', icon: '💪', focus: 'Chest · Triceps · Upper Body', exercises: [
+        { name: 'Incline Dumbbell Press', sets: 4, reps: '10-12', rest: '90s', tip: 'Figure requires more chest development than bikini for balanced upper body.' },
+        { name: 'Flat Dumbbell Press', sets: 4, reps: '10-12', rest: '90s', tip: 'Full chest development for balanced stage presence.' },
+        { name: 'Cable Flyes', sets: 3, reps: '12-15', rest: '60s', tip: 'Inner chest detail visible in every front pose.' },
+        { name: 'Tricep Pushdowns', sets: 4, reps: '12-15', rest: '45s', tip: 'Toned arms are essential for the figure package.' },
+        { name: 'Skull Crushers', sets: 3, reps: '12-15', rest: '60s', tip: 'Tricep mass for a complete upper body.' },
+        { name: 'Overhead Tricep Extension', sets: 3, reps: '12-15', rest: '45s', tip: 'Long head development for complete arm conditioning.' },
+      ]},
+      { day: 'Thursday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
+      { day: 'Friday', label: 'Quads & Glutes', icon: '🦵', focus: 'Quads · Glutes · Conditioning', exercises: [
+        { name: 'Barbell Squats', sets: 4, reps: '8-10', rest: '90s', tip: 'Figure requires more leg development than bikini — don\'t go light.' },
+        { name: 'Bulgarian Split Squats', sets: 4, reps: '10-12 each', rest: '90s', tip: 'Unilateral work for symmetry and quad-glute development.' },
+        { name: 'Leg Press', sets: 4, reps: '12-15', rest: '90s', tip: 'Quad volume for the overall leg conditioning figure demands.' },
+        { name: 'Barbell Hip Thrusts', sets: 4, reps: '10-12', rest: '90s', tip: 'Second glute day — figure requires significant posterior development.' },
+        { name: 'Leg Extensions', sets: 4, reps: '15-20', rest: '45s', tip: 'Quad sweep and conditioning detail.' },
+        { name: 'Calf Raises', sets: 5, reps: '20-25', rest: '30s', tip: 'Complete lower leg development for the figure stage package.' },
+      ]},
+      { day: 'Saturday', label: 'Back & Biceps', icon: '🏋️', focus: 'Back Thickness · Biceps · Posing', exercises: [
+        { name: 'Barbell Rows', sets: 4, reps: '8-10', rest: '90s', tip: 'Back thickness separates figure from bikini — rows are essential.' },
+        { name: 'Single Arm Dumbbell Rows', sets: 3, reps: '10-12 each', rest: '60s', tip: 'Unilateral back work for symmetry between sides.' },
+        { name: 'Cable Rows', sets: 3, reps: '12-15', rest: '60s', tip: 'Mid-back detail for complete rear pose development.' },
+        { name: 'Barbell Curls', sets: 3, reps: '10-12', rest: '60s', tip: 'Arm development contributes to the overall figure package.' },
+        { name: 'Hammer Curls', sets: 3, reps: '12-15', rest: '45s', tip: 'Complete arm development from every angle.' },
+        { name: 'Posing Practice', sets: 1, reps: '15-20 min', rest: '—', tip: 'Figure T-walk and quarter turns. Practice your presentation daily.' },
+      ]},
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Recovery · Active Rest', exercises: [] },
+    ]
+  },
   fullbody: {
     name: 'Your Blueprint Full Body Program',
     days: [
@@ -1444,7 +1599,7 @@ const WORKOUT_TEMPLATES = {
       { day: 'Saturday', label: 'Rest Day', icon: '😴', focus: 'Active Recovery', exercises: [] },
       { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Full Recovery', exercises: [] },
     ]
-  }
+  },
 };
 
 function onWorkoutTemplateChange() {
