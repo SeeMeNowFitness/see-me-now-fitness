@@ -653,9 +653,20 @@ function renderMeals(){
                   ${food.blueprint?`<div style="font-size:10px;color:var(--gold);">per ${food.serving}</div>`:''}
                 </div>
                 ${food.blueprint ? `
-                  <input type="number" value="${parseFloat(food.amount)||1}" min="0.5" step="0.5" placeholder="qty"
-                    onchange="updateBlueprintFoodCalc(${mi},${fi},this.value)"
-                    style="padding:6px 8px;font-size:12px;background:var(--dark);border:1px solid var(--gold-d);border-radius:6px;color:var(--white);outline:none;width:100%;text-align:center;">
+                  <div style="display:flex;gap:4px;">
+                    <input type="number" value="${parseFloat(food.amount)||1}" id="amt-${mi}-${fi}" oninput="updateBlueprintFoodCalcUnit(${mi},${fi})"
+                      style="padding:6px 6px;font-size:12px;background:var(--dark);border:1px solid var(--gold-d);border-radius:6px;color:var(--white);outline:none;width:60px;text-align:center;flex-shrink:0;">
+                    <select id="unit-${mi}-${fi}" onchange="updateBlueprintFoodCalcUnit(${mi},${fi})"
+                      style="padding:6px 4px;font-size:11px;background:var(--dark);border:1px solid var(--gold-d);border-radius:6px;color:var(--white);outline:none;flex:1;">
+                      <option value="g" ${(food.unit||'g')==='g'?'selected':''}>g</option>
+                      <option value="oz" ${food.unit==='oz'?'selected':''}>oz</option>
+                      <option value="cup" ${food.unit==='cup'?'selected':''}>cup</option>
+                      <option value="tbsp" ${food.unit==='tbsp'?'selected':''}>tbsp</option>
+                      <option value="tsp" ${food.unit==='tsp'?'selected':''}>tsp</option>
+                      <option value="ml" ${food.unit==='ml'?'selected':''}>ml</option>
+                      <option value="piece" ${food.unit==='piece'?'selected':''}>piece</option>
+                    </select>
+                  </div>
                 ` : `
                   <div style="display:flex;gap:4px;">
                     <input type="number" value="${parseFloat(food.amount)||100}" id="amt-${mi}-${fi}" oninput="updateMealFoodCalc(${mi},${fi})"
@@ -742,6 +753,39 @@ function moveFoodDown(mi,fi){
   renderMeals();updateTotals();
 }
 
+function updateBlueprintFoodCalcUnit(mi, fi) {
+  const amtEl = document.getElementById(`amt-${mi}-${fi}`);
+  const unitEl = document.getElementById(`unit-${mi}-${fi}`);
+  if (!amtEl || !unitEl) return;
+  const amt = parseFloat(amtEl.value) || 1;
+  const unit = unitEl.value;
+  const food = meals[mi].foods[fi];
+  // Get grams based on unit
+  const unitG = unit === 'piece' ? (food.servingG || 28.35) : (BUILDER_UNITS[unit] || 1);
+  const grams = amt * unitG;
+  // Scale from per-gram base values
+  const perGramCals = (food.baseCals || food._baseCals || 0) / (food.servingG || 28.35);
+  const perGramP = (food.baseProtein || food._baseProtein || 0) / (food.servingG || 28.35);
+  const perGramC = (food.baseCarbs || food._baseCarbs || 0) / (food.servingG || 28.35);
+  const perGramF = (food.baseFat || food._baseFat || 0) / (food.servingG || 28.35);
+  food.amount = String(amt);
+  food.unit = unit;
+  food.cals = Math.round(perGramCals * grams);
+  food.protein = Math.round(perGramP * grams * 10) / 10;
+  food.carbs = Math.round(perGramC * grams * 10) / 10;
+  food.fat = Math.round(perGramF * grams * 10) / 10;
+  // Update display in-place
+  const row = document.getElementById(`food-row-${mi}-${fi}`);
+  if (row) {
+    const vals = row.querySelectorAll('.fim-val');
+    if (vals[0]) vals[0].textContent = food.protein + 'g';
+    if (vals[1]) vals[1].textContent = food.carbs + 'g';
+    if (vals[2]) vals[2].textContent = food.fat + 'g';
+    if (vals[3]) vals[3].textContent = food.cals;
+  }
+  updateTotals();
+}
+
 function updateBlueprintFoodCalc(mi,fi,val){
   const q=parseFloat(val)||1;
   const food=meals[mi].foods[fi];
@@ -811,7 +855,7 @@ async function searchFood(mi){
     <div class="food-result-row" style="border-color:var(--gold-d);background:rgba(201,168,76,0.04);">
       <div class="fr-name" style="color:var(--gold);">⭐ ${f.name} <span style="font-size:9px;background:rgba(201,168,76,0.15);color:var(--gold);padding:2px 5px;border-radius:4px;font-weight:800;">BLUEPRINT</span></div>
       <div class="fr-macros">${f.cals} kcal / ${f.serving} · P:${f.protein}g C:${f.carbs}g F:${f.fat}g</div>
-      <button class="fr-add" onclick="addBlueprintFoodToMeal(${mi},'${f.name.replace(/'/g,"\\'")}',${f.cals},${f.protein},${f.carbs},${f.fat},'${f.serving}')">+ Add</button>
+      <button class="fr-add" onclick="addBlueprintFoodToMeal(${mi},'${f.name.replace(/'/g,"\\'")}',${f.cals},${f.protein},${f.carbs},${f.fat},'${f.serving}',${f.servingG||28.35})">+ Add</button>
     </div>`).join('');
 
   try{
@@ -835,10 +879,22 @@ async function searchFood(mi){
 }
 
 function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving) {
+  const servingG = arguments[7] || 28.35;
+  // Determine default unit from serving string
+  let defaultUnit = 'g';
+  if (serving.includes('oz')) defaultUnit = 'oz';
+  else if (serving.includes('tsp')) defaultUnit = 'tsp';
+  else if (serving.includes('tbsp')) defaultUnit = 'tbsp';
+  else if (serving.includes('cup')) defaultUnit = 'cup';
+  else if (serving.includes('ml')) defaultUnit = 'ml';
+  else if (serving.includes('egg') || serving.includes('banana') || serving.includes('medium') || serving.includes('scoop') || serving.includes('piece')) defaultUnit = 'piece';
+
   meals[mi].foods.push({ 
     name: `⭐ ${name}`, 
     amount: '1', 
+    unit: defaultUnit,
     serving: serving,
+    servingG: parseFloat(servingG),
     cals: cals, protein: protein, carbs: carbs, fat: fat,
     baseCals: cals, baseProtein: protein, baseCarbs: carbs, baseFat: fat,
     blueprint: true 
