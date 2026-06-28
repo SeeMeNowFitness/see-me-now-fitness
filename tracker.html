@@ -606,7 +606,7 @@ function toFV(v){if(v===null||v===undefined)return{nullValue:null};if(typeof v==
 // PROFILE
 async function loadClientProfile(){
 if(!CLIENT_ID||CLIENT_ID==='demo'){clientProfile={name:'Demo',tier:'lifestyle',macros:{protein:180,carbs:200,fat:60,calories:2020},bmr_inputs:{weight_lbs:180,height_cm:178,age:28,gender:'male'}};}
-else{try{clientProfile=(await fsGet(`clients/${CLIENT_ID}`))||defProfile();}catch(e){clientProfile=defProfile();}}
+else{try{clientProfile=(await fsGet(`clients/${CLIENT_ID}`))||defProfile();console.log('CLIENT PROFILE LOADED:',JSON.stringify({tier:clientProfile.tier,tracking_method:clientProfile.tracking_method,macros_high:clientProfile.macros_high,macros_low:clientProfile.macros_low}));}catch(e){console.error('loadClientProfile error:',e);clientProfile=defProfile();}}
 applyTierUI();
 }
 function defProfile(){return{name:'Client',tier:'tracker',macros:{protein:150,carbs:175,fat:55,calories:1795},bmr_inputs:{weight_lbs:160,height_cm:170,age:30,gender:'male'}};}
