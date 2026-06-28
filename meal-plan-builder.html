@@ -138,6 +138,19 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <input type="text" id="plan-notes" placeholder="e.g. Follow this on training days">
 </div>
 </div>
+<div id="zigzag-focus-fields" style="display:none;margin-top:12px;">
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">Zig Zag Day Focus Labels <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(optional — shows on client's Today tab)</span></div>
+<div class="grid-2">
+<div class="field" style="margin-bottom:0;">
+<label>🔥 High Day Focus</label>
+<input type="text" id="high-day-focus" placeholder="e.g. Chest & Shoulders, Upper Body, Legs…">
+</div>
+<div class="field" style="margin-bottom:0;">
+<label>❄️ Low Day Focus</label>
+<input type="text" id="low-day-focus" placeholder="e.g. Back & Biceps, Lower Body, Rest…">
+</div>
+</div>
+</div>
 </div>
 
 <!-- Plan Totals -->
@@ -630,6 +643,14 @@ function onClientSelect(){
   if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
   // Load flex meals
   if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;document.getElementById('flex-section').style.display='block';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));renderFlexMeals();}
+  // Show zigzag focus fields if client uses zigzag
+  if(selectedClient.tracking_method==='zigzag'){
+    document.getElementById('zigzag-focus-fields').style.display='block';
+    document.getElementById('high-day-focus').value=selectedClient.high_day_focus||'';
+    document.getElementById('low-day-focus').value=selectedClient.low_day_focus||'';
+  } else {
+    document.getElementById('zigzag-focus-fields').style.display='none';
+  }
   // Load workout plan
   if(selectedClient.workout_plan){
     workoutPlan=JSON.parse(JSON.stringify(selectedClient.workout_plan));
@@ -2217,6 +2238,8 @@ async function savePlan() {
         blood_type: document.getElementById('blood-type-select').value,
         flex_enabled: flexEnabled,
         flex_meals: flexEnabled ? flexMeals.filter(m => m.restaurant || m.meal) : [],
+        high_day_focus: document.getElementById('high-day-focus').value.trim() || null,
+        low_day_focus: document.getElementById('low-day-focus').value.trim() || null,
         workout_plan: workoutPlan ? {
           name: document.getElementById('workout-plan-name').value || workoutPlan.name,
           template: document.getElementById('workout-template-select').value,

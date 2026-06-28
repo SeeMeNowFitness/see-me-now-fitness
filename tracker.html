@@ -1572,7 +1572,31 @@ function renderPlanTab() {
 
 function renderPlanSummary() {
   const m = getMacros();
-  const isLeg = currentPlanDay === 'leg';
+  const profile = clientProfile || {};
+  const isZigzag = profile.tracking_method === 'zigzag';
+
+  // Determine focus label
+  let focusLabel = '';
+  let focusIcon = '💪';
+  if (profile.workout_plan?.days?.length) {
+    // Use today's workout day focus from assigned plan
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    const todayDay = profile.workout_plan.days.find(d => d.day === today);
+    if (todayDay) {
+      focusLabel = todayDay.exercises.length === 0 ? 'Rest Day' : todayDay.label;
+      focusIcon = todayDay.icon || '💪';
+    }
+  } else if (isZigzag) {
+    // Use high/low day focus labels Charles set
+    if (currentDayType === 'high') {
+      focusLabel = profile.high_day_focus || 'High Day';
+      focusIcon = '🔥';
+    } else {
+      focusLabel = profile.low_day_focus || 'Low Day';
+      focusIcon = '❄️';
+    }
+  }
+
   document.getElementById('plan-summary-pills').innerHTML = `
     <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 12px;flex:1;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);">Calories</div>
@@ -1582,10 +1606,11 @@ function renderPlanSummary() {
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);">Protein</div>
       <div style="font-size:18px;font-weight:900;color:var(--white);">${m.protein}<span style="font-size:11px;font-weight:400;color:var(--muted);">g</span></div>
     </div>
+    ${focusLabel ? `
     <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 12px;flex:1;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue);">Focus</div>
-      <div style="font-size:13px;font-weight:900;color:var(--white);margin-top:3px;">${isLeg ? '🦵 Legs' : '💪 Upper'}</div>
-    </div>
+      <div style="font-size:13px;font-weight:900;color:var(--white);margin-top:3px;">${focusIcon} ${focusLabel}</div>
+    </div>` : ''}
   `;
 }
 
