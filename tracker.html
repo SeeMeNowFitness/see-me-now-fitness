@@ -2427,15 +2427,20 @@ async function toggleExerciseGif(elId, exerciseName) {
   if (exerciseGifCache[elId]) { el.innerHTML = exerciseGifCache[elId]; return; }
   el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Loading demo…</div>';
 
-  // Check Firestore cache first — but don't let errors block API call
-  let cached = null;
-  try { cached = await fsGet(`exercise_library/${elId}`); } catch(e) { /* not cached yet */ }
-  if (cached?.gifUrl) {
-    const html = buildExerciseGifHtml(cached);
-    exerciseGifCache[elId] = html;
-    el.innerHTML = html;
-    return;
-  }
+  // Check Firestore cache
+  try {
+    const r = await fetch(`${FB}/exercise_library/${elId}?key=${FIREBASE_CONFIG.apiKey}`);
+    if (r.ok) {
+      const data = await r.json();
+      const doc = fsDoc(data);
+      if (doc?.gifUrl) {
+        const html = buildExerciseGifHtml(doc);
+        exerciseGifCache[elId] = html;
+        el.innerHTML = html;
+        return;
+      }
+    }
+  } catch(e) {}
 
   // Fetch from ExerciseDB API
   try {
@@ -2443,23 +2448,27 @@ async function toggleExerciseGif(elId, exerciseName) {
       .replace(/\s*\(.*?\)/g, '')
       .replace(/[^a-z0-9\s]/g, '')
       .trim();
+    console.log('Fetching ExerciseDB:', query);
     const r = await fetch(`https://exercisedb.p.rapidapi.com/exercises/name/${encodeURIComponent(query)}?limit=1&offset=0`, {
       headers: {
         'x-rapidapi-key': '7e67ac7bf8msh0898a81207ba7a5p135c90jsncc5d3e59bd02',
         'x-rapidapi-host': 'exercisedb.p.rapidapi.com'
       }
     });
+    console.log('ExerciseDB status:', r.status);
     if (!r.ok) throw new Error('API error: ' + r.status);
     const data = await r.json();
+    console.log('ExerciseDB result:', data?.[0]?.name, data?.[0]?.gifUrl?.slice(0,40));
     const ex = Array.isArray(data) ? data[0] : null;
     if (ex?.gifUrl) {
       const html = buildExerciseGifHtml(ex);
       exerciseGifCache[elId] = html;
       el.innerHTML = html;
-      // Cache to Firestore so we don't use API calls again
       try { await fsSet(`exercise_library/${elId}`, { name: exerciseName, gifUrl: ex.gifUrl, target: ex.target||'', bodyPart: ex.bodyPart||'', equipment: ex.equipment||'', secondaryMuscles: ex.secondaryMuscles||[] }); } catch(e) {}
+      return;
     }
-  } catch(e) { console.error('WorkoutX fetch error:', e); }
+  } catch(e) { console.error('ExerciseDB error:', e); }
+
   el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Demo not available — ask your coach for form cues.</div>';
 }
 
