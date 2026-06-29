@@ -2459,13 +2459,18 @@ async function toggleExerciseGif(elId, exerciseName) {
     console.log('ExerciseDB status:', r.status);
     if (!r.ok) throw new Error('API error: ' + r.status);
     const data = await r.json();
-    console.log('ExerciseDB full response:', JSON.stringify(data).slice(0, 500));
-    const ex = Array.isArray(data) ? data[0] : null;
-    if (ex?.gifUrl) {
-      const html = buildExerciseGifHtml(ex);
+    console.log('ExerciseDB raw:', JSON.stringify(data).slice(0, 500));
+    console.log('ExerciseDB raw:', JSON.stringify(data).slice(0, 500));
+    const ex = Array.isArray(data) ? data[0] : (data?.exercises?.[0] || null);
+    // ExerciseDB v2 uses 'gifUrl', v1 might use 'gif' or 'image'
+    const gifUrl = ex?.gifUrl || ex?.gif || ex?.image || ex?.animatedImage;
+    const exName = ex?.name || ex?.exerciseName || ex?.title || '';
+    if (gifUrl) {
+      const exData = { gifUrl, name: exName, target: ex?.target||ex?.primaryMuscles?.[0]||'', bodyPart: ex?.bodyPart||ex?.category||'', equipment: ex?.equipment||'', secondaryMuscles: ex?.secondaryMuscles||[] };
+      const html = buildExerciseGifHtml(exData);
       exerciseGifCache[elId] = html;
       el.innerHTML = html;
-      try { await fsSet(`exercise_library/${elId}`, { name: exerciseName, gifUrl: ex.gifUrl, target: ex.target||'', bodyPart: ex.bodyPart||'', equipment: ex.equipment||'', secondaryMuscles: ex.secondaryMuscles||[] }); } catch(e) {}
+      try { await fsSet(`exercise_library/${elId}`, { name: exerciseName, ...exData }); } catch(e) {}
       return;
     }
   } catch(e) { console.error('ExerciseDB error:', e); }
