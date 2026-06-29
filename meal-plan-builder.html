@@ -640,9 +640,17 @@ function onClientSelect(){
   selectedClient=allClients.find(c=>c.id===id)||null;
   const info=document.getElementById('client-info');
   if(!selectedClient){info.style.display='none';return;}
-  const m=selectedClient.macros||{};
+  // Show correct macros based on tracking method and plan type
+  const planType=document.getElementById('plan-type').value;
+  let m=selectedClient.macros||{};
+  if(selectedClient.tracking_method==='zigzag'){
+    if(planType==='high_day') m=selectedClient.macros_high||selectedClient.macros||{};
+    else if(planType==='low_day') m=selectedClient.macros_low||selectedClient.macros||{};
+    else m=selectedClient.macros_high||selectedClient.macros||{};
+  }
   info.style.display='block';
-  info.innerHTML=`<strong style="color:var(--white);">${selectedClient.name}</strong> &nbsp;·&nbsp; Target: <strong style="color:var(--gold);">${m.calories||'—'} kcal</strong> &nbsp;·&nbsp; P: ${m.protein||'—'}g &nbsp; C: ${m.carbs||'—'}g &nbsp; F: ${m.fat||'—'}g`;
+  const dayLabel=selectedClient.tracking_method==='zigzag'?` <span style="font-size:11px;color:var(--muted);">(${planType==='low_day'?'❄️ Low Day':'🔥 High Day'})</span>`:'';
+  info.innerHTML=`<strong style="color:var(--white);">${selectedClient.name}</strong>${dayLabel} &nbsp;·&nbsp; Target: <strong style="color:var(--gold);">${m.calories||'—'} kcal</strong> &nbsp;·&nbsp; P: ${m.protein||'—'}g &nbsp; C: ${m.carbs||'—'}g &nbsp; F: ${m.fat||'—'}g`;
   updateTargetCompare();
   if(selectedClient.blood_type){document.getElementById('blood-type-select').value=selectedClient.blood_type;onBloodTypeChange();}
   if(selectedClient.supplements?.length){supplements=selectedClient.supplements.map(s=>({...s}));renderSupplements();}
@@ -969,8 +977,8 @@ function updateBlueprintFoodCalc(mi,fi,val){
   }
   updateTotals();
 }
-function getMealCals(mi){return meals[mi].foods.reduce((s,f)=>s+(f.cals||0),0);}
-function getMealMacro(mi,key){return Math.round(meals[mi].foods.reduce((s,f)=>s+(f[key]||0),0));}
+function getMealCals(mi){return Math.round(meals[mi].foods.reduce((s,f)=>s+(f.cals||0),0));}
+function getMealMacro(mi,key){return Math.round(meals[mi].foods.reduce((s,f)=>s+(f[key]||0),0)*10)/10;}
 function recalcFoodCals(mi,fi){
   const f=meals[mi].foods[fi];
   f.cals=Math.round((f.protein||0)*4+(f.carbs||0)*4+(f.fat||0)*9);
@@ -1107,13 +1115,19 @@ function updateTotals(){
     totCal+=cal;totP+=p;totC+=c;totF+=f;
     const badge=document.getElementById(`meal-cal-badge-${mi}`);if(badge)badge.textContent=cal+' kcal';
   });
-  document.getElementById('total-cals').textContent=totCal;
-  document.getElementById('total-protein').textContent=totP+'g';
-  document.getElementById('total-carbs').textContent=totC+'g';
-  document.getElementById('total-fat').textContent=totF+'g';
+  document.getElementById('total-cals').textContent=Math.round(totCal);
+  document.getElementById('total-protein').textContent=(Math.round(totP*10)/10)+'g';
+  document.getElementById('total-carbs').textContent=(Math.round(totC*10)/10)+'g';
+  document.getElementById('total-fat').textContent=(Math.round(totF*10)/10)+'g';
   const el=document.getElementById('target-compare');
-  if(!selectedClient?.macros){el.textContent='';return;}
-  const m=selectedClient.macros;
+  if(!selectedClient){el.textContent='';return;}
+  const planType=document.getElementById('plan-type').value;
+  let m=selectedClient.macros||{};
+  if(selectedClient.tracking_method==='zigzag'){
+    if(planType==='high_day') m=selectedClient.macros_high||selectedClient.macros||{};
+    else if(planType==='low_day') m=selectedClient.macros_low||selectedClient.macros||{};
+    else m=selectedClient.macros_high||selectedClient.macros||{};
+  }
   if(!totCal){el.innerHTML=`Target: <strong style="color:var(--gold)">${m.calories} kcal</strong> · P:${m.protein}g C:${m.carbs}g F:${m.fat}g`;return;}
   const diff=totCal-m.calories;
   const dc=Math.abs(diff)<=50?'var(--green)':Math.abs(diff)<=150?'var(--gold)':'var(--red)';
