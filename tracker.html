@@ -1471,8 +1471,20 @@ function setPlanDay(day) {
     if(leg) leg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--blue);color:var(--white);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
     if(nonleg) nonleg.style.cssText = 'flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
   }
-  renderPlanTab();
-  renderToday();
+  // Re-fetch profile to get latest meal plans then render
+  if(CLIENT_ID && CLIENT_ID !== 'demo') {
+    fsGet(`clients/${CLIENT_ID}`).then(profile => {
+      if(profile) clientProfile = profile;
+      renderPlanTab();
+      renderToday();
+    }).catch(() => {
+      renderPlanTab();
+      renderToday();
+    });
+  } else {
+    renderPlanTab();
+    renderToday();
+  }
 }
 
 // Default workout templates
@@ -2116,6 +2128,8 @@ function renderMealPlan() {
   } else {
     assignedMeals = profile.meal_plan;
   }
+
+  console.log('renderMealPlan:', {dayType: currentDayType, isZigzag, hasMealPlanHigh: !!profile.meal_plan_high, hasMealPlanLow: !!profile.meal_plan_low, assignedMealsLength: assignedMeals?.length});
 
   const meals = assignedMeals || DEFAULT_MEAL_PLAN;
   const isTemplate = !assignedMeals;
