@@ -1210,8 +1210,11 @@ function populateMealSelector() {
   const plan = isZigzag
     ? (currentDayType === 'high' ? (profile.meal_plan_high || profile.meal_plan) : (profile.meal_plan_low || profile.meal_plan))
     : profile.meal_plan;
+
+  row.style.display = 'block';
+
   if (plan?.length) {
-    row.style.display = 'block';
+    // Use actual meal plan names
     sel.innerHTML = plan.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
     // Default to meal that best matches current time
     const hour = new Date().getHours();
@@ -1228,7 +1231,11 @@ function populateMealSelector() {
     });
     sel.selectedIndex = bestIdx;
   } else {
-    row.style.display = 'none';
+    // No meal plan — show generic options
+    const hour = new Date().getHours();
+    const defaultMeal = hour < 10 ? 'Breakfast' : hour < 12 ? 'Mid Morning' : hour < 14 ? 'Lunch' : hour < 17 ? 'Afternoon Snack' : hour < 20 ? 'Dinner' : 'Evening Snack';
+    sel.innerHTML = ['Breakfast','Mid Morning','Lunch','Afternoon Snack','Dinner','Evening Snack']
+      .map(m => `<option value="${m}" ${m===defaultMeal?'selected':''}>${m}</option>`).join('');
   }
 }
 
