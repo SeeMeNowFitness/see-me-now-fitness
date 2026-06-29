@@ -640,17 +640,23 @@ function onClientSelect(){
   selectedClient=allClients.find(c=>c.id===id)||null;
   const info=document.getElementById('client-info');
   if(!selectedClient){info.style.display='none';return;}
-  // Show correct macros based on tracking method and plan type
-  const planType=document.getElementById('plan-type').value;
-  let m=selectedClient.macros||{};
-  if(selectedClient.tracking_method==='zigzag'){
-    if(planType==='high_day') m=selectedClient.macros_high||selectedClient.macros||{};
-    else if(planType==='low_day') m=selectedClient.macros_low||selectedClient.macros||{};
-    else m=selectedClient.macros_high||selectedClient.macros||{};
+  // Show correct macros based on tracking method
+  let displayLabel = '';
+  let m = {};
+  if(selectedClient.tracking_method === 'zigzag' && selectedClient.macros_high && selectedClient.macros_low) {
+    const hd = selectedClient.high_days_per_week || 2;
+    const ld = 7 - hd;
+    const avgCal = Math.round((selectedClient.macros_high.calories * hd + selectedClient.macros_low.calories * ld) / 7);
+    const avgP = Math.round((selectedClient.macros_high.protein * hd + selectedClient.macros_low.protein * ld) / 7);
+    const avgC = Math.round((selectedClient.macros_high.carbs * hd + selectedClient.macros_low.carbs * ld) / 7);
+    const avgF = Math.round((selectedClient.macros_high.fat * hd + selectedClient.macros_low.fat * ld) / 7);
+    m = { calories: avgCal, protein: avgP, carbs: avgC, fat: avgF };
+    displayLabel = ` <span style="font-size:11px;color:var(--muted);">📊 Weekly Avg (${hd}H/${ld}L)</span>`;
+  } else {
+    m = selectedClient.macros || {};
   }
-  info.style.display='block';
-  const dayLabel=selectedClient.tracking_method==='zigzag'?` <span style="font-size:11px;color:var(--muted);">(${planType==='low_day'?'❄️ Low Day':'🔥 High Day'})</span>`:'';
-  info.innerHTML=`<strong style="color:var(--white);">${selectedClient.name}</strong>${dayLabel} &nbsp;·&nbsp; Target: <strong style="color:var(--gold);">${m.calories||'—'} kcal</strong> &nbsp;·&nbsp; P: ${m.protein||'—'}g &nbsp; C: ${m.carbs||'—'}g &nbsp; F: ${m.fat||'—'}g`;
+  info.style.display = 'block';
+  info.innerHTML = `<strong style="color:var(--white);">${selectedClient.name}</strong>${displayLabel} &nbsp;·&nbsp; Target: <strong style="color:var(--gold);">${m.calories||'—'} kcal</strong> &nbsp;·&nbsp; P: ${m.protein||'—'}g &nbsp; C: ${m.carbs||'—'}g &nbsp; F: ${m.fat||'—'}g`;
   updateTargetCompare();
   if(selectedClient.blood_type){document.getElementById('blood-type-select').value=selectedClient.blood_type;onBloodTypeChange();}
   if(selectedClient.supplements?.length){supplements=selectedClient.supplements.map(s=>({...s}));renderSupplements();}
@@ -660,6 +666,7 @@ function onClientSelect(){
   // Show zigzag focus fields if client uses zigzag or plan type is high/low
   document.getElementById('high-day-focus').value = selectedClient.high_day_focus || '';
   document.getElementById('low-day-focus').value = selectedClient.low_day_focus || '';
+  document.getElementById('plan-notes').value = selectedClient.meal_plan_notes || '';
   toggleZigzagFocusFields();
   // Load workout plan
   if(selectedClient.workout_plan){
@@ -1121,12 +1128,12 @@ function updateTotals(){
   document.getElementById('total-fat').textContent=(Math.round(totF*10)/10)+'g';
   const el=document.getElementById('target-compare');
   if(!selectedClient){el.textContent='';return;}
-  const planType=document.getElementById('plan-type').value;
-  let m=selectedClient.macros||{};
-  if(selectedClient.tracking_method==='zigzag'){
-    if(planType==='high_day') m=selectedClient.macros_high||selectedClient.macros||{};
-    else if(planType==='low_day') m=selectedClient.macros_low||selectedClient.macros||{};
-    else m=selectedClient.macros_high||selectedClient.macros||{};
+  let m={};
+  if(selectedClient.tracking_method==='zigzag'&&selectedClient.macros_high&&selectedClient.macros_low){
+    const hd=selectedClient.high_days_per_week||2,ld=7-hd;
+    m={calories:Math.round((selectedClient.macros_high.calories*hd+selectedClient.macros_low.calories*ld)/7),protein:Math.round((selectedClient.macros_high.protein*hd+selectedClient.macros_low.protein*ld)/7),carbs:Math.round((selectedClient.macros_high.carbs*hd+selectedClient.macros_low.carbs*ld)/7),fat:Math.round((selectedClient.macros_high.fat*hd+selectedClient.macros_low.fat*ld)/7)};
+  } else {
+    m=selectedClient.macros||{};
   }
   if(!totCal){el.innerHTML=`Target: <strong style="color:var(--gold)">${m.calories} kcal</strong> · P:${m.protein}g C:${m.carbs}g F:${m.fat}g`;return;}
   const diff=totCal-m.calories;
@@ -2336,7 +2343,7 @@ async function savePlan() {
       await db.collection('clients').doc(selectedClient.id).set({
         [planField]: planData,
         meal_plan_updated: new Date().toISOString(),
-        meal_plan_notes: document.getElementById('plan-notes').value,
+        meal_plan_notes: document.getElementById('plan-notes').value || (selectedClient.meal_plan_notes || ''),
         meal_plan_type: planType,
         supplements: supplements.filter(s => s.name),
         approved_foods: approvedFoods,
