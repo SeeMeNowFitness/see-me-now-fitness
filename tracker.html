@@ -2425,18 +2425,17 @@ async function toggleExerciseGif(elId, exerciseName) {
   if (el.style.display === 'block') { el.style.display = 'none'; return; }
   el.style.display = 'block';
   if (exerciseGifCache[elId]) { el.innerHTML = exerciseGifCache[elId]; return; }
-  el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Loading…</div>';
+  el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Loading demo…</div>';
 
-  // Check Firestore cache first
-  try {
-    const cached = await fsGet(`exercise_library/${elId}`);
-    if (cached?.gifUrl) {
-      const html = buildExerciseGifHtml(cached);
-      exerciseGifCache[elId] = html;
-      el.innerHTML = html;
-      return;
-    }
-  } catch(e) {}
+  // Check Firestore cache first — but don't let errors block API call
+  let cached = null;
+  try { cached = await fsGet(`exercise_library/${elId}`); } catch(e) { /* not cached yet */ }
+  if (cached?.gifUrl) {
+    const html = buildExerciseGifHtml(cached);
+    exerciseGifCache[elId] = html;
+    el.innerHTML = html;
+    return;
+  }
 
   // Fetch from ExerciseDB API
   try {
