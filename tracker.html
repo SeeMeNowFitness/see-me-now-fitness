@@ -353,6 +353,14 @@ select option{background:var(--dark);}
 </div>
 <div class="section-label">Today's Log</div>
 <div id="meal-log-list"><div class="empty-state"><div class="icon">🍽</div><h4>Nothing logged yet</h4><p>Search above or tap a quick add to start tracking.</p></div></div>
+
+<!-- WORKOUTS LOGGED TODAY -->
+<div id="workouts-logged-section" style="display:none;margin-top:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);">🏋️ Workouts Today</div>
+  </div>
+  <div id="workouts-log-list"></div>
+</div>
 <div id="weigh-food-note" style="display:none;"><div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--gold);">⚠️ <strong>Contest Prep:</strong> Weigh everything in grams. No estimates.</div></div>
 </div>
 
@@ -584,6 +592,11 @@ select option{background:var(--dark);}
 <!-- ADD FOOD MODAL — with serving unit selector -->
 <div class="modal-overlay" id="modal-add-food" onclick="closeModalOutside(event,'modal-add-food')"><div class="modal"><div class="modal-handle"></div>
 <h3 id="add-food-title">Add Food</h3>
+<div id="meal-selector-row" style="display:none;margin-bottom:12px;">
+<label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Add to Meal</label>
+<select id="add-food-meal" style="width:100%;padding:10px 12px;font-size:13px;font-weight:700;background:var(--dark);border:1px solid var(--gold);border-radius:8px;color:var(--white);outline:none;margin-top:4px;">
+</select>
+</div>
 <label>Amount & Unit</label>
 <div class="unit-row">
 <input type="number" id="add-food-amount" placeholder="1" inputmode="decimal" value="1" oninput="updateAddPreview()">
@@ -874,25 +887,38 @@ if(profile.tracking_method==='zigzag'&&profile.macros_high&&profile.macros_low){
 }
 }
 function renderMealsTodayDetail(){
-  // Meals
+  // Meals detail (energy breakdown card)
   const el=document.getElementById('meals-list-today');
-  el.innerHTML=dayData.meals.length?dayData.meals.map(m=>`<div class="detail-line"><span>${m.name}</span><span class="val">${m.calories} kcal</span></div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0;">No meals logged today.</div>';
-  // Workouts
+  if(el) el.innerHTML=dayData.meals.length?dayData.meals.map(m=>`<div class="detail-line"><span>${m.name}</span><span class="val">${m.calories} kcal</span></div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0;">No meals logged today.</div>';
+
+  // Workouts — energy breakdown card
   const wel=document.getElementById('workouts-list-today');
-  if(!wel) return;
   const workouts=dayData.workouts?.length?dayData.workouts:(dayData.workout?.type?[dayData.workout]:[]);
-  if(!workouts.length){wel.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0;">No workouts logged today.</div>';return;}
-  wel.innerHTML=workouts.map((w,i)=>`
-    <div class="detail-line" style="align-items:flex-start;">
-      <div>
-        <div style="font-size:13px;font-weight:700;color:var(--white);">${w.type||'Workout'}</div>
-        <div style="font-size:12px;color:var(--muted);">${w.duration?w.duration+' min':''} ${w.notes?'· '+w.notes:''}</div>
-      </div>
-      <div style="display:flex;gap:8px;align-items:center;">
-        <span class="val">${w.calories} kcal</span>
-        <button onclick="deleteWorkout(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0;">✕</button>
-      </div>
-    </div>`).join('');
+  if(wel){
+    if(!workouts.length){wel.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0;">No workouts logged today.</div>';}
+    else{wel.innerHTML=workouts.map((w,i)=>`<div class="detail-line" style="align-items:flex-start;"><div><div style="font-size:13px;font-weight:700;color:var(--white);">${w.type||'Workout'}</div><div style="font-size:12px;color:var(--muted);">${w.duration?w.duration+' min':''} ${w.notes?'· '+w.notes:''}</div></div><div style="display:flex;gap:8px;align-items:center;"><span class="val">${w.calories} kcal</span><button onclick="deleteWorkout(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0;">✕</button></div></div>`).join('');}
+  }
+
+  // Workouts — Log tab section
+  const logSection = document.getElementById('workouts-logged-section');
+  const logList = document.getElementById('workouts-log-list');
+  if(logSection && logList){
+    if(!workouts.length){ logSection.style.display='none'; }
+    else{
+      logSection.style.display='block';
+      logList.innerHTML=workouts.map((w,i)=>`
+        <div class="meal-log-item">
+          <div class="row-between">
+            <div class="name">🏋️ ${w.type||'Workout'} ${w.duration?'· '+w.duration+' min':''}</div>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <span style="font-size:12px;color:var(--gold);font-weight:700;">${w.calories} kcal</span>
+              <button onclick="deleteWorkout(${i})" class="delete-btn">✕</button>
+            </div>
+          </div>
+          ${w.notes?`<div style="font-size:12px;color:var(--muted);margin-top:2px;">${w.notes}</div>`:''}
+        </div>`).join('');
+    }
+  }
 }
 
 function logMealPlanMeal(mealIdx) {
@@ -911,21 +937,29 @@ function logMealPlanMeal(mealIdx) {
   if (!meal.foods?.length) { showToast('No foods in this meal'); return; }
   const now = new Date().toISOString();
   meal.foods.forEach(f => {
+    const cals = Math.round(parseFloat(f.cals || f.calories) || 0);
+    const protein = Math.round((parseFloat(f.protein) || 0) * 10) / 10;
+    const carbs = Math.round((parseFloat(f.carbs) || 0) * 10) / 10;
+    const fat = Math.round((parseFloat(f.fat) || 0) * 10) / 10;
     dayData.meals.push({
       name: f.name,
-      grams: f.grams || 100,
+      grams: parseFloat(f.grams) || 100,
       servingLabel: f.servingLabel || f.amount || '—',
-      calories: Math.round(f.cals || f.calories || 0),
-      protein: Math.round((f.protein || 0) * 10) / 10,
-      carbs: Math.round((f.carbs || 0) * 10) / 10,
-      fat: Math.round((f.fat || 0) * 10) / 10,
+      calories: cals,
+      protein,
+      carbs,
+      fat,
       time: now,
+      mealGroup: meal.name,
     });
   });
   saveDay();
   renderMealLog();
   renderToday();
   showToast(`✓ ${meal.name} added to log (${meal.foods.length} foods)`);
+  // Switch to Log tab so user can see what was logged
+  const logBtn = document.querySelector('.tab[onclick*="log"]');
+  if(logBtn) switchTab('log', logBtn);
 }
 
 function deleteWorkout(i){
@@ -937,9 +971,10 @@ function deleteWorkout(i){
 }
 
 // LOG TAB
-function getMealGroup(timeStr) {
-  if (!timeStr) return 'Other';
-  const d = new Date(timeStr);
+function getMealGroup(m) {
+  if (m.mealGroup) return m.mealGroup;
+  if (!m.time) return 'Other';
+  const d = new Date(m.time);
   const h = d.getHours();
   if (h < 10) return '🌅 Breakfast';
   if (h < 12) return '🥪 Mid Morning';
@@ -959,7 +994,7 @@ function renderMealLog(){
   const groups = {};
   const groupOrder = [];
   dayData.meals.forEach((m, i) => {
-    const group = getMealGroup(m.time);
+    const group = getMealGroup(m);
     if (!groups[group]) { groups[group] = []; groupOrder.push(group); }
     groups[group].push({ ...m, _idx: i });
   });
@@ -1166,6 +1201,37 @@ async function searchUSDA(q) {
   }
 }
 
+function populateMealSelector() {
+  const sel = document.getElementById('add-food-meal');
+  const row = document.getElementById('meal-selector-row');
+  if (!sel || !row) return;
+  const profile = clientProfile || {};
+  const isZigzag = profile.tracking_method === 'zigzag';
+  const plan = isZigzag
+    ? (currentDayType === 'high' ? (profile.meal_plan_high || profile.meal_plan) : (profile.meal_plan_low || profile.meal_plan))
+    : profile.meal_plan;
+  if (plan?.length) {
+    row.style.display = 'block';
+    sel.innerHTML = plan.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+    // Default to meal that best matches current time
+    const hour = new Date().getHours();
+    let bestIdx = 0, bestDiff = 99;
+    plan.forEach((m, i) => {
+      if (!m.time) return;
+      const parts = m.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+      if (!parts) return;
+      let h = parseInt(parts[1]);
+      if (parts[3] && parts[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+      if (parts[3] && parts[3].toUpperCase() === 'AM' && h === 12) h = 0;
+      const diff = Math.abs(h - hour);
+      if (diff < bestDiff) { bestDiff = diff; bestIdx = i; }
+    });
+    sel.selectedIndex = bestIdx;
+  } else {
+    row.style.display = 'none';
+  }
+}
+
 function prepareBlueprintFood(name, cals, protein, carbs, fat, serving, servingG) {
   cals = parseFloat(cals) || 0;
   protein = parseFloat(protein) || 0;
@@ -1214,6 +1280,7 @@ function prepareBlueprintFood(name, cals, protein, carbs, fat, serving, servingG
     document.getElementById('add-food-unit').value = 'g';
   }
   updateAddPreview();
+  populateMealSelector();
   openModal('modal-add-food');
 }
 
@@ -1235,6 +1302,7 @@ function prepareAddFood(id,name,cals,protein,carbs,fat){
   document.getElementById('add-food-title').textContent='Add: '+name;
   document.getElementById('add-food-amount').value=1;
   document.getElementById('add-food-unit').value='g';
+  populateMealSelector();
   updateAddPreview();
   openModal('modal-add-food');
 }
@@ -1291,6 +1359,7 @@ function confirmAddFood(){
     piece:pendingFood._pieceOverride?`${amount} × ${pendingFood._blueprintServing||'piece'}`:`${amount} piece${amount!==1?'s':''}`,
     scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`,fl_oz:`${amount} fl oz`,l:`${amount}L`
   };
+  const mealGroup = document.getElementById('add-food-meal')?.value || null;
   dayData.meals.push({
     name:pendingFood.name,
     grams:Math.round(grams),
@@ -1300,7 +1369,8 @@ function confirmAddFood(){
     carbs:Math.round((pendingFood.carbs||0)*mult*10)/10,
     fat:Math.round((pendingFood.fat||0)*mult*10)/10,
     time:new Date().toISOString(),
-    blueprint:pendingFood._isBlueprint||false
+    blueprint:pendingFood._isBlueprint||false,
+    mealGroup,
   });
   saveDay();
   closeModal('modal-add-food');
