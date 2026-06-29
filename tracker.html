@@ -2364,32 +2364,35 @@ function renderClientExercises(exercises) {
     const group = ex.group || 'none';
     const groupColors = { superset: '#4c8fe0', triset: '#9b59b6' };
     const groupLabels = { superset: 'Superset', triset: 'Triset' };
+    const exId = 'ex-' + ex.name.replace(/\s+/g,'_').toLowerCase();
 
     if (group !== 'none' && groupColors[group]) {
-      // Collect all exercises in this group
       const groupExes = [ex];
       let j = i + 1;
       while (j < exercises.length && exercises[j].group === group) {
         groupExes.push(exercises[j]);
         j++;
       }
-      // Find the last exercise's rest time
       const lastEx = groupExes[groupExes.length - 1];
       const restAfter = lastEx.rest && lastEx.rest !== 'No rest' ? lastEx.rest : '60s';
-
       html += `
         <div style="border-left:3px solid ${groupColors[group]};padding-left:10px;margin-bottom:14px;margin-left:2px;">
           <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:${groupColors[group]};margin-bottom:8px;">⚡ ${groupLabels[group]}</div>
-          ${groupExes.map(gex => `
-            <div class="exercise-row" style="border-color:rgba(255,255,255,0.06);">
+          ${groupExes.map(gex => {
+            const gexId = 'ex-' + gex.name.replace(/\s+/g,'_').toLowerCase();
+            return `<div class="exercise-row" style="border-color:rgba(255,255,255,0.06);">
               <div style="flex:1;">
-                <div class="exercise-name">${gex.name}</div>
-                <div class="exercise-detail" style="color:${groupColors[group]};opacity:0.7;">No rest — go straight to next exercise</div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="exercise-name">${gex.name}</div>
+                  <button onclick="toggleExerciseGif('${gexId}','${gex.name.replace(/'/g,"\\'")}')" style="background:rgba(201,168,76,0.15);border:1px solid var(--gold-dim);color:var(--gold);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:800;cursor:pointer;flex-shrink:0;">How To</button>
+                </div>
+                <div id="${gexId}-gif" style="display:none;margin:8px 0;"></div>
+                <div class="exercise-detail" style="color:${groupColors[group]};opacity:0.7;">No rest — go straight to next</div>
                 ${gex.tip ? `<div class="coach-tip"><strong>Coach:</strong> ${gex.tip}</div>` : ''}
               </div>
               <div class="exercise-sets">${gex.sets}×${gex.reps}<span>sets×reps</span></div>
-            </div>
-          `).join('')}
+            </div>`;
+          }).join('')}
           <div style="font-size:11px;color:var(--muted);padding:6px 0;border-top:1px solid var(--border);">⏱ Rest <strong style="color:var(--white);">${restAfter}</strong> after completing all ${groupExes.length} exercises</div>
         </div>`;
       i = j;
@@ -2397,7 +2400,11 @@ function renderClientExercises(exercises) {
       html += `
         <div class="exercise-row">
           <div style="flex:1;">
-            <div class="exercise-name">${ex.name}</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div class="exercise-name">${ex.name}</div>
+              <button onclick="toggleExerciseGif('${exId}','${ex.name.replace(/'/g,"\\'")}')" style="background:rgba(201,168,76,0.15);border:1px solid var(--gold-dim);color:var(--gold);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:800;cursor:pointer;flex-shrink:0;">How To</button>
+            </div>
+            <div id="${exId}-gif" style="display:none;margin:8px 0;"></div>
             <div class="exercise-detail">Rest: ${ex.rest || '60s'}</div>
             ${ex.tip ? `<div class="coach-tip"><strong>Coach:</strong> ${ex.tip}</div>` : ''}
           </div>
@@ -2407,6 +2414,63 @@ function renderClientExercises(exercises) {
     }
   }
   return html;
+}
+
+// Exercise GIF cache
+const exerciseGifCache = {};
+
+async function toggleExerciseGif(elId, exerciseName) {
+  const el = document.getElementById(elId + '-gif');
+  if (!el) return;
+  if (el.style.display === 'block') { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  if (exerciseGifCache[elId]) { el.innerHTML = exerciseGifCache[elId]; return; }
+  el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Loading…</div>';
+
+  // Check Firestore cache first
+  try {
+    const cached = await fsGet(`exercise_library/${elId}`);
+    if (cached?.gifUrl) {
+      const html = buildExerciseGifHtml(cached);
+      exerciseGifCache[elId] = html;
+      el.innerHTML = html;
+      return;
+    }
+  } catch(e) {}
+
+  // Fetch from WorkoutX API
+  try {
+    const query = exerciseName.toLowerCase().replace(/[^a-z0-9\s]/g,'');
+    const r = await fetch(`https://workoutx-exercise-api-with-gif-animations.p.rapidapi.com/exercises/name/${encodeURIComponent(query)}?limit=1`, {
+      headers: {
+        'x-rapidapi-key': '7e67ac7bf8msh0898a81207ba7a5p135c90jsncc5d3e59bd02',
+        'x-rapidapi-host': 'workoutx-exercise-api-with-gif-animations.p.rapidapi.com'
+      }
+    });
+    const data = await r.json();
+    const ex = Array.isArray(data) ? data[0] : data?.exercises?.[0];
+    if (ex?.gifUrl) {
+      const html = buildExerciseGifHtml(ex);
+      exerciseGifCache[elId] = html;
+      el.innerHTML = html;
+      // Cache to Firestore so we don't use API calls again
+      try { await fsSet(`exercise_library/${elId}`, { name: exerciseName, gifUrl: ex.gifUrl, target: ex.target||'', bodyPart: ex.bodyPart||'', equipment: ex.equipment||'', secondaryMuscles: ex.secondaryMuscles||[] }); } catch(e) {}
+      return;
+    }
+  } catch(e) {}
+  el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Demo not available — ask your coach for form cues.</div>';
+}
+
+function buildExerciseGifHtml(ex) {
+  const muscles = [ex.target, ...(ex.secondaryMuscles||[])].filter(Boolean).join(', ');
+  return `
+    <div style="background:var(--black);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:4px;">
+      <img src="${ex.gifUrl}" style="width:100%;max-height:220px;object-fit:contain;background:#111;" alt="${ex.name||''}" loading="lazy" onerror="this.style.display='none'">
+      <div style="padding:10px 12px;">
+        ${ex.bodyPart ? `<div style="font-size:11px;color:var(--muted);margin-bottom:4px;">🎯 <strong style="color:var(--white);">${ex.bodyPart}</strong>${muscles ? ' · '+muscles : ''}</div>` : ''}
+        ${ex.equipment ? `<div style="font-size:11px;color:var(--muted);">🏋️ ${ex.equipment}</div>` : ''}
+      </div>
+    </div>`;
 }
 
 function renderWorkoutDayCard(template) {
