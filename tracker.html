@@ -693,9 +693,20 @@ function setDayType(t){
     if(leg) leg.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--blue);color:var(--white);border:none;font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
     if(nonleg) nonleg.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:12px;letter-spacing:0.1em;cursor:pointer;';
   }
-  // Also update plan summary and meal plan if on My Plan tab
-  if(document.getElementById('plan-summary-pills')) renderPlanSummary();
-  if(document.getElementById('plan-meal-content')) renderMealPlan();
+  // Re-fetch profile to get latest meal plans then update UI
+  if(CLIENT_ID && CLIENT_ID !== 'demo') {
+    fsGet(`clients/${CLIENT_ID}`).then(profile => {
+      if(profile) clientProfile = profile;
+      if(document.getElementById('plan-summary-pills')) renderPlanSummary();
+      if(document.getElementById('plan-meal-content')) renderMealPlan();
+    }).catch(() => {
+      if(document.getElementById('plan-summary-pills')) renderPlanSummary();
+      if(document.getElementById('plan-meal-content')) renderMealPlan();
+    });
+  } else {
+    if(document.getElementById('plan-summary-pills')) renderPlanSummary();
+    if(document.getElementById('plan-meal-content')) renderMealPlan();
+  }
 }
 function getMacros(){if(!clientProfile)return{protein:150,carbs:175,fat:55,calories:1795};if(clientProfile.tracking_method==='zigzag')return currentDayType==='high'?(clientProfile.macros_high||clientProfile.macros):(clientProfile.macros_low||clientProfile.macros);return clientProfile.macros||{protein:150,carbs:175,fat:55,calories:1795};}
 function getZone(n){return n>100?'deficit':(n>-100?'maintenance':'surplus');}
@@ -1867,9 +1878,16 @@ function renderPlanSummary() {
       const lowDays = 7 - highDays;
       const avgCal = Math.round((profile.macros_high.calories * highDays + profile.macros_low.calories * lowDays) / 7);
       const avgP = Math.round((profile.macros_high.protein * highDays + profile.macros_low.protein * lowDays) / 7);
+      const avgC = Math.round((profile.macros_high.carbs * highDays + profile.macros_low.carbs * lowDays) / 7);
+      const avgF = Math.round((profile.macros_high.fat * highDays + profile.macros_low.fat * lowDays) / 7);
       return `<div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 12px;flex:1;min-width:100%;margin-top:8px;">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">📊 Weekly Avg (${highDays}H/${lowDays}L)</div>
-        <div style="font-size:15px;font-weight:900;color:var(--white);margin-top:3px;">${avgCal} <span style="font-size:11px;color:var(--muted);font-weight:400;">kcal</span> &nbsp;·&nbsp; ${avgP}g <span style="font-size:11px;color:var(--muted);font-weight:400;">protein</span></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
+          <span style="font-size:13px;font-weight:800;color:var(--white);">${avgCal} <span style="font-size:11px;color:var(--muted);font-weight:400;">kcal</span></span>
+          <span style="font-size:13px;font-weight:700;color:var(--muted);">P: <strong style="color:var(--white);">${avgP}g</strong></span>
+          <span style="font-size:13px;font-weight:700;color:var(--muted);">C: <strong style="color:var(--white);">${avgC}g</strong></span>
+          <span style="font-size:13px;font-weight:700;color:var(--muted);">F: <strong style="color:var(--white);">${avgF}g</strong></span>
+        </div>
       </div>`;
     })() : ''}
   `;
