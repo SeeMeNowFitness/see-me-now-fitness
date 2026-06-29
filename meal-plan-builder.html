@@ -705,13 +705,20 @@ function loadExistingPlan(plan){
   meals=plan.map(m=>({
     name:m.name,
     time:m.time,
-    foods:m.foods.map(f=>({
+    foods:(m.foods||[]).map(f=>({
       ...f,
-      // Restore base macros for calculation
+      unit: f.unit || 'g',
+      amount: f.amount || '100',
+      // Restore base macros for USDA foods
       _baseCals: f._baseCals || f.cals || 0,
       _baseProtein: f._baseProtein || f.protein || 0,
       _baseCarbs: f._baseCarbs || f.carbs || 0,
       _baseFat: f._baseFat || f.fat || 0,
+      // Restore base macros for Blueprint foods
+      baseCals: f.baseCals || f.cals || 0,
+      baseProtein: f.baseProtein || f.protein || 0,
+      baseCarbs: f.baseCarbs || f.carbs || 0,
+      baseFat: f.baseFat || f.fat || 0,
     }))
   }));
   renderMeals();updateTotals();
