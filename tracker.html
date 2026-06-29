@@ -2427,10 +2427,11 @@ async function toggleExerciseGif(elId, exerciseName) {
   if (exerciseGifCache[elId]) { el.innerHTML = exerciseGifCache[elId]; return; }
   el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Loading demo…</div>';
 
-  // Check Firestore cache
+  // Check Firestore cache (404 = not cached yet, skip silently)
   try {
     const r = await fetch(`${FB}/exercise_library/${elId}?key=${FIREBASE_CONFIG.apiKey}`);
-    if (r.ok) {
+    if (r.status === 404) { /* not cached yet — fall through to API */ }
+    else if (r.ok) {
       const raw = await r.json();
       const gifField = raw?.fields?.gifUrl?.stringValue;
       if (gifField) {
@@ -2445,24 +2446,32 @@ async function toggleExerciseGif(elId, exerciseName) {
 
   // Fetch from ExerciseDB API
   try {
-    const query = exerciseName.toLowerCase()
+    const cleanQuery = (name) => name.toLowerCase()
       .replace(/\s*\(.*?\)/g, '')
       .replace(/[^a-z0-9\s]/g, '')
       .trim();
-    console.log('Fetching ExerciseDB:', query);
-    const r = await fetch(`https://exercisedb.p.rapidapi.com/exercises/name/${encodeURIComponent(query)}?limit=1&offset=0`, {
-      headers: {
-        'x-rapidapi-key': '7e67ac7bf8msh0898a81207ba7a5p135c90jsncc5d3e59bd02',
-        'x-rapidapi-host': 'exercisedb.p.rapidapi.com'
-      }
-    });
-    console.log('ExerciseDB status:', r.status);
-    if (!r.ok) throw new Error('API error: ' + r.status);
-    const data = await r.json();
-    console.log('ExerciseDB raw:', JSON.stringify(data).slice(0, 500));
-    console.log('ExerciseDB raw:', JSON.stringify(data).slice(0, 500));
-    const ex = Array.isArray(data) ? data[0] : (data?.exercises?.[0] || null);
-    // ExerciseDB v2 uses 'gifUrl', v1 might use 'gif' or 'image'
+    // Try exact query, then retry with trailing 's' stripped (plural → singular)
+    const queries = [cleanQuery(exerciseName)];
+    if (queries[0].endsWith('s')) queries.push(queries[0].replace(/s$/, ''));
+
+    let ex = null;
+    for (const query of queries) {
+      console.log('Fetching ExerciseDB:', query);
+      const r = await fetch(`https://exercisedb.p.rapidapi.com/exercises/name/${encodeURIComponent(query)}?limit=1&offset=0`, {
+        headers: {
+          'x-rapidapi-key': '7e67ac7bf8msh0898a81207ba7a5p135c90jsncc5d3e59bd02',
+          'x-rapidapi-host': 'exercisedb.p.rapidapi.com'
+        }
+      });
+      console.log('ExerciseDB status:', r.status);
+      if (!r.ok) throw new Error('API error: ' + r.status);
+      const data = await r.json();
+      ex = Array.isArray(data) ? data[0] : (data?.exercises?.[0] || null);
+      console.log('ExerciseDB ex:', ex ? `gifUrl=${ex.gifUrl} name=${ex.name} bodyPart=${ex.bodyPart}` : `null (data length=${Array.isArray(data)?data.length:'n/a'})`);
+      if (ex) break; // found a result — stop retrying
+    }
+
+    // ExerciseDB returns: gifUrl, name, bodyPart, target, equipment, secondaryMuscles
     const gifUrl = ex?.gifUrl || ex?.gif || ex?.image || ex?.animatedImage;
     const exName = ex?.name || ex?.exerciseName || ex?.title || '';
     if (gifUrl) {
