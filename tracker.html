@@ -2431,9 +2431,10 @@ async function toggleExerciseGif(elId, exerciseName) {
   try {
     const r = await fetch(`${FB}/exercise_library/${elId}?key=${FIREBASE_CONFIG.apiKey}`);
     if (r.ok) {
-      const data = await r.json();
-      const doc = fsDoc(data);
-      if (doc?.gifUrl) {
+      const raw = await r.json();
+      const gifField = raw?.fields?.gifUrl?.stringValue;
+      if (gifField) {
+        const doc = { gifUrl: gifField, target: raw?.fields?.target?.stringValue||'', bodyPart: raw?.fields?.bodyPart?.stringValue||'', equipment: raw?.fields?.equipment?.stringValue||'', secondaryMuscles: [] };
         const html = buildExerciseGifHtml(doc);
         exerciseGifCache[elId] = html;
         el.innerHTML = html;
