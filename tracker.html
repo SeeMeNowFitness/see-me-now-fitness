@@ -435,6 +435,7 @@ select option{background:var(--dark);}
 
 <!-- Check-In / Upsell Button -->
 <div id="plan-checkin-block" style="margin-bottom:16px;"></div>
+<div id="plan-coach-notes" style="display:none;margin-bottom:12px;"></div>
 
 <!-- Disclaimer -->
 <div style="background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:12px 14px;margin-bottom:16px;font-size:11px;color:var(--muted);line-height:1.7;">
@@ -797,6 +798,30 @@ const m=getMacros(),l={protein:0,carbs:0,fat:0,calories:0};
 dayData.meals.forEach(x=>{l.protein+=x.protein||0;l.carbs+=x.carbs||0;l.fat+=x.fat||0;l.calories+=x.calories||0;});
 const items=[{key:'protein',label:'Protein',color:'bar-protein',unit:'g'},{key:'carbs',label:'Carbs',color:'bar-carbs',unit:'g'},{key:'fat',label:'Fat',color:'bar-fat',unit:'g'},{key:'calories',label:'Calories',color:'bar-calories',unit:'kcal'}];
 document.getElementById('macro-bars').innerHTML=items.map(i=>{const pct=Math.min(100,Math.round(l[i.key]/m[i.key]*100)),over=l[i.key]>m[i.key];const logged=i.key==='calories'?Math.round(l[i.key]):(Math.round(l[i.key]*10)/10);return`<div class="macro-row"><div class="macro-row-top"><span class="macro-name">${i.label}</span><span class="macro-nums"><span>${logged}${i.unit}</span> / ${m[i.key]}${i.unit}</span></div><div class="bar-track"><div class="bar-fill ${over?'bar-over':i.color}" style="width:${pct}%"></div></div></div>`;}).join('');
+// Weekly average for zigzag clients
+const profile = clientProfile || {};
+if(profile.tracking_method==='zigzag'&&profile.macros_high&&profile.macros_low){
+  const hd=profile.high_days_per_week||2,ld=7-hd;
+  const avgCal=Math.round((profile.macros_high.calories*hd+profile.macros_low.calories*ld)/7);
+  const avgP=Math.round((profile.macros_high.protein*hd+profile.macros_low.protein*ld)/7);
+  const avgC=Math.round((profile.macros_high.carbs*hd+profile.macros_low.carbs*ld)/7);
+  const avgF=Math.round((profile.macros_high.fat*hd+profile.macros_low.fat*ld)/7);
+  const existing=document.getElementById('weekly-avg-bar');
+  const html=`<div id="weekly-avg-bar" style="margin-top:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;">
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;">📊 Weekly Average (${hd} High / ${ld} Low days)</div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <span style="font-size:13px;font-weight:800;color:var(--white);">${avgCal} <span style="font-size:11px;color:var(--muted);font-weight:400;">kcal</span></span>
+      <span style="font-size:13px;font-weight:700;color:var(--muted);">P: <strong style="color:var(--white);">${avgP}g</strong></span>
+      <span style="font-size:13px;font-weight:700;color:var(--muted);">C: <strong style="color:var(--white);">${avgC}g</strong></span>
+      <span style="font-size:13px;font-weight:700;color:var(--muted);">F: <strong style="color:var(--white);">${avgF}g</strong></span>
+    </div>
+  </div>`;
+  if(existing) existing.outerHTML=html;
+  else document.getElementById('macro-bars').insertAdjacentHTML('afterend',html);
+} else {
+  const existing=document.getElementById('weekly-avg-bar');
+  if(existing) existing.remove();
+}
 }
 function renderMealsTodayDetail(){const el=document.getElementById('meals-list-today');el.innerHTML=dayData.meals.length?dayData.meals.map(m=>`<div class="detail-line"><span>${m.name}</span><span class="val">${m.calories} kcal</span></div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0;">No meals logged today.</div>';}
 
@@ -1771,11 +1796,29 @@ function renderCheckinBlock() {
 
 function renderPlanTab() {
   renderPlanSummary();
+  renderCoachNotes();
   renderWorkoutPlan();
   renderMealPlan();
   renderSupplements();
   renderApprovedFoods();
   renderFlexMeals();
+}
+
+function renderCoachNotes() {
+  const profile = clientProfile || {};
+  const notes = profile.meal_plan_notes || profile.coach_notes;
+  const el = document.getElementById('plan-coach-notes');
+  if (!el) return;
+  if (notes) {
+    el.style.display = 'block';
+    el.innerHTML = `
+      <div style="background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">📝 Coach Notes</div>
+        <div style="font-size:13px;color:var(--white);line-height:1.7;">${notes}</div>
+      </div>`;
+  } else {
+    el.style.display = 'none';
+  }
 }
 
 function renderPlanSummary() {
@@ -1819,6 +1862,16 @@ function renderPlanSummary() {
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue);">Focus</div>
       <div style="font-size:13px;font-weight:900;color:var(--white);margin-top:3px;">${focusIcon} ${focusLabel}</div>
     </div>` : ''}
+    ${isZigzag && profile.macros_high && profile.macros_low ? (() => {
+      const highDays = profile.high_days_per_week || 2;
+      const lowDays = 7 - highDays;
+      const avgCal = Math.round((profile.macros_high.calories * highDays + profile.macros_low.calories * lowDays) / 7);
+      const avgP = Math.round((profile.macros_high.protein * highDays + profile.macros_low.protein * lowDays) / 7);
+      return `<div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 12px;flex:1;min-width:100%;margin-top:8px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">📊 Weekly Avg (${highDays}H/${lowDays}L)</div>
+        <div style="font-size:15px;font-weight:900;color:var(--white);margin-top:3px;">${avgCal} <span style="font-size:11px;color:var(--muted);font-weight:400;">kcal</span> &nbsp;·&nbsp; ${avgP}g <span style="font-size:11px;color:var(--muted);font-weight:400;">protein</span></div>
+      </div>`;
+    })() : ''}
   `;
 }
 
@@ -2049,10 +2102,10 @@ function renderMealPlan() {
       📋 <strong style="color:var(--gold);">Sample Blueprint Meal Plan</strong> — Your coach will assign your personalized plan.
     </div>
   ` : '') + meals.map((meal, i) => {
-    const totalP = meal.foods.reduce((s, f) => s + (f.protein || 0), 0);
-    const totalC = meal.foods.reduce((s, f) => s + (f.carbs || 0), 0);
-    const totalF = meal.foods.reduce((s, f) => s + (f.fat || 0), 0);
-    const totalCal = meal.foods.reduce((s, f) => s + (f.cals || 0), 0);
+    const totalP = Math.round(meal.foods.reduce((s, f) => s + (f.protein || 0), 0) * 10) / 10;
+    const totalC = Math.round(meal.foods.reduce((s, f) => s + (f.carbs || 0), 0) * 10) / 10;
+    const totalF = Math.round(meal.foods.reduce((s, f) => s + (f.fat || 0), 0) * 10) / 10;
+    const totalCal = Math.round(meal.foods.reduce((s, f) => s + (f.cals || 0), 0));
     const pPct = Math.round(totalP * 4 / totalCal * 100) || 0;
     const cPct = Math.round(totalC * 4 / totalCal * 100) || 0;
     const fPct = Math.round(totalF * 9 / totalCal * 100) || 0;

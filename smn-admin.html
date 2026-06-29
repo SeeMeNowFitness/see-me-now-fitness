@@ -129,7 +129,17 @@ a{color:var(--gold);}
 <h3>Macro Targets</h3>
 <div class="field" style="margin-bottom:16px;"><label>Tracking Method</label><div style="display:flex;gap:8px;margin-top:6px;"><button id="method-standard" onclick="setTrackingMethod('standard')" class="btn btn-gold btn-sm" style="flex:1;">Standard</button><button id="method-zigzag" onclick="setTrackingMethod('zigzag')" class="btn btn-outline btn-sm" style="flex:1;">Zig Zag (High / Low)</button></div></div>
 <div id="macros-standard"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">Daily Targets</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein" oninput="autoCalcCalories('standard')"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs" oninput="autoCalcCalories('standard')"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat" oninput="autoCalcCalories('standard')"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories" style="color:var(--gold)"></div></div></div>
-<div id="macros-zigzag" style="display:none;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">🔥 High Day</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein-high" oninput="autoCalcCalories('high')"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-high" oninput="autoCalcCalories('high')"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat-high" oninput="autoCalcCalories('high')"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-high" style="color:var(--gold)"></div></div><div style="margin-bottom:16px;"></div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">❄️ Low Day</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein-low" oninput="autoCalcCalories('low')"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-low" oninput="autoCalcCalories('low')"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat-low" oninput="autoCalcCalories('low')"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-low" style="color:var(--gold)"></div></div></div>
+<div id="macros-zigzag" style="display:none;">
+<div style="margin-bottom:16px;">
+  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">📅 High Days Per Week</div>
+  <div style="display:flex;gap:8px;">
+    <button onclick="setHighDays(1)" id="hd-btn-1" class="btn btn-outline btn-sm" style="flex:1;">1 Day</button>
+    <button onclick="setHighDays(2)" id="hd-btn-2" class="btn btn-gold btn-sm" style="flex:1;">2 Days</button>
+    <button onclick="setHighDays(3)" id="hd-btn-3" class="btn btn-outline btn-sm" style="flex:1;">3 Days</button>
+  </div>
+  <div id="weekly-avg-preview" style="margin-top:10px;font-size:12px;color:var(--muted);padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;display:none;"></div>
+</div>
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">🔥 High Day</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein-high" oninput="autoCalcCalories('high');updateWeeklyAvgPreview()"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-high" oninput="autoCalcCalories('high');updateWeeklyAvgPreview()"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat-high" oninput="autoCalcCalories('high');updateWeeklyAvgPreview()"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-high" style="color:var(--gold)" oninput="updateWeeklyAvgPreview()"></div></div><div style="margin-bottom:16px;"></div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">❄️ Low Day</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein-low" oninput="autoCalcCalories('low');updateWeeklyAvgPreview()"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-low" oninput="autoCalcCalories('low');updateWeeklyAvgPreview()"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat-low" oninput="autoCalcCalories('low');updateWeeklyAvgPreview()"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-low" style="color:var(--gold)" oninput="updateWeeklyAvgPreview()"></div></div></div>
 </div>
 <div class="form-section" id="edit-bmr" style="display:none;">
 <h3>BMR Inputs (Mifflin-St Jeor)</h3>
@@ -251,6 +261,7 @@ async function loadClientIntoForm(id){
   const m=client.macros||{};const method=client.tracking_method||'standard';setTrackingMethod(method);
   document.getElementById('e-protein').value=m.protein||'';document.getElementById('e-carbs').value=m.carbs||'';document.getElementById('e-fat').value=m.fat||'';document.getElementById('e-calories').value=m.calories||'';
   const mh=client.macros_high||{};const ml=client.macros_low||{};
+  setHighDays(client.high_days_per_week||2);
   document.getElementById('e-protein-high').value=mh.protein||'';document.getElementById('e-carbs-high').value=mh.carbs||'';document.getElementById('e-fat-high').value=mh.fat||'';document.getElementById('e-calories-high').value=mh.calories||'';
   document.getElementById('e-protein-low').value=ml.protein||'';document.getElementById('e-carbs-low').value=ml.carbs||'';document.getElementById('e-fat-low').value=ml.fat||'';document.getElementById('e-calories-low').value=ml.calories||'';
   const b=client.bmr_inputs||{};
@@ -269,6 +280,39 @@ async function loadClientIntoForm(id){
 function updateTierFields(){const tier=document.getElementById('e-tier').value;document.getElementById('edit-contest').style.display=tier==='contest_prep'?'':'none';document.getElementById('edit-inperson').style.display=tier==='inperson'?'':'none';document.getElementById('edit-online').style.display='';}
 
 let currentTrackingMethod='standard';
+let currentHighDays = 2;
+
+function setHighDays(n) {
+  currentHighDays = n;
+  [1,2,3].forEach(i => {
+    const btn = document.getElementById(`hd-btn-${i}`);
+    if (btn) btn.className = `btn btn-sm ${i===n?'btn-gold':'btn-outline'}`;
+    if (btn) btn.style.flex = '1';
+  });
+  updateWeeklyAvgPreview();
+}
+
+function updateWeeklyAvgPreview() {
+  const el = document.getElementById('weekly-avg-preview');
+  if (!el) return;
+  const highCal = parseInt(document.getElementById('e-calories-high')?.value) || 0;
+  const lowCal = parseInt(document.getElementById('e-calories-low')?.value) || 0;
+  const highP = parseInt(document.getElementById('e-protein-high')?.value) || 0;
+  const lowP = parseInt(document.getElementById('e-protein-low')?.value) || 0;
+  const highC = parseInt(document.getElementById('e-carbs-high')?.value) || 0;
+  const lowC = parseInt(document.getElementById('e-carbs-low')?.value) || 0;
+  const highF = parseInt(document.getElementById('e-fat-high')?.value) || 0;
+  const lowF = parseInt(document.getElementById('e-fat-low')?.value) || 0;
+  const lowDays = 7 - currentHighDays;
+  if (!highCal && !lowCal) { el.style.display = 'none'; return; }
+  const avgCal = Math.round((highCal * currentHighDays + lowCal * lowDays) / 7);
+  const avgP = Math.round((highP * currentHighDays + lowP * lowDays) / 7);
+  const avgC = Math.round((highC * currentHighDays + lowC * lowDays) / 7);
+  const avgF = Math.round((highF * currentHighDays + lowF * lowDays) / 7);
+  el.style.display = 'block';
+  el.innerHTML = `📊 <strong style="color:var(--gold);">Weekly Average</strong> (${currentHighDays} High / ${lowDays} Low) &nbsp;·&nbsp; <strong style="color:var(--white);">${avgCal} kcal</strong> &nbsp;·&nbsp; P: ${avgP}g &nbsp; C: ${avgC}g &nbsp; F: ${avgF}g`;
+}
+
 function setTrackingMethod(method){currentTrackingMethod=method;document.getElementById('macros-standard').style.display=method==='standard'?'':'none';document.getElementById('macros-zigzag').style.display=method==='zigzag'?'':'none';document.getElementById('method-standard').className='btn btn-sm '+(method==='standard'?'btn-gold':'btn-outline');document.getElementById('method-zigzag').className='btn btn-sm '+(method==='zigzag'?'btn-gold':'btn-outline');document.getElementById('method-standard').style.flex='1';document.getElementById('method-zigzag').style.flex='1';}
 
 function autoCalcCalories(type){if(type==='standard'){const p=parseFloat(document.getElementById('e-protein').value)||0,c=parseFloat(document.getElementById('e-carbs').value)||0,f=parseFloat(document.getElementById('e-fat').value)||0;document.getElementById('e-calories').value=Math.round(p*4+c*4+f*9);}else if(type==='high'){const p=parseFloat(document.getElementById('e-protein-high').value)||0,c=parseFloat(document.getElementById('e-carbs-high').value)||0,f=parseFloat(document.getElementById('e-fat-high').value)||0;document.getElementById('e-calories-high').value=Math.round(p*4+c*4+f*9);}else if(type==='low'){const p=parseFloat(document.getElementById('e-protein-low').value)||0,c=parseFloat(document.getElementById('e-carbs-low').value)||0,f=parseFloat(document.getElementById('e-fat-low').value)||0;document.getElementById('e-calories-low').value=Math.round(p*4+c*4+f*9);}}
@@ -280,7 +324,7 @@ function calcBMRPreview(){const w=parseFloat(document.getElementById('e-weight-l
 async function saveClient(){
   if(!selectedClientId)return;
   const tier=document.getElementById('e-tier').value;
-  const data={name:document.getElementById('e-name').value,email:document.getElementById('e-email').value,email_lower:document.getElementById('e-email').value.trim().toLowerCase(),tier,phone:document.getElementById('e-phone').value,tracking_method:currentTrackingMethod,macros:{protein:parseInt(document.getElementById('e-protein').value)||0,carbs:parseInt(document.getElementById('e-carbs').value)||0,fat:parseInt(document.getElementById('e-fat').value)||0,calories:parseInt(document.getElementById('e-calories').value)||0},macros_high:{protein:parseInt(document.getElementById('e-protein-high').value)||0,carbs:parseInt(document.getElementById('e-carbs-high').value)||0,fat:parseInt(document.getElementById('e-fat-high').value)||0,calories:parseInt(document.getElementById('e-calories-high').value)||0},macros_low:{protein:parseInt(document.getElementById('e-protein-low').value)||0,carbs:parseInt(document.getElementById('e-carbs-low').value)||0,fat:parseInt(document.getElementById('e-fat-low').value)||0,calories:parseInt(document.getElementById('e-calories-low').value)||0},bmr_inputs:{weight_lbs:parseFloat(document.getElementById('e-weight-lbs').value)||0,height_cm:parseFloat(document.getElementById('e-height-cm').value)||0,age:parseInt(document.getElementById('e-age').value)||0,gender:document.getElementById('e-gender').value},notes:document.getElementById('e-notes').value,updated_at:new Date().toISOString()};
+  const data={name:document.getElementById('e-name').value,email:document.getElementById('e-email').value,email_lower:document.getElementById('e-email').value.trim().toLowerCase(),tier,phone:document.getElementById('e-phone').value,tracking_method:currentTrackingMethod,macros:{protein:parseInt(document.getElementById('e-protein').value)||0,carbs:parseInt(document.getElementById('e-carbs').value)||0,fat:parseInt(document.getElementById('e-fat').value)||0,calories:parseInt(document.getElementById('e-calories').value)||0},macros_high:{protein:parseInt(document.getElementById('e-protein-high').value)||0,carbs:parseInt(document.getElementById('e-carbs-high').value)||0,fat:parseInt(document.getElementById('e-fat-high').value)||0,calories:parseInt(document.getElementById('e-calories-high').value)||0},macros_low:{protein:parseInt(document.getElementById('e-protein-low').value)||0,carbs:parseInt(document.getElementById('e-carbs-low').value)||0,fat:parseInt(document.getElementById('e-fat-low').value)||0,calories:parseInt(document.getElementById('e-calories-low').value)||0},high_days_per_week:currentHighDays,bmr_inputs:{weight_lbs:parseFloat(document.getElementById('e-weight-lbs').value)||0,height_cm:parseFloat(document.getElementById('e-height-cm').value)||0,age:parseInt(document.getElementById('e-age').value)||0,gender:document.getElementById('e-gender').value},notes:document.getElementById('e-notes').value,updated_at:new Date().toISOString()};
   if(tier==='contest_prep'){data.competition_type=document.getElementById('e-competition-type').value;data.show_name=document.getElementById('e-show-name').value;data.federation=document.getElementById('e-federation').value;data.show_date=document.getElementById('e-show-date').value;}
   if(tier==='inperson'){data.sessions_purchased=parseInt(document.getElementById('e-sessions-purchased').value)||0;data.sessions_used=parseInt(document.getElementById('e-sessions-used').value)||0;data.next_session=document.getElementById('e-next-session').value;}
   data.checkin_streak=parseInt(document.getElementById('e-checkin-streak').value)||0;data.checkin_schedule=document.getElementById('e-checkin-schedule').value;
