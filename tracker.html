@@ -312,6 +312,7 @@ select option{background:var(--dark);}
 </div>
 </div>
 <div class="detail-card"><div class="detail-card-header" onclick="toggleDetail('detail-meals')"><h4>🍽 Meals Logged</h4><span class="chevron" id="chev-detail-meals">▼</span></div><div class="detail-card-body" id="detail-meals"><div id="meals-list-today"></div></div></div>
+<div class="detail-card"><div class="detail-card-header" onclick="toggleDetail('detail-workouts-logged')"><h4>🏋️ Workouts Logged</h4><span class="chevron" id="chev-detail-workouts-logged">▼</span></div><div class="detail-card-body" id="detail-workouts-logged"><div id="workouts-list-today"><div style="color:var(--muted);font-size:13px;padding:8px 0;">No workouts logged today.</div></div></div></div>
 <div id="contest-countdown" style="display:none;"><div class="card" style="text-align:center;"><div class="card-title" id="countdown-card-title">Show Countdown</div><div id="weeks-out" style="font-size:42px;font-weight:900;color:var(--gold);"></div><div style="font-size:12px;color:var(--muted);margin-top:4px;" id="show-name-label"></div></div></div>
 <div id="session-countdown" style="display:none;"><div class="card"><div class="card-title">Sessions Remaining</div><div style="display:flex;align-items:center;justify-content:space-between;"><div style="font-size:42px;font-weight:900;color:var(--gold);" id="sessions-remaining">—</div><div id="renew-prompt" style="display:none;"><a href="https://seemenowfitness.com/blank#in-person-training" class="btn btn-gold btn-sm">Renew</a></div></div><div style="font-size:12px;color:var(--muted);margin-top:4px;" id="next-session-label"></div></div></div>
 <div id="checkin-streak" style="display:none;"><div class="card" style="text-align:center;"><div class="card-title">Check-In Streak</div><div style="font-size:42px;font-weight:900;color:var(--green);" id="streak-count">—</div><div style="font-size:12px;color:var(--muted);">weeks in a row</div></div></div>
@@ -872,7 +873,68 @@ if(profile.tracking_method==='zigzag'&&profile.macros_high&&profile.macros_low){
   if(existing) existing.remove();
 }
 }
-function renderMealsTodayDetail(){const el=document.getElementById('meals-list-today');el.innerHTML=dayData.meals.length?dayData.meals.map(m=>`<div class="detail-line"><span>${m.name}</span><span class="val">${m.calories} kcal</span></div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0;">No meals logged today.</div>';}
+function renderMealsTodayDetail(){
+  // Meals
+  const el=document.getElementById('meals-list-today');
+  el.innerHTML=dayData.meals.length?dayData.meals.map(m=>`<div class="detail-line"><span>${m.name}</span><span class="val">${m.calories} kcal</span></div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0;">No meals logged today.</div>';
+  // Workouts
+  const wel=document.getElementById('workouts-list-today');
+  if(!wel) return;
+  const workouts=dayData.workouts?.length?dayData.workouts:(dayData.workout?.type?[dayData.workout]:[]);
+  if(!workouts.length){wel.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0;">No workouts logged today.</div>';return;}
+  wel.innerHTML=workouts.map((w,i)=>`
+    <div class="detail-line" style="align-items:flex-start;">
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--white);">${w.type||'Workout'}</div>
+        <div style="font-size:12px;color:var(--muted);">${w.duration?w.duration+' min':''} ${w.notes?'· '+w.notes:''}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="val">${w.calories} kcal</span>
+        <button onclick="deleteWorkout(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0;">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function logMealPlanMeal(mealIdx) {
+  const profile = clientProfile || {};
+  const isZigzag = profile.tracking_method === 'zigzag';
+  let plan;
+  if (isZigzag) {
+    plan = currentDayType === 'high'
+      ? (profile.meal_plan_high || profile.meal_plan)
+      : (profile.meal_plan_low || profile.meal_plan);
+  } else {
+    plan = profile.meal_plan;
+  }
+  if (!plan || !plan[mealIdx]) return;
+  const meal = plan[mealIdx];
+  if (!meal.foods?.length) { showToast('No foods in this meal'); return; }
+  const now = new Date().toISOString();
+  meal.foods.forEach(f => {
+    dayData.meals.push({
+      name: f.name,
+      grams: f.grams || 100,
+      servingLabel: f.servingLabel || f.amount || '—',
+      calories: Math.round(f.cals || f.calories || 0),
+      protein: Math.round((f.protein || 0) * 10) / 10,
+      carbs: Math.round((f.carbs || 0) * 10) / 10,
+      fat: Math.round((f.fat || 0) * 10) / 10,
+      time: now,
+    });
+  });
+  saveDay();
+  renderMealLog();
+  renderToday();
+  showToast(`✓ ${meal.name} added to log (${meal.foods.length} foods)`);
+}
+
+function deleteWorkout(i){
+  if(!dayData.workouts) dayData.workouts=[];
+  dayData.workouts.splice(i,1);
+  // Update legacy workout field
+  dayData.workout=dayData.workouts.length?dayData.workouts[dayData.workouts.length-1]:{type:null,duration:0,calories:0,notes:''};
+  saveDay();renderToday();showToast('Workout removed');
+}
 
 // LOG TAB
 function getMealGroup(timeStr) {
@@ -1280,10 +1342,17 @@ function saveWorkout(){
   const estCal=calcWCals(type,dur);
   const finalCal=manualCal||estCal;
   const calSource=manualCal?'device':'estimated';
+  // Stack workouts instead of replacing
+  if(!dayData.workouts) dayData.workouts=[];
+  if(dayData.workout&&dayData.workout.type&&!dayData.workouts.length){
+    // Migrate old single workout to array
+    dayData.workouts.push(dayData.workout);
+  }
+  dayData.workouts.push({type,duration:dur,calories:finalCal,notes,calSource,time:new Date().toISOString()});
+  // Keep legacy workout field for compatibility
   dayData.workout={type,duration:dur,calories:finalCal,notes,calSource};
   saveDay();
   closeModal('modal-workout');
-  // reset override field for next time
   document.getElementById('workout-calories-override').value='';
   document.getElementById('workout-calories-override').placeholder='Tap duration above to auto-estimate';
   document.getElementById('workout-cal-badge').textContent='estimated';
@@ -1297,7 +1366,7 @@ function saveWeight(){const v=parseFloat(document.getElementById('weight-input')
 function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=v;saveDay();closeModal('modal-water');showToast('Water saved ✓');}
 
 // FIREBASE IO
-async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},weight:null,water:0};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},weight:d.weight||null,water:d.water||0}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},weight:null,water:0};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},weight:null,water:0};}renderToday();renderMealLog();}
+async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},workouts:d.workouts||[],weight:d.weight||null,water:d.water||0}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};}renderToday();renderMealLog();}
 async function saveDay(){if(!CLIENT_ID||CLIENT_ID==='demo')return;try{await fsSet(`clients/${CLIENT_ID}/days/${currentDateKey}`,dayData);}catch(e){}}
 
 // ── WEEKLY BALANCE ──
@@ -2329,6 +2398,7 @@ function renderMealPlan() {
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <div class="meal-cals">${totalCal} kcal</div>
+          <button onclick="event.stopPropagation();logMealPlanMeal(${i})" style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid var(--gold-dim);border-radius:6px;padding:4px 10px;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;">+ Log</button>
           <span class="chevron" id="chev-meal-${i}">▼</span>
         </div>
       </div>

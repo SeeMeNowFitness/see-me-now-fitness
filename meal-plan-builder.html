@@ -709,14 +709,14 @@ function loadExistingPlan(plan){
       ...f,
       unit: f.unit || 'g',
       amount: String(f.amount || '100'),
-      _baseCals: parseFloat(f._baseCals||f.baseCals||f.cals)||0,
-      _baseProtein: parseFloat(f._baseProtein||f.baseProtein||f.protein)||0,
-      _baseCarbs: parseFloat(f._baseCarbs||f.baseCarbs||f.carbs)||0,
-      _baseFat: parseFloat(f._baseFat||f.baseFat||f.fat)||0,
-      baseCals: parseFloat(f.baseCals||f._baseCals||f.cals)||0,
-      baseProtein: parseFloat(f.baseProtein||f._baseProtein||f.protein)||0,
-      baseCarbs: parseFloat(f.baseCarbs||f._baseCarbs||f.carbs)||0,
-      baseFat: parseFloat(f.baseFat||f._baseFat||f.fat)||0,
+      _baseCals: parseFloat(f._baseCals||f.cals)||0,
+      _baseProtein: parseFloat(f._baseProtein||f.protein)||0,
+      _baseCarbs: parseFloat(f._baseCarbs||f.carbs)||0,
+      _baseFat: parseFloat(f._baseFat||f.fat)||0,
+      baseCals: parseFloat(f.baseCals||f.cals)||0,
+      baseProtein: parseFloat(f.baseProtein||f.protein)||0,
+      baseCarbs: parseFloat(f.baseCarbs||f.carbs)||0,
+      baseFat: parseFloat(f.baseFat||f.fat)||0,
       servingG: parseFloat(f.servingG)||100,
     }))
   }));
@@ -2115,7 +2115,7 @@ const DEFAULT_BLUEPRINT_FOODS = [
   { name:'Avocado (by weight)', serving:'1g', servingG:1, cals:1.6, protein:0.02, carbs:0.09, fat:0.15, category:'fat' },
   { name:'Peanut Butter Natural (by weight)', serving:'1g', servingG:1, cals:5.9, protein:0.25, carbs:0.2, fat:0.5, category:'fat' },
   // Olive Oil — tsp and tbsp
-  { name:'Olive Oil (teaspoon)', serving:'1 tsp', servingG:4.5, cals:40, protein:0, carbs:0, fat:4.5, category:'fat' },
+  { name:'Ezekiel 4:9 Bread (slice)', serving:'1 slice', servingG:34, cals:80, protein:5, carbs:15, fat:0.5, category:'carb' },
   { name:'Olive Oil (tablespoon)', serving:'1 tbsp', servingG:13.5, cals:119, protein:0, carbs:0, fat:14, category:'fat' },
 ];
 
