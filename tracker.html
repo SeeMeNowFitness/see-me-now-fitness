@@ -696,13 +696,20 @@ function setDayType(t){
   // Re-fetch profile to get latest meal plans then update UI
   if(CLIENT_ID && CLIENT_ID !== 'demo') {
     fsGet(`clients/${CLIENT_ID}`).then(profile => {
-      if(profile) {
-        clientProfile = profile;
-        console.log('meal_plan_high:', JSON.stringify(profile.meal_plan_high)?.slice(0,100));
-        console.log('meal_plan_low:', JSON.stringify(profile.meal_plan_low)?.slice(0,100));
-      }
+      if(profile) clientProfile = profile;
+      console.log('meal_plan_high:', JSON.stringify(profile?.meal_plan_high)?.slice(0,100));
+      console.log('meal_plan_low:', JSON.stringify(profile?.meal_plan_low)?.slice(0,100));
       if(document.getElementById('plan-summary-pills')) renderPlanSummary();
-      if(document.getElementById('plan-meal-content')) renderMealPlan();
+      if(document.getElementById('plan-meal-content')) {
+        renderMealPlan();
+        // Auto-expand meal plan section so user can see it changed
+        const mealBody = document.getElementById('plan-section-body-meals');
+        const mealChev = document.getElementById('plan-section-chev-meals');
+        if(mealBody && mealBody.style.display === 'none') {
+          mealBody.style.display = 'block';
+          if(mealChev) mealChev.textContent = '▲';
+        }
+      }
     }).catch(e => {
       console.error('fsGet error:', e);
       if(document.getElementById('plan-summary-pills')) renderPlanSummary();
@@ -1477,6 +1484,13 @@ function setPlanDay(day) {
       if(profile) clientProfile = profile;
       renderPlanTab();
       renderToday();
+      // Auto-expand meal plan section
+      const mealBody = document.getElementById('plan-section-body-meals');
+      const mealChev = document.getElementById('plan-section-chev-meals');
+      if(mealBody && mealBody.style.display === 'none') {
+        mealBody.style.display = 'block';
+        if(mealChev) mealChev.textContent = '▲';
+      }
     }).catch(() => {
       renderPlanTab();
       renderToday();
