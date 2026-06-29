@@ -2468,11 +2468,14 @@ async function toggleExerciseGif(elId, exerciseName) {
       const data = await r.json();
       ex = Array.isArray(data) ? data[0] : (data?.exercises?.[0] || null);
       console.log('ExerciseDB ex:', ex ? `gifUrl=${ex.gifUrl} name=${ex.name} bodyPart=${ex.bodyPart}` : `null (data length=${Array.isArray(data)?data.length:'n/a'})`);
+      if (ex) { console.log('ExerciseDB keys:', Object.keys(ex).join(', ')); console.log('ExerciseDB raw ex:', JSON.stringify(ex)); }
       if (ex) break; // found a result — stop retrying
     }
 
-    // ExerciseDB returns: gifUrl, name, bodyPart, target, equipment, secondaryMuscles
-    const gifUrl = ex?.gifUrl || ex?.gif || ex?.image || ex?.animatedImage;
+    // ExerciseDB returns: gifUrl (paid), name, bodyPart, target, equipment, secondaryMuscles, id
+    // Free tier omits gifUrl — construct from CDN using id as fallback
+    const gifUrl = ex?.gifUrl || ex?.gif || ex?.image || ex?.animatedImage
+      || (ex?.id ? `https://v2.exercisedb.io/image/${ex.id}` : null);
     const exName = ex?.name || ex?.exerciseName || ex?.title || '';
     if (gifUrl) {
       const exData = { gifUrl, name: exName, target: ex?.target||ex?.primaryMuscles?.[0]||'', bodyPart: ex?.bodyPart||ex?.category||'', equipment: ex?.equipment||'', secondaryMuscles: ex?.secondaryMuscles||[] };
