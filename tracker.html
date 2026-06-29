@@ -554,6 +554,32 @@ select option{background:var(--dark);}
 
 <div class="modal-overlay" id="modal-water" onclick="closeModalOutside(event,'modal-water')"><div class="modal"><div class="modal-handle"></div><h3>💧 Log Water</h3><label>Ounces today</label><input type="number" id="water-input" placeholder="e.g. 100" inputmode="numeric"><div class="steps-quick"><button class="steps-chip" onclick="document.getElementById('water-input').value=32">32 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=64">64 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=100">100 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=128">128 oz</button></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-water')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWater()">Save</button></div></div></div>
 
+<!-- EDIT FOOD MODAL -->
+<div class="modal-overlay" id="modal-edit-food" onclick="closeModalOutside(event,'modal-edit-food')"><div class="modal"><div class="modal-handle"></div>
+<div style="padding:0 16px 16px;">
+  <div style="font-size:14px;font-weight:800;color:var(--white);margin-bottom:4px;" id="edit-food-title">Edit Entry</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Adjust amount to update macros.</div>
+  <div style="display:flex;gap:8px;margin-bottom:12px;">
+    <input type="number" id="edit-food-amount" min="0.1" step="0.1" style="flex:1;padding:12px;font-size:16px;background:var(--dark);border:1px solid var(--gold);border-radius:8px;color:var(--white);outline:none;text-align:center;" oninput="updateEditPreview()">
+    <select id="edit-food-unit" onchange="updateEditPreview()" style="padding:12px;font-size:14px;background:var(--dark);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;">
+      <option value="g">g</option>
+      <option value="oz">oz</option>
+      <option value="cup">cup</option>
+      <option value="tbsp">tbsp</option>
+      <option value="tsp">tsp</option>
+      <option value="piece">piece</option>
+      <option value="scoop">scoop</option>
+      <option value="ml">ml</option>
+    </select>
+  </div>
+  <div id="edit-food-preview" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:14px;"></div>
+  <div style="display:flex;gap:10px;">
+    <button class="btn btn-outline btn-full" onclick="closeModal('modal-edit-food')">Cancel</button>
+    <button class="btn btn-gold btn-full" onclick="confirmEditMeal()">Update</button>
+  </div>
+</div>
+</div></div>
+
 <!-- ADD FOOD MODAL — with serving unit selector -->
 <div class="modal-overlay" id="modal-add-food" onclick="closeModalOutside(event,'modal-add-food')"><div class="modal"><div class="modal-handle"></div>
 <h3 id="add-food-title">Add Food</h3>
@@ -849,7 +875,131 @@ if(profile.tracking_method==='zigzag'&&profile.macros_high&&profile.macros_low){
 function renderMealsTodayDetail(){const el=document.getElementById('meals-list-today');el.innerHTML=dayData.meals.length?dayData.meals.map(m=>`<div class="detail-line"><span>${m.name}</span><span class="val">${m.calories} kcal</span></div>`).join(''):'<div style="color:var(--muted);font-size:13px;padding:8px 0;">No meals logged today.</div>';}
 
 // LOG TAB
-function renderMealLog(){const el=document.getElementById('meal-log-list');if(!dayData.meals.length){el.innerHTML=`<div class="empty-state"><div class="icon">🍽</div><h4>Your blueprint starts here</h4><p>Search above or tap a quick add to log your first meal.</p></div>`;return;}el.innerHTML=dayData.meals.map((m,i)=>`<div class="meal-log-item"><div class="row-between"><div class="name">${m.name}${m.servingLabel?` <span style="font-size:11px;color:var(--muted);font-weight:400;">(${m.servingLabel})</span>`:''}</div><button class="delete-btn" onclick="deleteMeal(${i})">✕</button></div><div class="macros">${m.calories} kcal &nbsp;·&nbsp; ${Math.round((m.protein||0)*10)/10}g P &nbsp;·&nbsp; ${Math.round((m.carbs||0)*10)/10}g C &nbsp;·&nbsp; ${Math.round((m.fat||0)*10)/10}g F</div></div>`).join('');}
+function getMealGroup(timeStr) {
+  if (!timeStr) return 'Other';
+  const d = new Date(timeStr);
+  const h = d.getHours();
+  if (h < 10) return '🌅 Breakfast';
+  if (h < 12) return '🥪 Mid Morning';
+  if (h < 14) return '☀️ Lunch';
+  if (h < 17) return '🍎 Afternoon';
+  if (h < 20) return '🌙 Dinner';
+  return '🌜 Evening';
+}
+
+function renderMealLog(){
+  const el=document.getElementById('meal-log-list');
+  if(!dayData.meals.length){
+    el.innerHTML=`<div class="empty-state"><div class="icon">🍽</div><h4>Your blueprint starts here</h4><p>Search above or tap a quick add to log your first meal.</p></div>`;
+    return;
+  }
+  // Group by meal time
+  const groups = {};
+  const groupOrder = [];
+  dayData.meals.forEach((m, i) => {
+    const group = getMealGroup(m.time);
+    if (!groups[group]) { groups[group] = []; groupOrder.push(group); }
+    groups[group].push({ ...m, _idx: i });
+  });
+  el.innerHTML = groupOrder.map(group => {
+    const items = groups[group];
+    const groupCals = Math.round(items.reduce((s,m) => s+(m.calories||0), 0));
+    const groupP = Math.round(items.reduce((s,m) => s+(m.protein||0), 0)*10)/10;
+    const groupC = Math.round(items.reduce((s,m) => s+(m.carbs||0), 0)*10)/10;
+    const groupF = Math.round(items.reduce((s,m) => s+(m.fat||0), 0)*10)/10;
+    return `
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px;">
+          <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);">${group}</div>
+          <div style="font-size:11px;color:var(--muted);">${groupCals} kcal · P:${groupP}g C:${groupC}g F:${groupF}g</div>
+        </div>
+        ${items.map(m => `
+          <div class="meal-log-item" style="cursor:pointer;" onclick="openEditMeal(${m._idx})">
+            <div class="row-between">
+              <div class="name">${m.name}${m.servingLabel?` <span style="font-size:11px;color:var(--muted);font-weight:400;">(${m.servingLabel})</span>`:''}</div>
+              <div style="display:flex;gap:8px;align-items:center;">
+                <button class="edit-btn" onclick="event.stopPropagation();openEditMeal(${m._idx})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">Edit</button>
+                <button class="delete-btn" onclick="event.stopPropagation();deleteMeal(${m._idx})">✕</button>
+              </div>
+            </div>
+            <div class="macros">${m.calories} kcal &nbsp;·&nbsp; ${Math.round((m.protein||0)*10)/10}g P &nbsp;·&nbsp; ${Math.round((m.carbs||0)*10)/10}g C &nbsp;·&nbsp; ${Math.round((m.fat||0)*10)/10}g F</div>
+          </div>
+        `).join('')}
+      </div>`;
+  }).join('');
+}
+let editingMealIdx = null;
+
+function openEditMeal(idx) {
+  editingMealIdx = idx;
+  const m = dayData.meals[idx];
+  if (!m) return;
+  document.getElementById('edit-food-title').textContent = m.name;
+  // Determine current amount and unit from servingLabel or default
+  const currentAmount = m.grams || 100;
+  document.getElementById('edit-food-amount').value = currentAmount;
+  document.getElementById('edit-food-unit').value = 'g';
+  updateEditPreview();
+  openModal('modal-edit-food');
+}
+
+function updateEditPreview() {
+  const idx = editingMealIdx;
+  if (idx === null) return;
+  const m = dayData.meals[idx];
+  if (!m) return;
+  const amount = parseFloat(document.getElementById('edit-food-amount').value) || 1;
+  const unit = document.getElementById('edit-food-unit').value;
+  const grams = amount * (UNIT_TO_GRAMS[unit] || 1);
+  // Calculate macros based on per-gram values from original entry
+  const origGrams = m.grams || 100;
+  const perGramCals = (m.calories || 0) / origGrams;
+  const perGramP = (m.protein || 0) / origGrams;
+  const perGramC = (m.carbs || 0) / origGrams;
+  const perGramF = (m.fat || 0) / origGrams;
+  const newCals = Math.round(perGramCals * grams);
+  const newP = Math.round(perGramP * grams * 10) / 10;
+  const newC = Math.round(perGramC * grams * 10) / 10;
+  const newF = Math.round(perGramF * grams * 10) / 10;
+  document.getElementById('edit-food-preview').innerHTML =
+    `<strong style="color:var(--white);font-size:16px;">${newCals} kcal</strong>` +
+    `&nbsp;&nbsp; P: <strong style="color:var(--white)">${newP}g</strong>` +
+    `&nbsp; C: <strong style="color:var(--white)">${newC}g</strong>` +
+    `&nbsp; F: <strong style="color:var(--white)">${newF}g</strong>` +
+    `<div style="font-size:11px;color:var(--muted);margin-top:4px;">${amount} ${unit} (${Math.round(grams)}g)</div>`;
+}
+
+function confirmEditMeal() {
+  const idx = editingMealIdx;
+  if (idx === null) return;
+  const m = dayData.meals[idx];
+  if (!m) return;
+  const amount = parseFloat(document.getElementById('edit-food-amount').value) || 1;
+  const unit = document.getElementById('edit-food-unit').value;
+  const grams = amount * (UNIT_TO_GRAMS[unit] || 1);
+  const origGrams = m.grams || 100;
+  const perGramCals = (m.calories || 0) / origGrams;
+  const perGramP = (m.protein || 0) / origGrams;
+  const perGramC = (m.carbs || 0) / origGrams;
+  const perGramF = (m.fat || 0) / origGrams;
+  const unitLabels = {g:`${Math.round(grams)}g`,oz:`${amount} oz`,cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,piece:`${amount} piece${amount!==1?'s':''}`,scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`};
+  dayData.meals[idx] = {
+    ...m,
+    grams: Math.round(grams),
+    servingLabel: unitLabels[unit] || `${Math.round(grams)}g`,
+    calories: Math.round(perGramCals * grams),
+    protein: Math.round(perGramP * grams * 10) / 10,
+    carbs: Math.round(perGramC * grams * 10) / 10,
+    fat: Math.round(perGramF * grams * 10) / 10,
+  };
+  saveDay();
+  closeModal('modal-edit-food');
+  renderMealLog();
+  renderToday();
+  showToast('✓ Entry updated');
+  editingMealIdx = null;
+}
+
 function deleteMeal(i){dayData.meals.splice(i,1);saveDay();renderMealLog();renderToday();showToast('Meal removed');}
 
 // FOOD SEARCH
