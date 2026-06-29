@@ -2440,15 +2440,20 @@ async function toggleExerciseGif(elId, exerciseName) {
 
   // Fetch from WorkoutX API
   try {
-    const query = exerciseName.toLowerCase().replace(/[^a-z0-9\s]/g,'');
-    const r = await fetch(`https://workoutx-exercise-api-with-gif-animations.p.rapidapi.com/exercises/name/${encodeURIComponent(query)}?limit=1`, {
+    const query = exerciseName.toLowerCase()
+      .replace(/\s*\(.*?\)/g, '')
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim();
+    // Try search endpoint first
+    const r = await fetch(`https://workoutx-exercise-api-with-gif-animations.p.rapidapi.com/exercises/search?query=${encodeURIComponent(query)}&limit=1`, {
       headers: {
         'x-rapidapi-key': '7e67ac7bf8msh0898a81207ba7a5p135c90jsncc5d3e59bd02',
         'x-rapidapi-host': 'workoutx-exercise-api-with-gif-animations.p.rapidapi.com'
       }
     });
+    if (!r.ok) throw new Error('API error: ' + r.status);
     const data = await r.json();
-    const ex = Array.isArray(data) ? data[0] : data?.exercises?.[0];
+    const ex = Array.isArray(data) ? data[0] : (data?.results?.[0] || data?.exercises?.[0] || null);
     if (ex?.gifUrl) {
       const html = buildExerciseGifHtml(ex);
       exerciseGifCache[elId] = html;
@@ -2457,7 +2462,7 @@ async function toggleExerciseGif(elId, exerciseName) {
       try { await fsSet(`exercise_library/${elId}`, { name: exerciseName, gifUrl: ex.gifUrl, target: ex.target||'', bodyPart: ex.bodyPart||'', equipment: ex.equipment||'', secondaryMuscles: ex.secondaryMuscles||[] }); } catch(e) {}
       return;
     }
-  } catch(e) {}
+  } catch(e) { console.error('WorkoutX fetch error:', e); }
   el.innerHTML = '<div style="font-size:12px;color:var(--muted);padding:8px 0;">Demo not available — ask your coach for form cues.</div>';
 }
 
