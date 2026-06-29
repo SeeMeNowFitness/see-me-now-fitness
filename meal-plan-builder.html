@@ -708,17 +708,16 @@ function loadExistingPlan(plan){
     foods:(m.foods||[]).map(f=>({
       ...f,
       unit: f.unit || 'g',
-      amount: f.amount || '100',
-      // Restore base macros for USDA foods
-      _baseCals: f._baseCals || f.cals || 0,
-      _baseProtein: f._baseProtein || f.protein || 0,
-      _baseCarbs: f._baseCarbs || f.carbs || 0,
-      _baseFat: f._baseFat || f.fat || 0,
-      // Restore base macros for Blueprint foods
-      baseCals: f.baseCals || f.cals || 0,
-      baseProtein: f.baseProtein || f.protein || 0,
-      baseCarbs: f.baseCarbs || f.carbs || 0,
-      baseFat: f.baseFat || f.fat || 0,
+      amount: String(f.amount || '100'),
+      _baseCals: parseFloat(f._baseCals||f.baseCals||f.cals)||0,
+      _baseProtein: parseFloat(f._baseProtein||f.baseProtein||f.protein)||0,
+      _baseCarbs: parseFloat(f._baseCarbs||f.baseCarbs||f.carbs)||0,
+      _baseFat: parseFloat(f._baseFat||f.baseFat||f.fat)||0,
+      baseCals: parseFloat(f.baseCals||f._baseCals||f.cals)||0,
+      baseProtein: parseFloat(f.baseProtein||f._baseProtein||f.protein)||0,
+      baseCarbs: parseFloat(f.baseCarbs||f._baseCarbs||f.carbs)||0,
+      baseFat: parseFloat(f.baseFat||f._baseFat||f.fat)||0,
+      servingG: parseFloat(f.servingG)||100,
     }))
   }));
   renderMeals();updateTotals();
@@ -2337,7 +2336,27 @@ async function savePlan() {
   const planType = document.getElementById('plan-type').value;
   const planData = meals.map(meal => ({
     name: meal.name, time: meal.time,
-    foods: meal.foods.map(f => ({ name: f.name, amount: f.amount || '100g', protein: f.protein || 0, carbs: f.carbs || 0, fat: f.fat || 0, cals: f.cals || 0 }))
+    foods: meal.foods.map(f => ({
+      name: f.name,
+      amount: f.amount || '100',
+      unit: f.unit || 'g',
+      protein: f.protein || 0,
+      carbs: f.carbs || 0,
+      fat: f.fat || 0,
+      cals: f.cals || 0,
+      // Always save base macros so we can recalculate when loading
+      _baseCals: f._baseCals || f.cals || 0,
+      _baseProtein: f._baseProtein || f.protein || 0,
+      _baseCarbs: f._baseCarbs || f.carbs || 0,
+      _baseFat: f._baseFat || f.fat || 0,
+      baseCals: f.baseCals || f.cals || 0,
+      baseProtein: f.baseProtein || f.protein || 0,
+      baseCarbs: f.baseCarbs || f.carbs || 0,
+      baseFat: f.baseFat || f.fat || 0,
+      servingG: f.servingG || 100,
+      blueprint: f.blueprint || false,
+      serving: f.serving || '',
+    }))
   }));
   const status = document.getElementById('save-status');
   status.style.display = 'inline'; status.className = 'save-status'; status.textContent = 'Saving…';
