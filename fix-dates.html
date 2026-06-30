@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Blueprint — Date Key Migration</title>
+<style>
+  :root{--black:#0A0A0A;--gold:#F5A800;--orange:#E84B1A;--white:#fff;--muted:#999;--border:#262626;--green:#4CAF76;--red:#E5484D;}
+  body{background:var(--black);color:var(--white);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:24px;line-height:1.5;}
+  .wrap{max-width:720px;margin:0 auto;}
+  h1{font-size:20px;color:var(--gold);margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:24px;}
+  label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.04em;}
+  input{width:100%;background:#141414;border:1px solid var(--border);border-radius:8px;color:var(--white);padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:16px;}
+  button{background:var(--gold);color:var(--black);border:none;border-radius:8px;padding:11px 18px;font-size:13px;font-weight:800;cursor:pointer;margin-right:8px;}
+  button:disabled{opacity:0.4;cursor:not-allowed;}
+  button.secondary{background:transparent;border:1px solid var(--border);color:var(--white);}
+  .log{background:#111;border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:20px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;max-height:480px;overflow-y:auto;white-space:pre-wrap;}
+  .row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .ok{color:var(--green);}
+  .warn{color:var(--gold);}
+  .err{color:var(--red);}
+  .dim{color:var(--muted);}
+  .card{background:#141414;border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Blueprint — Date Key Migration</h1>
+  <div class="sub">One-time fix for the UTC date-key bug. Finds days that were saved under the wrong (UTC) date and merges them into the correct local date, then removes the orphaned doc.</div>
+
+  <div class="card">
+    <label>Client ID</label>
+    <input id="clientId" placeholder="e.g. semeon-charles or the doc ID from Firestore">
+    <label>Timezone offset from UTC (hours, e.g. -5 for CDT, -6 for CST)</label>
+    <input id="tzOffset" type="number" value="-5">
+    <label>How many days back to scan</label>
+    <input id="daysBack" type="number" value="14">
+    <div>
+      <button id="scanBtn" onclick="scan()">1. Scan for orphaned days</button>
+      <button id="fixBtn" onclick="applyFixes()" disabled>2. Apply fixes</button>
+      <button class="secondary" onclick="document.getElementById('log').textContent=''">Clear log</button>
+    </div>
+  </div>
+
+  <div id="log" class="log">Enter a Client ID and click "Scan" to begin.</div>
+</div>
+
+<script>
+const FIREBASE_CONFIG={apiKey:"AIzaSyCLUo020Q7A9S_PCM0mti7E-0-SflNIRy8",projectId:"see-me-now-fitness"};
+const FB=`https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
+
+function log(msg, cls){
+  const el = document.getElementById('log');
+  const line = document.createElement('div');
+  line.className = 'row ' + (cls||'');
+  line.textContent = msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+function clearLog(){ document.getElementById('log').innerHTML=''; }
+
+function fsVal(v){
+  if(v.stringValue!==undefined)return v.stringValue;
+  if(v.integerValue!==undefined)return parseInt(v.integerValue);
+  if(v.doubleValue!==undefined)return parseFloat(v.doubleValue);
+  if(v.booleanValue!==undefined)return v.booleanValue;
+  if(v.nullValue!==undefined)return null;
+  if(v.mapValue)return fsDoc(v.mapValue);
+  if(v.arrayValue)return(v.arrayValue.values||[]).map(fsVal);
+  return null;
+}
+function fsDoc(doc){
+  if(!doc.fields)return null;
+  const o={};
+  for(const[k,v]of Object.entries(doc.fields))o[k]=fsVal(v);
+  return o;
+}
+function toFV(v){
+  if(v===null||v===undefined)return{nullValue:null};
+  if(typeof v==='boolean')return{booleanValue:v};
+  if(typeof v==='number')return Number.isInteger(v)?{integerValue:v}:{doubleValue:v};
+  if(typeof v==='string')return{stringValue:v};
+  if(Array.isArray(v))return{arrayValue:{values:v.map(toFV)}};
+  if(typeof v==='object')return{mapValue:{fields:toFields(v)}};
+  return{stringValue:String(v)};
+}
+function toFields(obj){
+  const f={};
+  for(const[k,v]of Object.entries(obj))f[k]=toFV(v);
+  return f;
+}
+
+async function fsGetRaw(path){
+  const r = await fetch(`${FB}/${path}?key=${FIREBASE_CONFIG.apiKey}`);
+  if(r.status===404) return null;
+  if(!r.ok) throw new Error('GET failed: '+r.status);
+  return fsDoc(await r.json());
+}
+async function fsSet(path, data){
+  const r = await fetch(`${FB}/${path}?key=${FIREBASE_CONFIG.apiKey}`,{
+    method:'PATCH',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({fields:toFields(data)})
+  });
+  if(!r.ok) throw new Error('PATCH failed: '+r.status);
+}
+async function fsDelete(path){
+  const r = await fetch(`${FB}/${path}?key=${FIREBASE_CONFIG.apiKey}`,{method:'DELETE'});
+  if(!r.ok && r.status!==404) throw new Error('DELETE failed: '+r.status);
+}
+
+function utcKeyFor(localDate){
+  // What todayKey() used to compute (the buggy UTC-based version) for a given local calendar date
+  return localDate.toISOString().split('T')[0];
+}
+function localKeyFor(localDate){
+  return localDate.getFullYear()+'-'+String(localDate.getMonth()+1).padStart(2,'0')+'-'+String(localDate.getDate()).padStart(2,'0');
+}
+
+function mergeDayData(correct, orphan){
+  // Union meals/workouts, prefer non-empty/most-recent for scalar fields
+  const merged = {
+    meals: [...(correct?.meals||[]), ...(orphan?.meals||[])],
+    workouts: [...(correct?.workouts||[]), ...(orphan?.workouts||[])],
+    steps: (correct?.steps || orphan?.steps || 0),
+    weight: (correct?.weight ?? orphan?.weight ?? null),
+    water: (correct?.water || orphan?.water || 0),
+    workout: (correct?.workout && correct.workout.type) ? correct.workout : (orphan?.workout || {type:null,duration:0,calories:0,notes:''})
+  };
+  return merged;
+}
+
+let pendingFixes = [];
+
+async function scan(){
+  clearLog();
+  pendingFixes = [];
+  document.getElementById('fixBtn').disabled = true;
+  const clientId = document.getElementById('clientId').value.trim();
+  const tzOffset = parseFloat(document.getElementById('tzOffset').value);
+  const daysBack = parseInt(document.getElementById('daysBack').value) || 14;
+
+  if(!clientId){ log('Enter a Client ID first.', 'err'); return; }
+
+  log(`Scanning last ${daysBack} days for client "${clientId}"...`, 'dim');
+  log(`Using timezone offset ${tzOffset >= 0 ? '+' : ''}${tzOffset} hours from UTC`, 'dim');
+
+  let found = 0;
+
+  for(let i = 0; i < daysBack; i++){
+    // Construct a "local midday" reference for day i-back, using the assumed offset
+    const now = new Date();
+    const localRef = new Date(now.getTime());
+    localRef.setUTCHours(12 - tzOffset, 0, 0, 0); // approximate local noon in UTC terms
+    localRef.setDate(localRef.getDate() - i);
+
+    const correctKey = localKeyFor(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i));
+    const wrongKey = utcKeyFor(localRef);
+
+    if(correctKey === wrongKey) continue; // no drift for this day, skip
+
+    try{
+      const [correctDoc, orphanDoc] = await Promise.all([
+        fsGetRaw(`clients/${clientId}/days/${correctKey}`),
+        fsGetRaw(`clients/${clientId}/days/${wrongKey}`)
+      ]);
+
+      if(orphanDoc && (orphanDoc.meals?.length || orphanDoc.workouts?.length || orphanDoc.steps || orphanDoc.weight || orphanDoc.water)){
+        found++;
+        log(`Found orphaned data at "${wrongKey}" that belongs to "${correctKey}":`, 'warn');
+        log(`   meals: ${orphanDoc.meals?.length||0}, workouts: ${orphanDoc.workouts?.length||0}, steps: ${orphanDoc.steps||0}, weight: ${orphanDoc.weight||'—'}, water: ${orphanDoc.water||0}`, 'dim');
+        pendingFixes.push({ correctKey, wrongKey, correctDoc, orphanDoc });
+      }
+    } catch(e){
+      log(`Error checking ${wrongKey} → ${correctKey}: ${e.message}`, 'err');
+    }
+  }
+
+  if(found === 0){
+    log('No orphaned days found. Nothing to fix.', 'ok');
+  } else {
+    log(`\n${found} day(s) need fixing. Review above, then click "Apply fixes" to merge and clean up.`, 'warn');
+    document.getElementById('fixBtn').disabled = false;
+  }
+}
+
+async function applyFixes(){
+  document.getElementById('fixBtn').disabled = true;
+  const clientId = document.getElementById('clientId').value.trim();
+  log('\nApplying fixes...', 'dim');
+
+  for(const fix of pendingFixes){
+    try{
+      const merged = mergeDayData(fix.correctDoc, fix.orphanDoc);
+      await fsSet(`clients/${clientId}/days/${fix.correctKey}`, merged);
+      await fsDelete(`clients/${clientId}/days/${fix.wrongKey}`);
+      log(`✓ Merged "${fix.wrongKey}" into "${fix.correctKey}" and removed the orphan.`, 'ok');
+    } catch(e){
+      log(`✗ Failed to fix ${fix.wrongKey} → ${fix.correctKey}: ${e.message}`, 'err');
+    }
+  }
+
+  log('\nDone. Refresh the tracker and check Progress / Log Food for the recovered days.', 'ok');
+  pendingFixes = [];
+}
+</script>
+</body>
+</html>
