@@ -431,7 +431,7 @@ select option{background:var(--dark);}
 <div class="panel" id="panel-recipes">
 <div class="tier-banner"><div class="tier-icon">🏆</div><div class="tier-info"><h4 id="recipes-tier-label">Loading…</h4><p id="recipes-tier-sub">Setting up your recipe recommendations</p></div></div>
 <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;">
-<div style="font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;">Macros Remaining Today</div>
+<div style="font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;">Today's Blueprint Remaining</div>
 <div style="display:flex;gap:12px;flex-wrap:wrap;" id="macro-remaining-pills"></div>
 </div>
 <div id="blueprint-approved-section"><div class="section-label">Blueprint Approved</div><div id="blueprint-approved-content"></div></div>
@@ -489,22 +489,22 @@ select option{background:var(--dark);}
 <!-- APPROVED FOODS SECTION -->
 <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
 <div onclick="togglePlanSection('approvedfoods')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
-<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Approved Foods</div>
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Blueprint Foods</div>
 <span style="color:var(--muted);font-size:12px;" id="plan-section-chev-approvedfoods">▼</span>
 </div>
 <div id="plan-section-body-approvedfoods" style="display:none;padding:0 16px 16px;">
-<div id="plan-approved-foods-content"><div class="loading">Loading approved foods…</div></div>
+<div id="plan-approved-foods-content"><div class="loading">Loading Blueprint Foods…</div></div>
 </div>
 </div>
 
 <!-- SUPPLEMENTS SECTION -->
 <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
 <div onclick="togglePlanSection('supplements')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
-<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Supplements</div>
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Blueprint Supplements</div>
 <span style="color:var(--muted);font-size:12px;" id="plan-section-chev-supplements">▼</span>
 </div>
 <div id="plan-section-body-supplements" style="display:none;padding:0 16px 16px;">
-<div id="plan-supplements-content"><div class="loading">Loading supplements…</div></div>
+<div id="plan-supplements-content"><div class="loading">Loading Blueprint Supplements…</div></div>
 </div>
 </div>
 
@@ -837,9 +837,9 @@ if(noM){ze.textContent="TODAY'S PROGRESS";ze.className='balance-zone maintenance
 else{ze.textContent=zl[zone];ze.className='balance-zone '+zone;ne.textContent=(e.net>=0?'+':'')+Math.round(e.net);ne.className='balance-number '+zone;document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
 const pb=document.getElementById('projection-banner');
 if(noM)pb.innerHTML=`<div class="proj-label">👇 How to get started</div><div class="proj-val" style="font-size:15px;font-weight:700;">Tap Log → search a food → add it</div><div class="proj-sub">Your macros, deficit, and projections appear once you start logging.</div>`;
-else if(zone==='deficit'){const lw=Math.abs(e.net*7/3500).toFixed(2),l4=Math.abs(e.net*28/3500).toFixed(1);pb.innerHTML=`<div class="proj-label">📉 Projected Fat Loss</div><div class="proj-val">${lw} lbs / week</div><div class="proj-sub">At this rate: ${l4} lbs in 4 weeks</div>`;}
-else if(zone==='surplus')pb.innerHTML=`<div class="proj-label">📈 Caloric Surplus</div><div class="proj-val">${Math.abs(e.net)} kcal over maintenance</div><div class="proj-sub">Adjust intake to hit your deficit target</div>`;
-else pb.innerHTML=`<div class="proj-label">⚖️ Maintenance Zone</div><div class="proj-val">±${Math.abs(e.net)} kcal from maintenance</div><div class="proj-sub">Within 100 kcal of target — well balanced</div>`;
+else if(zone==='deficit'){const lw=Math.abs(e.net*7/3500).toFixed(2),l4=Math.abs(e.net*28/3500).toFixed(1);pb.innerHTML=`<div class="proj-label">🔥 Excellent Work</div><div class="proj-val" style="font-size:16px;">Projects ~${lw} lbs of fat loss this week</div><div class="proj-sub">~${l4} lbs over 4 weeks at this pace</div>`;}
+else if(zone==='surplus')pb.innerHTML=`<div class="proj-label">📈 Ahead of Your Blueprint</div><div class="proj-val">${Math.abs(e.net)} kcal over today's target</div><div class="proj-sub">Tighten up intake to get back into your deficit</div>`;
+else pb.innerHTML=`<div class="proj-label">⚖️ Holding Steady</div><div class="proj-val">±${Math.abs(e.net)} kcal from target</div><div class="proj-sub">Right where you want to be — well balanced</div>`;
 // Update weekly balance banner on Today tab
 updateWeeklyBalanceBanner();
 renderMacroBars();
@@ -1489,6 +1489,14 @@ async function updateWeeklyBalanceBanner() {
     const wb = await getWeeklyBalance();
     if (wb.daysLogged === 0) { banner.style.display = 'none'; return; }
     banner.style.display = 'block';
+    if (wb.daysLogged < 4) {
+      pills.innerHTML = `
+        <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:12px 14px;flex:1;text-align:center;">
+          <div style="font-size:12px;color:var(--muted);line-height:1.5;">📊 Continue logging to unlock your weekly projection</div>
+          <div style="font-size:11px;color:var(--gold);font-weight:700;margin-top:6px;">${wb.daysLogged}/4 days logged this week</div>
+        </div>`;
+      return;
+    }
     const zone = getZone(Math.round(wb.totalNet / wb.daysLogged));
     const projLbs = Math.abs(wb.totalNet / 3500).toFixed(2);
     const zoneColor = zone === 'deficit' ? 'var(--green)' : zone === 'surplus' ? 'var(--red)' : 'var(--gold)';
@@ -1527,6 +1535,16 @@ function updateProgressWeeklyBalance(history) {
   const card = document.getElementById('weekly-balance-card');
   if (daysLogged === 0) { card.style.display = 'none'; return; }
   card.style.display = '';
+  if (daysLogged < 4) {
+    document.getElementById('ws-total-balance').textContent = '—';
+    document.getElementById('ws-daily-avg-bal').textContent = '—';
+    document.getElementById('ws-projected-lbs').textContent = '—';
+    document.getElementById('ws-projected-4wk').textContent = '—';
+    document.getElementById('ws-days-logged').textContent = daysLogged;
+    document.getElementById('ws-balance-message').textContent = `📊 Continue logging to unlock your projection — ${daysLogged}/4 days logged this week.`;
+    document.getElementById('ws-balance-message').style.color = 'var(--muted)';
+    return;
+  }
   const avg = Math.round(totalNet / daysLogged);
   const zone = getZone(avg);
   const projLbs = Math.abs(totalNet / 3500);
@@ -1542,9 +1560,9 @@ function updateProgressWeeklyBalance(history) {
   document.getElementById('ws-projected-4wk').style.color = zoneColor;
   document.getElementById('ws-days-logged').textContent = daysLogged;
   const msgs = {
-    deficit: `🔥 You're in a caloric deficit this week — great work! On track to lose ~${projLbs.toFixed(2)} lbs this week, ~${(projLbs * 4).toFixed(1)} lbs over 4 weeks.`,
-    surplus: `📈 You're in a caloric surplus this week. Reduce daily intake or increase activity to return to a fat loss deficit.`,
-    maintenance: `⚖️ You're right at maintenance this week. Push into a slight deficit to continue progressing toward your goals.`
+    deficit: `🔥 Excellent work. Your consistency this week projects approximately ${projLbs.toFixed(2)} lbs of fat loss — and ~${(projLbs * 4).toFixed(1)} lbs if you keep this pace for 4 weeks.`,
+    surplus: `📈 You're running ahead of your Blueprint this week. Tighten up intake or add activity to get back into your deficit.`,
+    maintenance: `⚖️ You're holding steady at maintenance this week. A slight pull toward your deficit will keep the progress moving.`
   };
   document.getElementById('ws-balance-message').textContent = msgs[zone];
   document.getElementById('ws-balance-message').style.color = zoneColor;
@@ -2684,7 +2702,7 @@ function renderApprovedFoods() {
   };
 
   el.innerHTML = `
-    ${!isAssigned ? `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">📋 <strong style="color:var(--gold);">Blueprint Approved Foods</strong> — ${btLabels[bloodType]} · Tap each category to expand.</div>` : ''}
+    ${!isAssigned ? `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">📋 <strong style="color:var(--gold);">Blueprint Foods</strong> — ${btLabels[bloodType]} · Tap each category to expand.</div>` : ''}
     ${renderCategory(protein, 'protein', '💪 Protein Sources', 'var(--gold)')}
     ${renderCategory(carbs, 'carbs', '🌾 Carbohydrate Sources', 'var(--blue)')}
     ${renderCategory(fats, 'fats', '🥑 Fat Sources', 'var(--orange)')}
