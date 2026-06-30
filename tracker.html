@@ -570,7 +570,7 @@ select option{background:var(--dark);}
   <div style="font-size:14px;font-weight:800;color:var(--white);margin-bottom:4px;" id="edit-food-title">Edit Entry</div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Adjust amount to update macros.</div>
   <div style="display:flex;gap:8px;margin-bottom:12px;">
-    <input type="number" id="edit-food-amount" min="0.1" step="0.1" style="flex:1;padding:12px;font-size:16px;background:var(--dark);border:1px solid var(--gold);border-radius:8px;color:var(--white);outline:none;text-align:center;" oninput="updateEditPreview()">
+    <input type="number" id="edit-food-amount" min="0.1" step="0.1" style="flex:1;padding:12px;font-size:16px;background:var(--dark);border:1px solid var(--gold);border-radius:8px;color:var(--white);outline:none;text-align:center;" oninput="updateEditPreview()" onfocus="this.select()">
     <select id="edit-food-unit" onchange="updateEditPreview()" style="padding:12px;font-size:14px;background:var(--dark);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;">
       <option value="g">g</option>
       <option value="oz">oz</option>
@@ -600,7 +600,7 @@ select option{background:var(--dark);}
 </div>
 <label>Amount & Unit</label>
 <div class="unit-row">
-<input type="number" id="add-food-amount" placeholder="1" inputmode="decimal" value="1" oninput="updateAddPreview()">
+<input type="number" id="add-food-amount" placeholder="1" inputmode="decimal" value="1" oninput="updateAddPreview()" onfocus="this.select()">
 <select id="add-food-unit" onchange="updateAddPreview()">
 <option value="g">grams (g)</option>
 <option value="oz">ounces (oz)</option>
@@ -626,7 +626,7 @@ select option{background:var(--dark);}
 <input type="text" id="custom-food-name" placeholder="e.g. Quest Protein Bar">
 <label>Serving Size</label>
 <div class="unit-row">
-<input type="number" id="custom-food-serving-amount" placeholder="1" inputmode="decimal" value="1">
+<input type="number" id="custom-food-serving-amount" placeholder="1" inputmode="decimal" value="1" onfocus="this.select()">
 <select id="custom-food-serving-unit">
 <option value="g">grams (g)</option>
 <option value="oz">ounces (oz)</option>
