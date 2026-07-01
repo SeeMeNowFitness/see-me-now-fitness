@@ -443,6 +443,16 @@ select option{background:var(--dark);}
 <!-- PLAN TAB -->
 <div class="panel" id="panel-plan">
 
+<!-- PDF Download Buttons -->
+<div style="display:flex;gap:8px;margin-bottom:16px;">
+  <button onclick="generateMealPlanPDF()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:var(--card);border:1px solid var(--gold-dim);border-radius:10px;color:var(--gold);font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.08em;cursor:pointer;">
+    📄 SAVE MEAL PLAN PDF
+  </button>
+  <button onclick="generateWorkoutPDF()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;background:var(--card);border:1px solid var(--gold-dim);border-radius:10px;color:var(--gold);font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.08em;cursor:pointer;">
+    📄 SAVE WORKOUT PDF
+  </button>
+</div>
+
 <!-- Check-In / Upsell Button -->
 <div id="plan-checkin-block" style="margin-bottom:16px;"></div>
 <div id="plan-coach-notes" style="display:none;margin-bottom:12px;"></div>
@@ -2913,6 +2923,307 @@ function renderFlexMeals() {
       ⚠️ <strong style="color:var(--gold);">Reminder:</strong> This is a weekly treat, not a daily option. Stay disciplined the rest of the week and results will follow. 💪
     </div>
   `;
+}
+
+// ── PDF GENERATION ──
+function getBrandedPDFHeader(title, subtitle) {
+  const name = clientProfile?.name || 'Client';
+  const date = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  return `
+    <div class="pdf-header">
+      <div class="pdf-logo-row">
+        <img src="https://seemenowfitness.github.io/see-me-now-fitness/logo.png" class="pdf-logo" alt="See Me Now Fitness">
+        <div class="pdf-brand">
+          <div class="pdf-brand-name">SEE ME NOW FITNESS</div>
+          <div class="pdf-brand-tag">THE BLUEPRINT SYSTEM</div>
+        </div>
+      </div>
+      <div class="pdf-title-block">
+        <div class="pdf-doc-title">${title}</div>
+        <div class="pdf-doc-sub">${subtitle}</div>
+      </div>
+      <div class="pdf-client-row">
+        <div class="pdf-client-info"><span class="pdf-label">Client:</span> ${name}</div>
+        <div class="pdf-client-info"><span class="pdf-label">Date:</span> ${date}</div>
+        ${clientProfile?.tier ? `<div class="pdf-client-info"><span class="pdf-label">Plan:</span> ${clientProfile.tier.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+function getPDFStyles() {
+  return `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800;900&display=swap');
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: 'Inter', Arial, sans-serif; background: #fff; color: #1a1a1a; font-size: 11px; line-height: 1.5; }
+      .pdf-header { background: #0A0A0A; color: #fff; padding: 24px 32px 20px; }
+      .pdf-logo-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+      .pdf-logo { height: 48px; width: auto; }
+      .pdf-brand-name { font-family: 'Anton', sans-serif; font-size: 18px; letter-spacing: 0.15em; color: #C9A84C; }
+      .pdf-brand-tag { font-size: 10px; letter-spacing: 0.2em; color: #888; margin-top: 2px; text-transform: uppercase; }
+      .pdf-title-block { border-top: 1px solid #2a2a2a; border-bottom: 1px solid #2a2a2a; padding: 12px 0; margin-bottom: 12px; }
+      .pdf-doc-title { font-family: 'Anton', sans-serif; font-size: 24px; letter-spacing: 0.08em; background: linear-gradient(90deg,#C9A84C,#e07c2a); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+      .pdf-doc-sub { font-size: 11px; color: #888; margin-top: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
+      .pdf-client-row { display: flex; gap: 24px; flex-wrap: wrap; }
+      .pdf-client-info { font-size: 11px; color: #aaa; }
+      .pdf-label { color: #C9A84C; font-weight: 700; margin-right: 4px; }
+      .pdf-body { padding: 24px 32px; }
+      .pdf-section { margin-bottom: 24px; }
+      .pdf-section-title { font-family: 'Anton', sans-serif; font-size: 13px; letter-spacing: 0.12em; text-transform: uppercase; color: #C9A84C; border-bottom: 2px solid #C9A84C; padding-bottom: 6px; margin-bottom: 12px; }
+      .pdf-macro-bar { display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f8f8f8; border-radius: 6px; margin-bottom: 4px; font-size: 11px; }
+      .pdf-macro-label { font-weight: 700; color: #1a1a1a; }
+      .pdf-macro-val { color: #C9A84C; font-weight: 800; }
+      .pdf-meal-block { border: 1px solid #e8e8e8; border-radius: 8px; margin-bottom: 12px; overflow: hidden; page-break-inside: avoid; }
+      .pdf-meal-header { background: #0A0A0A; color: #fff; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+      .pdf-meal-name { font-family: 'Anton', sans-serif; font-size: 12px; letter-spacing: 0.08em; color: #C9A84C; }
+      .pdf-meal-time { font-size: 10px; color: #888; }
+      .pdf-meal-cals { font-size: 13px; font-weight: 800; color: #fff; }
+      .pdf-food-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+      .pdf-food-table th { background: #f0f0f0; padding: 5px 8px; text-align: left; font-weight: 700; color: #666; font-size: 9px; text-transform: uppercase; letter-spacing: 0.05em; }
+      .pdf-food-table th:not(:first-child) { text-align: right; }
+      .pdf-food-table td { padding: 6px 8px; border-bottom: 1px solid #f0f0f0; }
+      .pdf-food-table td:not(:first-child) { text-align: right; color: #666; }
+      .pdf-food-table tr:last-child td { border-bottom: none; }
+      .pdf-food-total td { background: #f8f8f8; font-weight: 800; color: #1a1a1a !important; }
+      .pdf-meal-macros { padding: 8px 14px; background: #fafafa; display: flex; gap: 16px; font-size: 10px; border-top: 1px solid #eee; }
+      .pdf-meal-macro { color: #888; }
+      .pdf-meal-macro strong { color: #1a1a1a; }
+      .pdf-exercise-block { border: 1px solid #e8e8e8; border-radius: 8px; margin-bottom: 10px; overflow: hidden; page-break-inside: avoid; }
+      .pdf-exercise-header { background: #0A0A0A; color: #fff; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; }
+      .pdf-exercise-day { font-family: 'Anton', sans-serif; font-size: 13px; letter-spacing: 0.08em; color: #C9A84C; }
+      .pdf-exercise-focus { font-size: 10px; color: #888; }
+      .pdf-exercise-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 8px 14px; border-bottom: 1px solid #f0f0f0; }
+      .pdf-exercise-row:last-child { border-bottom: none; }
+      .pdf-exercise-name { font-weight: 700; font-size: 11px; color: #1a1a1a; }
+      .pdf-exercise-detail { font-size: 10px; color: #888; margin-top: 2px; }
+      .pdf-exercise-sets { font-family: 'Anton', sans-serif; font-size: 14px; color: #C9A84C; text-align: right; }
+      .pdf-exercise-sets-label { font-size: 9px; color: #aaa; display: block; }
+      .pdf-tip { background: #fffbf0; border-left: 3px solid #C9A84C; padding: 6px 10px; margin-top: 6px; font-size: 10px; color: #666; border-radius: 0 4px 4px 0; }
+      .pdf-supp-row { display: flex; justify-content: space-between; padding: 7px 10px; border-bottom: 1px solid #f0f0f0; font-size: 11px; }
+      .pdf-supp-row:last-child { border-bottom: none; }
+      .pdf-supp-name { font-weight: 700; }
+      .pdf-supp-dose { color: #888; }
+      .pdf-supp-timing { color: #C9A84C; font-weight: 700; font-size: 10px; }
+      .pdf-approved-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+      .pdf-approved-item { background: #f8f8f8; border-radius: 6px; padding: 7px 10px; }
+      .pdf-approved-name { font-weight: 700; font-size: 11px; }
+      .pdf-approved-macro { font-size: 9px; color: #888; margin-top: 2px; }
+      .pdf-flex-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+      .pdf-flex-table th { background: #0A0A0A; color: #C9A84C; padding: 7px 10px; text-align: left; font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; }
+      .pdf-flex-table td { padding: 7px 10px; border-bottom: 1px solid #f0f0f0; }
+      .pdf-flex-table tr:nth-child(even) td { background: #fafafa; }
+      .pdf-footer { background: #0A0A0A; padding: 14px 32px; display: flex; justify-content: space-between; align-items: center; margin-top: 32px; }
+      .pdf-footer-brand { font-family: 'Anton', sans-serif; font-size: 12px; letter-spacing: 0.1em; color: #C9A84C; }
+      .pdf-footer-url { font-size: 10px; color: #666; }
+      .pdf-disclaimer { font-size: 9px; color: #aaa; margin-top: 6px; line-height: 1.5; }
+      .pdf-zigzag-badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 9px; font-weight: 800; letter-spacing: 0.06em; margin-left: 8px; }
+      .pdf-badge-high { background: rgba(201,168,76,0.15); color: #C9A84C; }
+      .pdf-badge-low { background: rgba(76,143,224,0.15); color: #4c8fe0; }
+      @media print {
+        body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .pdf-meal-block, .pdf-exercise-block { page-break-inside: avoid; }
+        .pdf-section { page-break-inside: avoid; }
+      }
+    </style>`;
+}
+
+function generateMealPlanPDF() {
+  const profile = clientProfile || {};
+  const isZigzag = profile.tracking_method === 'zigzag';
+  const macros = getMacros();
+
+  // Get both high and low plans for zigzag, single plan otherwise
+  const plans = [];
+  if (isZigzag && profile.macros_high && profile.macros_low) {
+    const highPlan = profile.meal_plan_high || profile.meal_plan || DEFAULT_MEAL_PLAN;
+    const lowPlan = profile.meal_plan_low || profile.meal_plan || DEFAULT_MEAL_PLAN;
+    plans.push({ label: '🔥 High Day', badge: 'high', macros: profile.macros_high, meals: highPlan });
+    plans.push({ label: '❄️ Low Day', badge: 'low', macros: profile.macros_low, meals: lowPlan });
+  } else {
+    const mealPlan = profile.meal_plan || DEFAULT_MEAL_PLAN;
+    plans.push({ label: 'Daily Meal Plan', badge: null, macros, meals: mealPlan });
+  }
+
+  // Supplements
+  const supps = profile.supplements || DEFAULT_SUPPLEMENTS;
+
+  // Approved foods
+  const af = profile.approved_foods;
+  let protein = [], carbs = [], fats = [];
+  if (af) {
+    protein = af.protein || []; carbs = af.carbs || []; fats = af.fats || [];
+  } else {
+    const defaults = getDefaultApprovedFoods(profile.blood_type || 'unknown');
+    protein = defaults.protein || []; carbs = defaults.carbs || []; fats = defaults.fats || [];
+  }
+
+  // Flex meals
+  const flexMeals = profile.flex_enabled && profile.flex_meals?.length ? profile.flex_meals : null;
+
+  const renderMeals = (plan) => plan.meals.map(meal => {
+    const totalP = Math.round(meal.foods.reduce((s,f) => s+(f.protein||0), 0)*10)/10;
+    const totalC = Math.round(meal.foods.reduce((s,f) => s+(f.carbs||0), 0)*10)/10;
+    const totalF = Math.round(meal.foods.reduce((s,f) => s+(f.fat||0), 0)*10)/10;
+    const totalCal = Math.round(meal.foods.reduce((s,f) => s+(f.cals||0), 0));
+    return `
+      <div class="pdf-meal-block">
+        <div class="pdf-meal-header">
+          <div>
+            <div class="pdf-meal-name">${meal.name}</div>
+            ${meal.time ? `<div class="pdf-meal-time">${meal.time}</div>` : ''}
+          </div>
+          <div class="pdf-meal-cals">${totalCal} kcal</div>
+        </div>
+        <table class="pdf-food-table">
+          <tr><th>Food</th><th>Amount</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>kcal</th></tr>
+          ${meal.foods.map(f => `<tr><td>${f.name}</td><td>${f.amount}</td><td>${f.protein}g</td><td>${f.carbs}g</td><td>${f.fat}g</td><td>${f.cals}</td></tr>`).join('')}
+          <tr class="pdf-food-total"><td colspan="2">Total</td><td>${totalP}g</td><td>${totalC}g</td><td>${totalF}g</td><td>${totalCal}</td></tr>
+        </table>
+        <div class="pdf-meal-macros">
+          <div class="pdf-meal-macro">P: <strong>${totalP}g</strong></div>
+          <div class="pdf-meal-macro">C: <strong>${totalC}g</strong></div>
+          <div class="pdf-meal-macro">F: <strong>${totalF}g</strong></div>
+          <div class="pdf-meal-macro">kcal: <strong>${totalCal}</strong></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const plansHTML = plans.map(plan => `
+    <div class="pdf-section">
+      <div class="pdf-section-title">
+        ${plan.label}
+        ${plan.badge ? `<span class="pdf-zigzag-badge pdf-badge-${plan.badge}">${plan.macros.calories} kcal · P:${plan.macros.protein}g C:${plan.macros.carbs}g F:${plan.macros.fat}g</span>` : ''}
+      </div>
+      ${renderMeals(plan)}
+    </div>`).join('');
+
+  const suppHTML = `
+    <div class="pdf-section">
+      <div class="pdf-section-title">Blueprint Supplements</div>
+      <div style="border:1px solid #e8e8e8;border-radius:8px;overflow:hidden;">
+        ${supps.map(s => `
+          <div class="pdf-supp-row">
+            <div>
+              <div class="pdf-supp-name">${s.name}</div>
+              <div class="pdf-supp-dose">${s.dose}</div>
+            </div>
+            <div class="pdf-supp-timing">${s.timing}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  const approvedHTML = (protein.length || carbs.length || fats.length) ? `
+    <div class="pdf-section">
+      <div class="pdf-section-title">Blueprint Foods</div>
+      ${protein.length ? `<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#C9A84C;margin-bottom:6px;">💪 Protein Sources</div><div class="pdf-approved-grid">${protein.map(f=>`<div class="pdf-approved-item"><div class="pdf-approved-name">${f.name}</div><div class="pdf-approved-macro">${f.macro}</div></div>`).join('')}</div></div>` : ''}
+      ${carbs.length ? `<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#4c8fe0;margin-bottom:6px;">🌾 Carbohydrate Sources</div><div class="pdf-approved-grid">${carbs.map(f=>`<div class="pdf-approved-item"><div class="pdf-approved-name">${f.name}</div><div class="pdf-approved-macro">${f.macro}</div></div>`).join('')}</div></div>` : ''}
+      ${fats.length ? `<div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#e07c2a;margin-bottom:6px;">🥑 Fat Sources</div><div class="pdf-approved-grid">${fats.map(f=>`<div class="pdf-approved-item"><div class="pdf-approved-name">${f.name}</div><div class="pdf-approved-macro">${f.macro}</div></div>`).join('')}</div></div>` : ''}
+    </div>` : '';
+
+  const flexHTML = flexMeals ? `
+    <div class="pdf-section">
+      <div class="pdf-section-title">⭐ Weekend Flex Meal</div>
+      <div style="background:#fffbf0;border:1px solid #C9A84C;border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:10px;color:#666;">
+        Choose ONE option to replace Meal 2 — ONE day of the weekend only. Do not add on top of your plan.
+      </div>
+      <table class="pdf-flex-table">
+        <tr><th>Restaurant</th><th>Meal Option</th><th>Notes</th></tr>
+        ${flexMeals.map(m=>`<tr><td><strong>${m.restaurant}</strong></td><td>${m.meal}</td><td>${m.notes||''}</td></tr>`).join('')}
+      </table>
+    </div>` : '';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Blueprint Meal Plan — ${clientProfile?.name || 'Client'}</title>${getPDFStyles()}</head><body>
+    ${getBrandedPDFHeader('BLUEPRINT MEAL PLAN', `Personalized Nutrition Plan · See Me Now Fitness`)}
+    <div class="pdf-body">
+      <div class="pdf-section">
+        <div class="pdf-section-title">Daily Macro Targets</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
+          ${[{l:'Calories',v:macros.calories,u:'kcal',c:'#4caf76'},{l:'Protein',v:macros.protein,u:'g',c:'#C9A84C'},{l:'Carbs',v:macros.carbs,u:'g',c:'#4c8fe0'},{l:'Fat',v:macros.fat,u:'g',c:'#e07c2a'}].map(m=>`
+          <div style="background:#f8f8f8;border-radius:8px;padding:10px;text-align:center;">
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#888;margin-bottom:4px;">${m.l}</div>
+            <div style="font-size:20px;font-weight:900;color:${m.c};">${m.v}<span style="font-size:11px;font-weight:400;color:#aaa;">${m.u}</span></div>
+          </div>`).join('')}
+        </div>
+      </div>
+      ${plansHTML}
+      ${suppHTML}
+      ${approvedHTML}
+      ${flexHTML}
+      <div class="pdf-disclaimer">⚠️ Please consult a qualified healthcare practitioner prior to beginning any nutrition plan. Individual results may vary.</div>
+    </div>
+    <div class="pdf-footer">
+      <div><div class="pdf-footer-brand">SEE ME NOW FITNESS</div><div class="pdf-footer-url">seemenowfitness.com</div></div>
+      <div style="font-size:10px;color:#666;">Blueprint System · Confidential</div>
+    </div>
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => win.print();
+}
+
+function generateWorkoutPDF() {
+  const profile = clientProfile || {};
+  const plan = profile.workout_plan;
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Blueprint Workout Plan — ${clientProfile?.name || 'Client'}</title>${getPDFStyles()}</head><body>
+    ${getBrandedPDFHeader('BLUEPRINT WORKOUT PLAN', `Personalized Training Program · See Me Now Fitness`)}
+    <div class="pdf-body">
+      ${plan?.days?.length ? plan.days.map(day => {
+        const isRest = day.exercises.length === 0 && (!day.warmup || day.warmup.length === 0);
+        return `
+          <div class="pdf-exercise-block">
+            <div class="pdf-exercise-header">
+              <div>
+                <div class="pdf-exercise-day">${day.icon || ''} ${day.day} — ${day.label}</div>
+                ${day.focus ? `<div class="pdf-exercise-focus">${day.focus}</div>` : ''}
+              </div>
+              ${isRest ? '<div style="color:#888;font-size:11px;">Rest & Recovery</div>' : ''}
+            </div>
+            ${isRest ? '<div style="padding:12px 14px;color:#888;font-size:11px;">Active recovery recommended. Focus on sleep, hydration, and mobility.</div>' : `
+              <div style="padding:0;">
+                ${day.warmup?.length ? `
+                  <div style="padding:8px 14px 4px;background:#f0fff4;">
+                    <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#4caf76;margin-bottom:6px;">🔥 Warmup</div>
+                    ${day.warmup.map(ex => `
+                      <div class="pdf-exercise-row" style="background:#f0fff4;">
+                        <div><div class="pdf-exercise-name">${ex.name}</div><div class="pdf-exercise-detail">${ex.sets} set${ex.sets>1?'s':''} · ${ex.reps}${ex.rest&&ex.rest!=='—'?' · Rest: '+ex.rest:''}</div>${ex.tip?`<div class="pdf-tip">💡 ${ex.tip}</div>`:''}</div>
+                        <div></div>
+                      </div>`).join('')}
+                  </div>` : ''}
+                ${day.exercises.length ? `
+                  <div style="padding:8px 14px 4px;">
+                    <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#C9A84C;margin-bottom:6px;">💪 Main Workout</div>
+                    ${day.exercises.map(ex => `
+                      <div class="pdf-exercise-row">
+                        <div style="flex:1;">
+                          <div class="pdf-exercise-name">${ex.name}</div>
+                          <div class="pdf-exercise-detail">Rest: ${ex.rest || '60s'}</div>
+                          ${ex.tip ? `<div class="pdf-tip">💡 ${ex.tip}</div>` : ''}
+                        </div>
+                        <div class="pdf-exercise-sets">${ex.sets}×${ex.reps}<span class="pdf-exercise-sets-label">sets×reps</span></div>
+                      </div>`).join('')}
+                  </div>` : ''}
+              </div>`}
+          </div>`;
+      }).join('') : `
+        <div style="text-align:center;padding:40px;color:#888;">
+          <div style="font-size:32px;margin-bottom:12px;">💪</div>
+          <div style="font-weight:700;">Your personalized workout plan will appear here once assigned by Coach Charles.</div>
+        </div>`}
+      <div class="pdf-disclaimer" style="margin-top:24px;">⚠️ Please consult a qualified healthcare practitioner prior to beginning any exercise program. Individual results may vary.</div>
+    </div>
+    <div class="pdf-footer">
+      <div><div class="pdf-footer-brand">SEE ME NOW FITNESS</div><div class="pdf-footer-url">seemenowfitness.com</div></div>
+      <div style="font-size:10px;color:#666;">Blueprint System · Confidential</div>
+    </div>
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => win.print();
 }
 
 function togglePlanSection(id) {
