@@ -1008,13 +1008,14 @@ function logMealPlanMeal(mealIdx) {
       carbs,
       fat,
       time: now,
-      mealGroup: meal.name,
+      mealGroup: getMealDisplayName(meal, mealIdx),
     });
   });
   saveDay();
   renderMealLog();
   renderToday();
-  showToast(`✓ ${meal.name} added to log (${meal.foods.length} foods)`);
+  const displayName = getMealDisplayName(meal, mealIdx);
+  showToast(`✓ ${displayName} added to log (${meal.foods.length} foods)`);
   // Switch to Log tab so user can see what was logged
   const logBtn = document.querySelector('.tab[onclick*="log"]');
   if(logBtn) switchTab('log', logBtn);
@@ -2751,7 +2752,7 @@ function renderMealPlan() {
     <div class="meal-plan-card">
       <div class="meal-plan-card-header" onclick="togglePlanCard('meal-${i}')">
         <div>
-          <div class="meal-title">${meal.name}</div>
+          <div class="meal-title">${getMealDisplayName(meal, i)}</div>
           <div style="font-size:11px;color:var(--muted);margin-top:2px;">${meal.time || ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
@@ -3060,16 +3061,17 @@ function generateMealPlanPDF() {
   // Flex meals
   const flexMeals = profile.flex_enabled && profile.flex_meals?.length ? profile.flex_meals : null;
 
-  const renderMeals = (plan) => plan.meals.map(meal => {
+  const renderMeals = (plan) => plan.meals.map((meal, mealIdx) => {
     const totalP = Math.round(meal.foods.reduce((s,f) => s+(f.protein||0), 0)*10)/10;
     const totalC = Math.round(meal.foods.reduce((s,f) => s+(f.carbs||0), 0)*10)/10;
     const totalF = Math.round(meal.foods.reduce((s,f) => s+(f.fat||0), 0)*10)/10;
     const totalCal = Math.round(meal.foods.reduce((s,f) => s+(f.cals||0), 0));
+    const displayName = getMealDisplayName(meal, mealIdx);
     return `
       <div class="pdf-meal-block">
         <div class="pdf-meal-header">
           <div>
-            <div class="pdf-meal-name">${meal.name}</div>
+            <div class="pdf-meal-name">${displayName}</div>
             ${meal.time ? `<div class="pdf-meal-time">${meal.time}</div>` : ''}
           </div>
           <div class="pdf-meal-cals">${totalCal} kcal</div>
@@ -3224,6 +3226,14 @@ function generateWorkoutPDF() {
   win.document.write(html);
   win.document.close();
   win.onload = () => win.print();
+}
+
+function getMealDisplayName(meal, index) {
+  const name = (meal.name || '').toLowerCase();
+  if (name.includes('breakfast')) return 'Breakfast';
+  if (name.includes('lunch')) return 'Lunch';
+  if (name.includes('dinner')) return 'Dinner';
+  return `Meal ${index + 1}`;
 }
 
 function togglePlanSection(id) {
