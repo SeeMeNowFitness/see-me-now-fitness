@@ -1216,7 +1216,7 @@ function renderMealLog(){
           <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);">${group}</div>
           <div style="display:flex;align-items:center;gap:8px;">
             <div style="font-size:11px;color:var(--muted);">${groupCals} kcal · P:${groupP}g C:${groupC}g F:${groupF}g</div>
-            <button onclick="openSaveMealModal('${group.replace(/'/g,"\\'")}',${JSON.stringify(items).replace(/'/g,"\\'")})" style="background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);color:var(--gold);border-radius:6px;padding:3px 7px;font-size:10px;font-weight:800;cursor:pointer;white-space:nowrap;">⭐ Save</button>
+            <button onclick="window._mealLogGroups=window._mealLogGroups||{};window._mealLogGroups[this.dataset.group]=JSON.parse(this.dataset.items);openSaveMealModal(this.dataset.group,window._mealLogGroups[this.dataset.group])" data-group="${group.replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" data-items="${JSON.stringify(items).replace(/&/g,'&amp;').replace(/"/g,'&quot;')}" style="background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);color:var(--gold);border-radius:6px;padding:3px 7px;font-size:10px;font-weight:800;cursor:pointer;white-space:nowrap;">⭐ Save</button>
           </div>
         </div>
         ${items.map(m => `
