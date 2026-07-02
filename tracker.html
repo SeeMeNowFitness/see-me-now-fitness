@@ -317,6 +317,7 @@ select option{background:var(--dark);}
 <button id="zz-high" onclick="setDayType('high')" style="flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;">🔥 HIGH DAY</button>
 <button id="zz-low" onclick="setDayType('low')" style="flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;">❄️ LOW DAY</button>
 </div>
+<div id="zigzag-day-count" style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:0.04em;"></div>
 </div>
 <div class="balance-hero"><div class="balance-zone" id="balance-zone-label">Calculating…</div><div class="balance-number" id="balance-number">—</div><div class="balance-label">energy balance</div><div class="balance-sub" id="balance-sub"></div></div>
 <div class="card"><div class="card-title">Macros Today</div><div id="macro-bars"></div></div>
@@ -853,6 +854,7 @@ document.getElementById('session-countdown').style.display=tier==='inperson'?'bl
 document.getElementById('checkin-streak').style.display='block';
 document.getElementById('upsell-block').style.display=tier==='tracker'?'block':'none';
 const zzt=document.getElementById('zigzag-toggle');if(zzt)zzt.style.display=clientProfile.tracking_method==='zigzag'?'block':'none';
+if(clientProfile.tracking_method==='zigzag'){const hd=clientProfile.high_days_per_week||2;const ld=7-hd;const dc=document.getElementById('zigzag-day-count');if(dc)dc.textContent=`🔥 ${hd} High Day${hd!==1?'s':''} · ❄️ ${ld} Low Day${ld!==1?'s':''} per week`;}
 const sb=document.getElementById('setup-banner');if(sb)sb.style.display=(!CLIENT_ID||CLIENT_ID==='demo')?'block':'none';
 if(tier==='contest_prep'&&clientProfile.show_date){
   const now=new Date();
@@ -3399,10 +3401,12 @@ function generateMealPlanPDF() {
   // Get both high and low plans for zigzag, single plan otherwise
   const plans = [];
   if (isZigzag && profile.macros_high && profile.macros_low) {
+    const hd = profile.high_days_per_week || 2;
+    const ld = 7 - hd;
     const highPlan = profile.meal_plan_high || profile.meal_plan || DEFAULT_MEAL_PLAN;
     const lowPlan = profile.meal_plan_low || profile.meal_plan || DEFAULT_MEAL_PLAN;
-    plans.push({ label: '🔥 High Day', badge: 'high', macros: profile.macros_high, meals: highPlan });
-    plans.push({ label: '❄️ Low Day', badge: 'low', macros: profile.macros_low, meals: lowPlan });
+    plans.push({ label: `🔥 High Day (${hd} day${hd!==1?'s':''}/week)`, badge: 'high', macros: profile.macros_high, meals: highPlan });
+    plans.push({ label: `❄️ Low Day (${ld} day${ld!==1?'s':''}/week)`, badge: 'low', macros: profile.macros_low, meals: lowPlan });
   } else {
     const mealPlan = profile.meal_plan || DEFAULT_MEAL_PLAN;
     plans.push({ label: 'Daily Meal Plan', badge: null, macros, meals: mealPlan });
