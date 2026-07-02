@@ -228,9 +228,39 @@ select option{background:var(--dark);}
 .cal-source-badge.estimated{color:var(--muted);background:var(--border);}
 .cal-source-badge.device{color:var(--green);background:rgba(76,175,118,0.15);}
 </style>
+<!-- OneSignal Push Notifications -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "076bb653-8360-4302-910c-4834686c6564",
+      safari_web_id: "web.onesignal.auto.253751a8-ac24-4181-97da-883dbdadac49",
+      notifyButton: { enable: false },
+      welcomeNotification: {
+        title: "See Me Now Fitness",
+        message: "You're subscribed to Blueprint updates from Coach Charles."
+      }
+    });
+  });
+</script>
 </head>
 <body>
 <div id="pwa-banner"><div class="pi"><img src="https://seemenowfitness.github.io/see-me-now-fitness/logo.png" alt="Blueprint"><div class="pt"><strong>Add Blueprint to Home Screen</strong><span>Opens full-screen like a native app</span></div><button class="install-btn" id="pwa-install-btn">Install</button><button class="dismiss-btn" onclick="dismissPWA()">✕</button></div></div>
+
+<!-- Coach Update Banner -->
+<div id="coach-update-banner" style="display:none;background:linear-gradient(135deg,#C9A84C,#e07c2a);padding:12px 16px;margin:8px;border-radius:10px;cursor:pointer;" onclick="handleUpdateBannerTap()">
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="font-size:20px;">📋</div>
+      <div>
+        <div style="font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.06em;color:#0A0A0A;">BLUEPRINT UPDATE</div>
+        <div id="coach-update-message" style="font-size:11px;color:rgba(0,0,0,0.75);margin-top:1px;">Coach Charles updated your plan</div>
+      </div>
+    </div>
+    <button onclick="event.stopPropagation();dismissUpdateBanner()" style="background:rgba(0,0,0,0.15);border:none;color:#0A0A0A;border-radius:50%;width:24px;height:24px;cursor:pointer;font-size:12px;">✕</button>
+  </div>
+</div>
 
 <div id="email-login-screen" style="position:fixed;inset:0;background:var(--black);z-index:500;align-items:center;justify-content:center;padding:24px;display:none;">
 <div style="width:100%;max-width:360px;">
@@ -351,6 +381,10 @@ select option{background:var(--dark);}
 <div style="position:absolute;bottom:100px;left:0;right:0;text-align:center;"><div style="font-size:13px;color:var(--white);font-weight:700;margin-bottom:4px;" id="barcode-status">Point camera at a barcode</div><div style="font-size:11px;color:var(--muted);">Works with food packaging barcodes</div></div>
 <button onclick="closeBarcodeScanner()" style="position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.6);border:1px solid var(--border);color:var(--white);border-radius:99px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">Cancel</button>
 </div>
+</div>
+<div style="display:flex;gap:8px;margin-bottom:8px;">
+  <button onclick="openModal('modal-my-meals');loadMyMeals()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">⭐ Saved Meals</button>
+  <button onclick="openCopyDayModal()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:8px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;">📋 Copy Previous Day</button>
 </div>
 <div class="section-label">Today's Log</div>
 <div id="meal-log-list"><div class="empty-state"><div class="icon">🍽</div><h4>Nothing logged yet</h4><p>Search above or tap a quick add to start tracking.</p></div></div>
@@ -490,6 +524,7 @@ select option{background:var(--dark);}
 <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
 <div onclick="togglePlanSection('meals')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
 <div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Meal Plan</div>
+<div style="font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:0.04em;">Personalized for your macros and blood type</div>
 <span style="color:var(--muted);font-size:12px;" id="plan-section-chev-meals">▼</span>
 </div>
 <div id="plan-section-body-meals" style="display:none;padding:0 8px 12px;">
@@ -551,20 +586,30 @@ select option{background:var(--dark);}
 <div class="modal-overlay" id="modal-workout" onclick="closeModalOutside(event,'modal-workout')"><div class="modal"><div class="modal-handle"></div><h3>🏋️ Log Workout</h3>
 <label>Type</label>
 <select id="workout-type" onchange="updateWorkoutCalPreview()">
-<option value="weights">Weight Training (~450 kcal/hr)</option>
-<option value="cardio">Moderate Cardio (~550 kcal/hr)</option>
-<option value="hiit">HIIT (~700 kcal/hr)</option>
-<option value="posing">Posing Practice (~250 kcal/hr)</option>
-<option value="other">Other (~300 kcal/hr)</option>
+<option value="weights">🏋️ Bodybuilding / Weight Training</option>
+<option value="bb_hiit">💥 Bodybuilding / HIIT Hybrid</option>
+<option value="hiit">⚡ HIIT</option>
+<option value="cardio">🏃 Cardio / Elliptical</option>
+<option value="running_moderate">🏃 Running (Moderate)</option>
+<option value="running_fast">🏃 Running (Fast)</option>
+<option value="cycling">🚴 Cycling / Stationary Bike</option>
+<option value="walking_brisk">🚶 Walking (Brisk)</option>
+<option value="walking_casual">🚶 Walking (Casual)</option>
+<option value="swimming">🏊 Swimming</option>
+<option value="sports">🏀 Sports / Basketball / Soccer</option>
+<option value="yoga">🧘 Yoga / Stretching</option>
+<option value="posing">🏆 Posing Practice</option>
+<option value="other">💪 Other</option>
 </select>
 <label>Duration (minutes)</label>
-<input type="number" id="workout-duration" placeholder="e.g. 60" inputmode="numeric" oninput="updateWorkoutCalPreview()">
+<input type="number" id="workout-duration" placeholder="e.g. 60" inputmode="numeric" oninput="updateWorkoutCalPreview()" onfocus="this.select()">
 <label>Calories Burned</label>
 <div class="cal-override-wrap">
-<input type="number" id="workout-calories-override" inputmode="numeric" placeholder="Tap duration above to auto-estimate" oninput="updateWorkoutCalPreview()">
+<input type="number" id="workout-calories-override" inputmode="numeric" placeholder="Tap duration above to auto-estimate" oninput="updateWorkoutCalPreview()" onfocus="this.select()">
 <span class="cal-source-badge estimated" id="workout-cal-badge">estimated</span>
 </div>
-<div style="font-size:11px;color:var(--muted);margin-top:6px;margin-bottom:2px;">💡 Got an Apple Watch or Fitbit? Enter your device's number above for more accurate tracking.</div>
+<div id="workout-cal-preview" style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:2px;min-height:16px;"></div>
+<div style="font-size:11px;color:var(--muted);margin-bottom:2px;">💡 Got an Apple Watch or Fitbit? Enter your device's number above for more accurate tracking.</div>
 <label>Notes (optional)</label>
 <input type="text" id="workout-notes" placeholder="e.g. Legs day, felt strong">
 <div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-workout')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWorkout()">Save</button></div>
@@ -675,6 +720,41 @@ select option{background:var(--dark);}
 <div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-custom-food')">Cancel</button><button class="btn btn-gold btn-full" onclick="confirmCustomFood()">Continue</button></div>
 </div></div>
 
+<!-- SAVED MEALS MODAL — save a logged meal group for future reuse -->
+<div class="modal-overlay" id="modal-save-meal" onclick="closeModalOutside(event,'modal-save-meal')"><div class="modal"><div class="modal-handle"></div>
+<h3>⭐ Save This Meal</h3>
+<div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Give this meal a name so you can log it again with one tap.</div>
+<label>Meal Name</label>
+<input type="text" id="save-meal-name" placeholder="e.g. Post Workout Shake, My Breakfast">
+<div id="save-meal-preview" style="background:#111;border:1px solid var(--border);border-radius:8px;padding:10px;margin-top:8px;font-size:12px;color:var(--muted);max-height:140px;overflow-y:auto;"></div>
+<div id="save-meal-error" style="display:none;color:var(--red);font-size:12px;margin-top:8px;"></div>
+<div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-save-meal')">Cancel</button><button class="btn btn-gold btn-full" onclick="confirmSaveMeal()">Save Meal</button></div>
+</div></div>
+
+<!-- MY SAVED MEALS MODAL — browse and log saved meals -->
+<div class="modal-overlay" id="modal-my-meals" onclick="closeModalOutside(event,'modal-my-meals')"><div class="modal"><div class="modal-handle"></div>
+<h3>⭐ My Saved Meals</h3>
+<div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Tap a meal to log it today.</div>
+<div id="my-meals-list"><div class="loading">Loading saved meals…</div></div>
+<div style="margin-top:16px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-my-meals')">Close</button></div>
+</div></div>
+
+<!-- COPY FROM PREVIOUS DAY MODAL -->
+<div class="modal-overlay" id="modal-copy-day" onclick="closeModalOutside(event,'modal-copy-day')"><div class="modal"><div class="modal-handle"></div>
+<h3>📋 Copy From Previous Day</h3>
+<div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Copy meals from a previous day into today's log.</div>
+<label>Select Date</label>
+<input type="date" id="copy-day-date" max="" style="width:100%;background:#141414;border:1px solid var(--border);border-radius:8px;color:var(--white);padding:10px 12px;font-size:14px;box-sizing:border-box;margin-bottom:12px;">
+<div id="copy-day-preview" style="min-height:60px;"></div>
+<div id="copy-day-options" style="display:none;margin-top:10px;">
+<div style="display:flex;gap:8px;margin-bottom:8px;">
+<button class="btn btn-gold btn-full" onclick="copyFullDay()" style="font-size:12px;">Copy Full Day</button>
+</div>
+<div id="copy-day-meal-list"></div>
+</div>
+<div style="margin-top:16px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-copy-day')">Close</button></div>
+</div></div>
+
 <div class="modal-overlay" id="modal-recipe-detail" onclick="closeModalOutside(event,'modal-recipe-detail')"><div class="modal"><div class="modal-handle"></div><div id="recipe-detail-body"></div></div></div>
 
 <div id="toast"></div>
@@ -692,6 +772,31 @@ if('serviceWorker' in navigator)window.addEventListener('load',()=>navigator.ser
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPWAPrompt=e;if(!localStorage.getItem('smn_pwa_dismissed'))document.getElementById('pwa-banner').style.display='block';});
 document.getElementById('pwa-install-btn').addEventListener('click',async()=>{if(!deferredPWAPrompt)return;deferredPWAPrompt.prompt();await deferredPWAPrompt.userChoice;deferredPWAPrompt=null;dismissPWA();});
 window.addEventListener('appinstalled',()=>dismissPWA());
+function showUpdateBanner(message) {
+  const banner = document.getElementById('coach-update-banner');
+  const msg = document.getElementById('coach-update-message');
+  if (banner) { banner.style.display = 'block'; if (msg) msg.textContent = message; }
+}
+
+function handleUpdateBannerTap() {
+  // Switch to My Plan tab and clear the flag
+  const planBtn = document.querySelector('.tab[onclick*="plan"]');
+  if (planBtn) switchTab('plan', planBtn);
+  dismissUpdateBanner();
+  // Clear has_update flag in Firestore so banner doesn't show again
+  if (CLIENT_ID && CLIENT_ID !== 'demo') {
+    try { fsSet(`clients/${CLIENT_ID}`, { ...clientProfile, has_update: false, update_message: '' }); } catch(e) {}
+  }
+}
+
+function dismissUpdateBanner() {
+  const banner = document.getElementById('coach-update-banner');
+  if (banner) banner.style.display = 'none';
+  if (CLIENT_ID && CLIENT_ID !== 'demo' && clientProfile) {
+    try { fsSet(`clients/${CLIENT_ID}`, { ...clientProfile, has_update: false, update_message: '' }); } catch(e) {}
+  }
+}
+
 function dismissPWA(){localStorage.setItem('smn_pwa_dismissed','1');document.getElementById('pwa-banner').style.display='none';}
 
 // DATE
@@ -717,6 +822,27 @@ if(!CLIENT_ID||CLIENT_ID==='demo'){clientProfile={name:'Demo',tier:'lifestyle',m
 else{try{clientProfile=(await fsGet(`clients/${CLIENT_ID}`))||defProfile();}catch(e){clientProfile=defProfile();}}
 applyTierUI();
 renderGreetingCard();
+// OneSignal — tag this client so we can send them targeted notifications
+if(CLIENT_ID && CLIENT_ID !== 'demo') {
+  try {
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      const permission = await OneSignal.Notifications.permission;
+      if (!permission) {
+        // Ask for permission after a short delay so it doesn't interrupt load
+        setTimeout(async () => {
+          try { await OneSignal.Notifications.requestPermission(); } catch(e) {}
+        }, 3000);
+      }
+      // Tag client with their ID so admin can target them specifically
+      await OneSignal.User.addTags({ client_id: CLIENT_ID, name: clientProfile.name || '' });
+    });
+  } catch(e) {}
+  // Check for coach update notification
+  if (clientProfile.has_update) {
+    showUpdateBanner(clientProfile.update_message || 'Coach Charles updated your Blueprint. Tap to view your plan.');
+  }
+}
 }
 function defProfile(){return{name:'Client',tier:'tracker',macros:{protein:150,carbs:175,fat:55,calories:1795},bmr_inputs:{weight_lbs:160,height_cm:170,age:30,gender:'male'}};}
 function applyTierUI(){
@@ -764,7 +890,28 @@ const t=tl[tier]||tl['tracker'];document.getElementById('recipes-tier-label').te
 
 // ENERGY
 function calcBMR(){if(!clientProfile?.bmr_inputs)return 1800;const{weight_lbs,height_cm,age,gender}=clientProfile.bmr_inputs;return Math.round((10*weight_lbs*0.453592)+(6.25*height_cm)-(5*age)+(gender==='male'?5:-161));}
-function calcWCals(type,min){return Math.round(({weights:450,cardio:550,hiit:700,posing:250,other:300}[type]||300)/60*min);}
+const WORKOUT_METS = {
+  walking_casual:   { met: 3.5,  label: 'Walking (Casual)',            emoji: '🚶' },
+  walking_brisk:    { met: 4.5,  label: 'Walking (Brisk)',             emoji: '🚶' },
+  cycling:          { met: 7.0,  label: 'Cycling / Stationary Bike',   emoji: '🚴' },
+  cardio:           { met: 7.0,  label: 'Cardio / Elliptical',         emoji: '🏃' },
+  running_moderate: { met: 9.0,  label: 'Running (Moderate)',          emoji: '🏃' },
+  running_fast:     { met: 11.0, label: 'Running (Fast)',              emoji: '🏃' },
+  hiit:             { met: 10.0, label: 'HIIT',                        emoji: '⚡' },
+  bb_hiit:          { met: 7.5,  label: 'Bodybuilding / HIIT Hybrid',  emoji: '💥' },
+  weights:          { met: 5.0,  label: 'Bodybuilding / Weight Training', emoji: '🏋️' },
+  yoga:             { met: 2.5,  label: 'Yoga / Stretching',           emoji: '🧘' },
+  swimming:         { met: 7.0,  label: 'Swimming',                    emoji: '🏊' },
+  sports:           { met: 8.0,  label: 'Sports / Basketball / Soccer', emoji: '🏀' },
+  posing:           { met: 2.5,  label: 'Posing Practice',             emoji: '🏆' },
+  other:            { met: 5.0,  label: 'Other',                       emoji: '💪' },
+};
+
+function calcWCals(type, min) {
+  const met = WORKOUT_METS[type]?.met || 5.0;
+  const weightKg = (clientProfile?.weight_lbs ? clientProfile.weight_lbs * 0.453592 : 75);
+  return Math.round(met * weightKg * (min / 60));
+}
 function calcSCals(s,lbs){return Math.round(s*lbs*0.0005);}
 function calcBal(){const bmr=calcBMR(),wl=dayData.weight||(clientProfile?.bmr_inputs?.weight_lbs||160),sc=calcSCals(dayData.steps||0,wl),wc=dayData.workout.calories||0,tb=bmr+sc+wc,tc=dayData.meals.reduce((s,m)=>s+(m.calories||0),0);return{bmr,stepCals:sc,workoutCals:wc,totalBurned:tb,totalConsumed:tc,net:tb-tc};}
 
@@ -1067,7 +1214,10 @@ function renderMealLog(){
       <div style="margin-bottom:16px;">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:6px;">
           <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);">${group}</div>
-          <div style="font-size:11px;color:var(--muted);">${groupCals} kcal · P:${groupP}g C:${groupC}g F:${groupF}g</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="font-size:11px;color:var(--muted);">${groupCals} kcal · P:${groupP}g C:${groupC}g F:${groupF}g</div>
+            <button onclick="openSaveMealModal('${group.replace(/'/g,"\\'")}',${JSON.stringify(items).replace(/'/g,"\\'")})" style="background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);color:var(--gold);border-radius:6px;padding:3px 7px;font-size:10px;font-weight:800;cursor:pointer;white-space:nowrap;">⭐ Save</button>
+          </div>
         </div>
         ${items.map(m => `
           <div class="meal-log-item" style="cursor:pointer;" onclick="openEditMeal(${m._idx})">
@@ -1560,6 +1710,173 @@ function confirmAddFood(){
   document.getElementById('food-search-results').innerHTML='';
 }
 
+// ── SAVED MEALS ──
+let _pendingSaveMealItems = [];
+let myMealsCache = null;
+
+function openSaveMealModal(groupName, items) {
+  _pendingSaveMealItems = items;
+  document.getElementById('save-meal-name').value = groupName || '';
+  document.getElementById('save-meal-error').style.display = 'none';
+  const preview = document.getElementById('save-meal-preview');
+  const totalCal = Math.round(items.reduce((s,m)=>s+(m.calories||0),0));
+  const totalP = Math.round(items.reduce((s,m)=>s+(m.protein||0),0)*10)/10;
+  const totalC = Math.round(items.reduce((s,m)=>s+(m.carbs||0),0)*10)/10;
+  const totalF = Math.round(items.reduce((s,m)=>s+(m.fat||0),0)*10)/10;
+  preview.innerHTML = `<div style="margin-bottom:6px;font-size:11px;font-weight:800;color:var(--gold);">${items.length} food${items.length!==1?'s':''} · ${totalCal} kcal · P:${totalP}g C:${totalC}g F:${totalF}g</div>${items.map(m=>`<div style="font-size:11px;color:var(--white);padding:2px 0;">${m.name}${m.servingLabel?` (${m.servingLabel})`:''}</div>`).join('')}`;
+  openModal('modal-save-meal');
+}
+
+async function confirmSaveMeal() {
+  const name = document.getElementById('save-meal-name').value.trim();
+  const errEl = document.getElementById('save-meal-error');
+  if (!name) { errEl.textContent = 'Enter a name for this meal.'; errEl.style.display = 'block'; return; }
+  if (!CLIENT_ID || CLIENT_ID === 'demo') { errEl.textContent = 'Sign in to save meals.'; errEl.style.display = 'block'; return; }
+  errEl.style.display = 'none';
+  const id = name.toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,60) + '_' + Date.now();
+  const foods = _pendingSaveMealItems.map(m => ({ name: m.name, calories: m.calories||0, protein: m.protein||0, carbs: m.carbs||0, fat: m.fat||0, servingLabel: m.servingLabel||'', amount: m.amount||1, unit: m.unit||'g', cals100: m.cals100||m.calories||0, protein100: m.protein100||m.protein||0, carbs100: m.carbs100||m.carbs||0, fat100: m.fat100||m.fat||0 }));
+  try {
+    await fsSet(`clients/${CLIENT_ID}/saved_meals/${id}`, { name, foods, savedAt: new Date().toISOString() });
+    myMealsCache = null;
+    closeModal('modal-save-meal');
+    showToast(`⭐ "${name}" saved to My Meals ✓`);
+  } catch(e) { errEl.textContent = 'Failed to save. Try again.'; errEl.style.display = 'block'; }
+}
+
+async function loadMyMeals() {
+  const el = document.getElementById('my-meals-list');
+  if (!CLIENT_ID || CLIENT_ID === 'demo') { el.innerHTML = '<div class="loading">Sign in to see saved meals.</div>'; return; }
+  if (myMealsCache) { renderMyMealsList(myMealsCache); return; }
+  el.innerHTML = '<div class="loading">Loading…</div>';
+  try {
+    const r = await fetch(`${FB}/clients/${CLIENT_ID}/saved_meals?key=${FIREBASE_CONFIG.apiKey}`);
+    if (!r.ok) { el.innerHTML = '<div class="empty-state"><div class="icon">⭐</div><h4>No saved meals yet</h4><p>Tap ⭐ Save next to any logged meal group to save it.</p></div>'; return; }
+    const d = await r.json();
+    myMealsCache = (d.documents||[]).map(doc => ({ id: doc.name.split('/').pop(), ...fsDoc(doc) })).filter(m => m && m.name);
+    renderMyMealsList(myMealsCache);
+  } catch(e) { el.innerHTML = '<div class="loading">Error loading meals.</div>'; }
+}
+
+function renderMyMealsList(meals) {
+  const el = document.getElementById('my-meals-list');
+  if (!meals.length) { el.innerHTML = '<div class="empty-state"><div class="icon">⭐</div><h4>No saved meals yet</h4><p>Tap ⭐ Save next to any logged meal group to save it.</p></div>'; return; }
+  el.innerHTML = meals.map(m => {
+    const totalCal = Math.round((m.foods||[]).reduce((s,f)=>s+(f.calories||0),0));
+    const totalP = Math.round((m.foods||[]).reduce((s,f)=>s+(f.protein||0),0)*10)/10;
+    const totalC = Math.round((m.foods||[]).reduce((s,f)=>s+(f.carbs||0),0)*10)/10;
+    const totalF = Math.round((m.foods||[]).reduce((s,f)=>s+(f.fat||0),0)*10)/10;
+    return `
+      <div style="background:#141414;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="font-weight:800;font-size:13px;color:var(--white);">${m.name}</div>
+          <div style="display:flex;gap:6px;">
+            <button onclick="logSavedMeal('${m.id}')" style="background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer;">+ Log</button>
+            <button onclick="deleteSavedMeal('${m.id}')" style="background:none;border:1px solid var(--border);color:var(--red);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;">✕</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">${totalCal} kcal · P:${totalP}g C:${totalC}g F:${totalF}g</div>
+        <div style="font-size:11px;color:var(--muted);">${(m.foods||[]).map(f=>f.name).join(', ')}</div>
+      </div>`;
+  }).join('');
+}
+
+async function logSavedMeal(mealId) {
+  const meal = myMealsCache?.find(m => m.id === mealId);
+  if (!meal) return;
+  const now = new Date().toISOString();
+  (meal.foods||[]).forEach(f => {
+    dayData.meals.push({ name: f.name, calories: f.calories||0, protein: f.protein||0, carbs: f.carbs||0, fat: f.fat||0, servingLabel: f.servingLabel||'', amount: f.amount||1, unit: f.unit||'g', cals100: f.cals100||f.calories||0, protein100: f.protein100||f.protein||0, carbs100: f.carbs100||f.carbs||0, fat100: f.fat100||f.fat||0, mealGroup: meal.name, time: now });
+  });
+  saveDay(); renderMealLog(); renderToday();
+  closeModal('modal-my-meals');
+  showToast(`✓ ${meal.name} logged (${(meal.foods||[]).length} foods)`);
+}
+
+async function deleteSavedMeal(mealId) {
+  if (!CLIENT_ID || CLIENT_ID === 'demo') return;
+  try {
+    await fsDelete(`clients/${CLIENT_ID}/saved_meals/${mealId}`);
+    myMealsCache = myMealsCache?.filter(m => m.id !== mealId);
+    renderMyMealsList(myMealsCache||[]);
+    showToast('Meal removed ✓');
+  } catch(e) { showToast('Error removing meal'); }
+}
+
+// ── COPY FROM PREVIOUS DAY ──
+async function openCopyDayModal() {
+  const today = todayKey();
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const yKey = yesterday.getFullYear()+'-'+String(yesterday.getMonth()+1).padStart(2,'0')+'-'+String(yesterday.getDate()).padStart(2,'0');
+  const input = document.getElementById('copy-day-date');
+  input.max = yKey;
+  input.value = yKey;
+  document.getElementById('copy-day-preview').innerHTML = '<div class="loading">Loading…</div>';
+  document.getElementById('copy-day-options').style.display = 'none';
+  openModal('modal-copy-day');
+  await loadCopyDayPreview(yKey);
+  input.onchange = () => loadCopyDayPreview(input.value);
+}
+
+async function loadCopyDayPreview(dateKey) {
+  const preview = document.getElementById('copy-day-preview');
+  const options = document.getElementById('copy-day-options');
+  const mealList = document.getElementById('copy-day-meal-list');
+  if (!dateKey || !CLIENT_ID || CLIENT_ID === 'demo') return;
+  preview.innerHTML = '<div class="loading">Loading…</div>';
+  options.style.display = 'none';
+  try {
+    const d = await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);
+    if (!d || !d.meals?.length) {
+      preview.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:8px 0;">No meals logged on ${friendlyDate(dateKey)}.</div>`;
+      return;
+    }
+    const totalCal = Math.round(d.meals.reduce((s,m)=>s+(m.calories||0),0));
+    preview.innerHTML = `<div style="font-size:12px;color:var(--muted);padding:4px 0;">${friendlyDate(dateKey)} · ${d.meals.length} foods · ${totalCal} kcal total</div>`;
+    // Group meals
+    const groups = {};
+    const groupOrder = [];
+    d.meals.forEach(m => {
+      const g = m.mealGroup || getMealGroup(m);
+      if (!groups[g]) { groups[g] = []; groupOrder.push(g); }
+      groups[g].push(m);
+    });
+    mealList.innerHTML = groupOrder.map(g => {
+      const items = groups[g];
+      const gCal = Math.round(items.reduce((s,m)=>s+(m.calories||0),0));
+      return `
+        <div style="background:#141414;border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+            <div style="font-size:11px;font-weight:800;color:var(--gold);">${g}</div>
+            <button onclick="copyMealGroup(${JSON.stringify(items).replace(/"/g,"'")}, '${g.replace(/'/g,"\\'")}')" style="background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:800;cursor:pointer;">+ Log This</button>
+          </div>
+          <div style="font-size:11px;color:var(--muted);">${gCal} kcal · ${items.map(m=>m.name).join(', ')}</div>
+        </div>`;
+    }).join('');
+    options.style.display = 'block';
+    options._dayData = d;
+    options._dateKey = dateKey;
+  } catch(e) { preview.innerHTML = '<div style="font-size:12px;color:var(--muted);">Could not load this day.</div>'; }
+}
+
+function copyMealGroup(items, groupName) {
+  const now = new Date().toISOString();
+  items.forEach(m => dayData.meals.push({ ...m, mealGroup: groupName, time: now }));
+  saveDay(); renderMealLog(); renderToday();
+  closeModal('modal-copy-day');
+  showToast(`✓ ${groupName} copied to today`);
+}
+
+function copyFullDay() {
+  const options = document.getElementById('copy-day-options');
+  const d = options._dayData;
+  if (!d?.meals?.length) return;
+  const now = new Date().toISOString();
+  d.meals.forEach(m => dayData.meals.push({ ...m, time: now }));
+  saveDay(); renderMealLog(); renderToday();
+  closeModal('modal-copy-day');
+  showToast(`✓ Full day copied to today (${d.meals.length} foods)`);
+}
+
 // ── WORKOUT with device calorie override ──
 function updateWorkoutCalPreview(){
   const type=document.getElementById('workout-type').value;
@@ -1567,12 +1884,19 @@ function updateWorkoutCalPreview(){
   const est=calcWCals(type,dur);
   const overrideInput=document.getElementById('workout-calories-override');
   const badge=document.getElementById('workout-cal-badge');
+  const preview=document.getElementById('workout-cal-preview');
+  const weightLbs=clientProfile?.weight_lbs||0;
   if(dur>0&&!overrideInput.value){
     overrideInput.placeholder=`~${est} kcal (estimated)`;
+    if(preview) preview.textContent=weightLbs?`Based on ${weightLbs} lbs bodyweight · MET formula`:'Set your weight in profile for a more accurate estimate';
+  } else if(dur===0){
+    overrideInput.placeholder='Tap duration above to auto-estimate';
+    if(preview) preview.textContent='';
   }
   if(overrideInput.value){
     badge.textContent='from device';
     badge.className='cal-source-badge device';
+    if(preview) preview.textContent=`Auto-estimate would be ~${est} kcal`;
   } else {
     badge.textContent='estimated';
     badge.className='cal-source-badge estimated';
@@ -2947,6 +3271,7 @@ function getBrandedPDFHeader(title, subtitle) {
         <div class="pdf-client-info"><span class="pdf-label">Client:</span> ${name}</div>
         <div class="pdf-client-info"><span class="pdf-label">Date:</span> ${date}</div>
         ${clientProfile?.tier ? `<div class="pdf-client-info"><span class="pdf-label">Plan:</span> ${clientProfile.tier.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase())}</div>` : ''}
+      ${clientProfile?.blood_type ? `<div class="pdf-client-info"><span class="pdf-label">Blood Type:</span> ${clientProfile.blood_type}</div>` : ''}
       </div>
     </div>`;
 }
@@ -3135,7 +3460,7 @@ function generateMealPlanPDF() {
     </div>` : '';
 
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Blueprint Meal Plan — ${clientProfile?.name || 'Client'}</title>${getPDFStyles()}</head><body>
-    ${getBrandedPDFHeader('BLUEPRINT MEAL PLAN', `Personalized Nutrition Plan · See Me Now Fitness`)}
+    ${getBrandedPDFHeader('BLUEPRINT MEAL PLAN', `Personalized Macro Nutrition Plan · Blood Type Optimized · See Me Now Fitness`)}
     <div class="pdf-body">
       <div class="pdf-section">
         <div class="pdf-section-title">Daily Macro Targets</div>

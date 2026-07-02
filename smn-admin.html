@@ -155,6 +155,15 @@ a{color:var(--gold);}
 <button class="btn btn-outline" onclick="switchAdminTab('clients',document.querySelectorAll('.admin-tab')[0])">Cancel</button>
 <span class="save-feedback" id="save-feedback">✓ Saved</span>
 </div>
+<div id="notify-section" style="display:none;margin-top:16px;background:#1a1a1a;border:1px solid #333;border-radius:10px;padding:14px;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.1em;color:#C9A84C;margin-bottom:10px;">📱 SEND CLIENT NOTIFICATION</div>
+<div class="field" style="margin-bottom:10px;">
+  <label>Message (shown as in-app banner when client opens tracker)</label>
+  <input type="text" id="notify-message" placeholder="e.g. Your meal plan has been updated — check My Plan!" style="width:100%;">
+</div>
+<button class="btn btn-gold" onclick="sendClientNotification()" style="width:100%;">📋 Send In-App Banner</button>
+<span class="save-feedback" id="notify-feedback" style="display:block;margin-top:6px;"></span>
+</div>
 <div id="tracker-link-section" style="display:none;margin-top:20px;">
 <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Share this link with client:</div>
 <div class="tracker-link-box" id="tracker-link-display"></div>
@@ -271,7 +280,7 @@ async function loadClientIntoForm(id){
   document.getElementById('e-sessions-purchased').value=client.sessions_purchased||'';document.getElementById('e-sessions-used').value=client.sessions_used||'';document.getElementById('e-next-session').value=client.next_session||'';
   document.getElementById('e-checkin-streak').value=client.checkin_streak||0;document.getElementById('e-checkin-schedule').value=client.checkin_schedule||'biweekly';
   document.getElementById('e-notes').value=client.notes||'';
-  ['edit-form','edit-macros','edit-bmr','edit-notes-sec','edit-save-row'].forEach(id=>document.getElementById(id).style.display='');
+  ['edit-form','edit-macros','edit-bmr','edit-notes-sec','edit-save-row','notify-section'].forEach(id=>document.getElementById(id).style.display='');
   updateTierFields();calcBMRPreview();
   const link=`https://seemenowfitness.github.io/see-me-now-fitness/tracker.html?client=${id}`;
   document.getElementById('tracker-link-display').textContent=link;document.getElementById('tracker-link-section').style.display='';
@@ -361,6 +370,37 @@ function switchAdminTab(name,el){document.querySelectorAll('.admin-panel').forEa
 async function incrementCheckin(clientId,clientName){if(!db)return alert('Firebase not connected.');try{const ref=db.collection('clients').doc(clientId);const snap=await ref.get();const current=(snap.data()&&snap.data().checkin_streak)||0;const newStreak=current+1;await ref.update({checkin_streak:newStreak,last_checkin_date:new Date().toISOString()});const idx=allClients.findIndex(c=>c.id===clientId);if(idx>=0)allClients[idx].checkin_streak=newStreak;renderClientList(allClients);const msg=document.createElement('div');msg.textContent=`✓ ${clientName} — streak now ${newStreak} week${newStreak!==1?'s':''}`;msg.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #4caf76;color:#4caf76;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';document.body.appendChild(msg);setTimeout(()=>msg.remove(),2500);}catch(e){alert('Could not update streak.');}}
 
 async function resetCheckin(clientId,clientName){if(!db)return alert('Firebase not connected.');if(!confirm(`Reset ${clientName}'s streak to 0?`))return;try{await db.collection('clients').doc(clientId).update({checkin_streak:0,last_checkin_date:null});const idx=allClients.findIndex(c=>c.id===clientId);if(idx>=0){allClients[idx].checkin_streak=0;allClients[idx].last_checkin_date=null;}renderClientList(allClients);const msg=document.createElement('div');msg.textContent=`↺ ${clientName} — streak reset to 0`;msg.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #e05c5c;color:#e05c5c;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';document.body.appendChild(msg);setTimeout(()=>msg.remove(),2500);}catch(e){alert('Could not reset streak.');}}
+
+// ── CLIENT NOTIFICATIONS ──
+// Note: Push notifications are sent via OneSignal dashboard directly
+// In-app banner is set via Firestore flag below
+
+async function setInAppFlag(message) {
+  if (!selectedClientId || !db) return false;
+  try {
+    await db.collection('clients').doc(selectedClientId).update({
+      has_update: true,
+      update_message: message
+    });
+    return true;
+  } catch(e) { return false; }
+}
+
+async function sendClientNotification() {
+  const message = document.getElementById('notify-message').value.trim();
+  const fb = document.getElementById('notify-feedback');
+  if (!message) { fb.textContent = 'Enter a message first.'; fb.style.color = '#e05c5c'; fb.style.display = 'block'; return; }
+  if (!selectedClientId) { fb.textContent = 'No client selected.'; fb.style.color = '#e05c5c'; fb.style.display = 'block'; return; }
+  fb.textContent = 'Sending…'; fb.style.color = '#C9A84C'; fb.style.display = 'block';
+  const ok = await setInAppFlag(message);
+  fb.textContent = ok ? '✓ In-app banner set — client will see it next time they open the tracker.' : '✗ Failed.';
+  fb.style.color = ok ? '#4caf76' : '#e05c5c';
+  if (ok) document.getElementById('notify-message').value = '';
+}
+
+async function sendInAppOnly() {
+  await sendClientNotification();
+}
 </script>
 </body>
 </html>
