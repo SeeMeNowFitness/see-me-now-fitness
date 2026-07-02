@@ -3428,6 +3428,16 @@ function generateMealPlanPDF() {
   // Flex meals
   const flexMeals = profile.flex_enabled && profile.flex_meals?.length ? profile.flex_meals : null;
 
+  // Coach notes
+  const coachNotes = profile.meal_plan_notes || profile.coach_notes;
+  const coachNotesHTML = coachNotes ? `
+    <div class="pdf-section">
+      <div style="background:#fffbf0;border:1px solid #C9A84C;border-radius:8px;padding:14px 16px;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#C9A84C;margin-bottom:6px;">📝 Coach Notes</div>
+        <div style="font-size:12px;color:#333;line-height:1.7;">${coachNotes}</div>
+      </div>
+    </div>` : '';
+
   const renderMeals = (plan) => plan.meals.map((meal, mealIdx) => {
     const totalP = Math.round(meal.foods.reduce((s,f) => s+(f.protein||0), 0)*10)/10;
     const totalC = Math.round(meal.foods.reduce((s,f) => s+(f.carbs||0), 0)*10)/10;
@@ -3504,6 +3514,7 @@ function generateMealPlanPDF() {
   const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Blueprint Meal Plan — ${clientProfile?.name || 'Client'}</title>${getPDFStyles()}</head><body>
     ${getBrandedPDFHeader('BLUEPRINT MEAL PLAN', `Personalized Macro Nutrition Plan · Blood Type Optimized · See Me Now Fitness`)}
     <div class="pdf-body">
+      ${coachNotesHTML}
       <div class="pdf-section">
         <div class="pdf-section-title">Daily Macro Targets</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px;">
