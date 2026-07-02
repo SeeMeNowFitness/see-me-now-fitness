@@ -1,15 +1,17 @@
 // ── See Me Now Fitness — Service Worker ──
 // Update this version number every time you upload a new tracker.html
 // Clients will automatically get the fresh version within seconds
-const CACHE_VERSION = 'smn-v80';
+const CACHE_VERSION = 'smn-v81';
 const CACHE_NAME = CACHE_VERSION;
-
 const PRECACHE_URLS = [
   '/',
   '/see-me-now-fitness/tracker.html',
   '/see-me-now-fitness/manifest.json',
   '/see-me-now-fitness/logo.png'
 ];
+
+// OneSignal service worker integration
+importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
 
 // Install — cache core files
 self.addEventListener('install', event => {
@@ -19,7 +21,6 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS).catch(() => {}))
   );
 });
-
 // Activate — delete ALL old caches immediately
 self.addEventListener('activate', event => {
   event.waitUntil(
@@ -32,14 +33,12 @@ self.addEventListener('activate', event => {
     ).then(() => self.clients.claim())
   );
 });
-
 // Fetch — network first, fall back to cache
 // This means clients ALWAYS get the latest version if online
 self.addEventListener('fetch', event => {
   // Skip non-GET requests and cross-origin requests
   if (event.request.method !== 'GET') return;
   if (!event.request.url.startsWith(self.location.origin)) return;
-
   event.respondWith(
     fetch(event.request)
       .then(response => {
