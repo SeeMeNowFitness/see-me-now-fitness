@@ -1765,19 +1765,57 @@ function renderMyMealsList(meals) {
     const totalP = Math.round((m.foods||[]).reduce((s,f)=>s+(f.protein||0),0)*10)/10;
     const totalC = Math.round((m.foods||[]).reduce((s,f)=>s+(f.carbs||0),0)*10)/10;
     const totalF = Math.round((m.foods||[]).reduce((s,f)=>s+(f.fat||0),0)*10)/10;
+    const safeName = m.name.replace(/\'/g, "\\\'");
     return `
-      <div style="background:#141414;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
+      <div id="saved-meal-card-${m.id}" style="background:#141414;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-          <div style="font-weight:800;font-size:13px;color:var(--white);">${m.name}</div>
+          <div id="saved-meal-name-${m.id}" style="font-weight:800;font-size:13px;color:var(--white);">${m.name}</div>
           <div style="display:flex;gap:6px;">
             <button onclick="logSavedMeal('${m.id}')" style="background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:800;cursor:pointer;">+ Log</button>
+            <button onclick="startRenameMeal('${m.id}','${safeName}')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;">✏️</button>
             <button onclick="deleteSavedMeal('${m.id}')" style="background:none;border:1px solid var(--border);color:var(--red);border-radius:6px;padding:5px 8px;font-size:11px;cursor:pointer;">✕</button>
+          </div>
+        </div>
+        <div id="saved-meal-rename-${m.id}" style="display:none;margin-bottom:8px;">
+          <div style="display:flex;gap:6px;">
+            <input type="text" id="saved-meal-rename-input-${m.id}" style="flex:1;background:#0A0A0A;border:1px solid var(--gold);border-radius:6px;color:var(--white);padding:6px 10px;font-size:12px;" placeholder="New name…">
+            <button onclick="confirmRenameMeal('${m.id}')" style="background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:6px 10px;font-size:11px;font-weight:800;cursor:pointer;">Save</button>
+            <button onclick="cancelRenameMeal('${m.id}')" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:6px 8px;font-size:11px;cursor:pointer;">✕</button>
           </div>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">${totalCal} kcal · P:${totalP}g C:${totalC}g F:${totalF}g</div>
         <div style="font-size:11px;color:var(--muted);">${(m.foods||[]).map(f=>f.name).join(', ')}</div>
       </div>`;
   }).join('');
+}
+
+function startRenameMeal(mealId, currentName) {
+  const renameEl = document.getElementById(`saved-meal-rename-${mealId}`);
+  const input = document.getElementById(`saved-meal-rename-input-${mealId}`);
+  if (renameEl) renameEl.style.display = 'block';
+  if (input) { input.value = currentName; input.focus(); input.select(); }
+}
+
+function cancelRenameMeal(mealId) {
+  const renameEl = document.getElementById(`saved-meal-rename-${mealId}`);
+  if (renameEl) renameEl.style.display = 'none';
+}
+
+async function confirmRenameMeal(mealId) {
+  const input = document.getElementById(`saved-meal-rename-input-${mealId}`);
+  const newName = input?.value.trim();
+  if (!newName) return;
+  if (!CLIENT_ID || CLIENT_ID === 'demo') return;
+  try {
+    const meal = myMealsCache?.find(m => m.id === mealId);
+    if (!meal) return;
+    await fsSet(`clients/${CLIENT_ID}/saved_meals/${mealId}`, { ...meal, name: newName });
+    if (myMealsCache) { const idx = myMealsCache.findIndex(m => m.id === mealId); if (idx >= 0) myMealsCache[idx].name = newName; }
+    const nameEl = document.getElementById(`saved-meal-name-${mealId}`);
+    if (nameEl) nameEl.textContent = newName;
+    cancelRenameMeal(mealId);
+    showToast(`✓ Renamed to "${newName}"`);
+  } catch(e) { showToast('Could not rename — try again'); }
 }
 
 async function logSavedMeal(mealId) {
