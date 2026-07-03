@@ -322,10 +322,10 @@ select option{background:var(--dark);}
 <div class="balance-hero"><div class="balance-zone" id="balance-zone-label">Calculating…</div><div class="balance-number" id="balance-number">—</div><div class="balance-label">energy balance</div><div class="balance-sub" id="balance-sub"></div></div>
 <div class="card"><div class="card-title">Macros Today</div><div id="macro-bars"></div></div>
 <div class="stat-grid">
-<div class="stat-tile"><div class="lbl">Steps</div><div class="val" id="stat-steps">—</div><div class="unit">today</div></div>
-<div class="stat-tile"><div class="lbl">Burned</div><div class="val" id="stat-burned">—</div><div class="unit">total kcal</div></div>
-<div class="stat-tile"><div class="lbl">Consumed</div><div class="val" id="stat-consumed">—</div><div class="unit">kcal eaten</div></div>
 <div class="stat-tile"><div class="lbl">Weight</div><div class="val" id="stat-weight">—</div><div class="unit">lbs today</div></div>
+<div class="stat-tile"><div class="lbl">Steps</div><div class="val" id="stat-steps">—</div><div class="unit">today</div></div>
+<div class="stat-tile"><div class="lbl">Calories Eaten</div><div class="val" id="stat-consumed">—</div><div class="unit">kcal eaten</div></div>
+<div class="stat-tile"><div class="lbl">Calories Burned</div><div class="val" id="stat-burned">—</div><div class="unit">total kcal</div></div>
 </div>
 <div class="projection-banner" id="projection-banner"></div>
 <div id="weekly-balance-banner" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
@@ -972,19 +972,24 @@ function getZone(n){return n>100?'deficit':(n>-100?'maintenance':'surplus');}
 
 // GREETING CARD
 const MOTIVATIONAL_QUOTES = [
-  "Consistency creates confidence.",
-  "Every rep, every meal — it all counts.",
-  "Progress over perfection.",
-  "Show up today. Your future self will thank you.",
-  "The body achieves what the mind believes.",
-  "Small steps every day lead to big results.",
-  "Trust the process. Trust the Blueprint.",
-  "Champions are built in the habits, not the highlights.",
-  "One decision at a time. Make it count.",
-  "Your discipline today is your transformation tomorrow.",
-  "Earn it. Every. Single. Day.",
-  "The work you put in now is building the version of you that's coming.",
+  { text: "Consistency creates confidence.", category: "philosophy" },
+  { text: "Every rep, every meal — it all counts.", category: "philosophy" },
+  { text: "Progress over perfection.", category: "philosophy" },
+  { text: "Show up today. Your future self will thank you.", category: "philosophy" },
+  { text: "The body achieves what the mind believes.", category: "philosophy" },
+  { text: "Small steps every day lead to big results.", category: "philosophy" },
+  { text: "Trust the process. Trust the Blueprint.", category: "philosophy" },
+  { text: "Champions are built in the habits, not the highlights.", category: "philosophy" },
+  { text: "One decision at a time. Make it count.", category: "philosophy" },
+  { text: "Your discipline today is your transformation tomorrow.", category: "philosophy" },
+  { text: "Earn it. Every. Single. Day.", category: "philosophy" },
+  { text: "The work you put in now is building the version of you that's coming.", category: "philosophy" },
+  { text: "I don't coach shortcuts. I coach the version of you that lasts.", category: "coach", author: "Coach Charles" },
+  { text: "The scale is one data point. Show up, log it, trust the trend.", category: "coach", author: "Coach Charles" },
+  { text: "You don't need a perfect day. You need today.", category: "coach", author: "Coach Charles" },
 ];
+// TODO: swap in real, permission-cleared client success quotes here (category: "client")
+const CLIENT_SUCCESS_QUOTES = [];
 
 function renderGreetingCard() {
   const card = document.getElementById('greeting-card');
@@ -1028,9 +1033,11 @@ function renderGreetingCard() {
     `<div style="display:flex;align-items:center;gap:5px;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:99px;padding:5px 10px;font-size:11px;font-weight:700;color:${p.color};">${p.icon} ${p.text}</div>`
   ).join('');
 
-  // Random motivational quote
-  const quote = MOTIVATIONAL_QUOTES[new Date().getDay() % MOTIVATIONAL_QUOTES.length];
-  document.getElementById('greeting-quote').textContent = `"${quote}"`;
+  // Motivational quote — rotates across philosophy/coach/client quotes by day-of-year
+  const allQuotes = MOTIVATIONAL_QUOTES.concat(CLIENT_SUCCESS_QUOTES);
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const quote = allQuotes[dayOfYear % allQuotes.length];
+  document.getElementById('greeting-quote').textContent = quote.author ? `"${quote.text}" — ${quote.author}` : `"${quote.text}"`;
 }
 
 // RENDER TODAY
@@ -1038,13 +1045,13 @@ function renderToday(){
 updateDateLabel();
 renderGreetingCard();
 const e=calcBal(),noM=dayData.meals.length===0,zone=getZone(e.net);
-const zl={deficit:'FAT LOSS DEFICIT',maintenance:'MAINTENANCE',surplus:'SURPLUS'};
+const zl={deficit:'ESTIMATED DEFICIT',maintenance:'MAINTENANCE',surplus:'SURPLUS'};
 const ze=document.getElementById('balance-zone-label'),ne=document.getElementById('balance-number');
 if(noM){ze.textContent="TODAY'S PROGRESS";ze.className='balance-zone maintenance';ne.textContent='—';ne.className='balance-number maintenance';document.getElementById('balance-sub').innerHTML='Log your first meal to start tracking your blueprint';}
 else{ze.textContent=zl[zone];ze.className='balance-zone '+zone;ne.textContent=(e.net>=0?'+':'')+Math.round(e.net);ne.className='balance-number '+zone;document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
 const pb=document.getElementById('projection-banner');
 if(noM)pb.innerHTML=`<div class="proj-label">👇 How to get started</div><div class="proj-val" style="font-size:15px;font-weight:700;">Tap Log → search a food → add it</div><div class="proj-sub">Your macros, deficit, and projections appear once you start logging.</div>`;
-else if(zone==='deficit'){const lw=Math.abs(e.net*7/3500).toFixed(2),l4=Math.abs(e.net*28/3500).toFixed(1);pb.innerHTML=`<div class="proj-label">🔥 Excellent Work</div><div class="proj-val" style="font-size:16px;">Projects ~${lw} lbs of fat loss this week</div><div class="proj-sub">~${l4} lbs over 4 weeks at this pace</div>`;}
+else if(zone==='deficit'){pb.innerHTML=`<div class="proj-label">🔥 Excellent Work</div><div class="proj-val" style="font-size:16px;">On pace for meaningful fat loss this week</div><div class="proj-sub">Keep this consistency going — the Blueprint is working</div>`;}
 else if(zone==='surplus')pb.innerHTML=`<div class="proj-label">📈 Ahead of Your Blueprint</div><div class="proj-val">${Math.abs(e.net)} kcal over today's target</div><div class="proj-sub">Tighten up intake to get back into your deficit</div>`;
 else pb.innerHTML=`<div class="proj-label">⚖️ Holding Steady</div><div class="proj-val">±${Math.abs(e.net)} kcal from target</div><div class="proj-sub">Right where you want to be — well balanced</div>`;
 // Update weekly balance banner on Today tab
@@ -2042,7 +2049,7 @@ async function updateWeeklyBalanceBanner() {
         <div style="font-size:12px;font-weight:800;color:${zoneColor};">${zoneLabel}</div>
       </div>
       <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex:1;text-align:center;">
-        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Week Total</div>
+        <div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:3px;">Weekly Balance</div>
         <div style="font-size:12px;font-weight:800;color:${zoneColor};">${wb.totalNet>=0?'+':''}${wb.totalNet.toLocaleString()} kcal</div>
       </div>
       <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 10px;flex:1;text-align:center;">
