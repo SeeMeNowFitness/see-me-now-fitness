@@ -322,7 +322,7 @@ select option{background:var(--dark);}
 <div class="balance-hero"><div class="balance-zone" id="balance-zone-label">Calculating…</div><div class="balance-number" id="balance-number">—</div><div class="balance-label">energy balance</div><div class="balance-sub" id="balance-sub"></div></div>
 <div class="card"><div class="card-title">Macros Today</div><div id="macro-bars"></div></div>
 <div class="stat-grid">
-<div class="stat-tile"><div class="lbl">Weight</div><div class="val" id="stat-weight">—</div><div class="unit">lbs today</div></div>
+<div class="stat-tile"><div class="lbl">Weight</div><div class="val" id="stat-weight">—</div><div class="unit">lbs today</div><div id="weight-trend" style="display:none;margin-top:6px;font-size:10px;line-height:1.6;"></div></div>
 <div class="stat-tile"><div class="lbl">Steps</div><div class="val" id="stat-steps">—</div><div class="unit">today</div></div>
 <div class="stat-tile"><div class="lbl">Calories Eaten</div><div class="val" id="stat-consumed">—</div><div class="unit">kcal eaten</div></div>
 <div class="stat-tile"><div class="lbl">Calories Burned</div><div class="val" id="stat-burned">—</div><div class="unit">total kcal</div></div>
@@ -1056,6 +1056,7 @@ else if(zone==='surplus')pb.innerHTML=`<div class="proj-label">📈 Ahead of You
 else pb.innerHTML=`<div class="proj-label">⚖️ Holding Steady</div><div class="proj-val">±${Math.abs(e.net)} kcal from target</div><div class="proj-sub">Right where you want to be — well balanced</div>`;
 // Update weekly balance banner on Today tab
 updateWeeklyBalanceBanner();
+updateWeightTrend();
 renderMacroBars();
 document.getElementById('stat-steps').textContent=(dayData.steps||0).toLocaleString();
 document.getElementById('stat-burned').textContent=e.totalBurned.toLocaleString();
@@ -2061,6 +2062,64 @@ async function updateWeeklyBalanceBanner() {
         <div style="font-size:12px;font-weight:800;color:var(--white);">${wb.daysLogged}/7</div>
       </div>`;
   } catch(e) { banner.style.display = 'none'; }
+}
+
+// ── WEIGHT TREND ──
+let weightTrendCache = null;
+
+async function getWeightTrend() {
+  const ONE_MINUTE = 60000;
+  if (weightTrendCache && (Date.now() - weightTrendCache.ts) < ONE_MINUTE) return weightTrendCache.data;
+  const readings = [];
+  for (let i = 0; i <= 13; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    let w = null;
+    if (key === currentDateKey) {
+      w = dayData.weight || null;
+    } else if (CLIENT_ID && CLIENT_ID !== 'demo') {
+      try { const dd = await fsGet(`clients/${CLIENT_ID}/days/${key}`); w = dd?.weight || null; } catch(e) {}
+    }
+    if (w) readings.push({ i, weight: w });
+  }
+  const thisWeek = readings.filter(r => r.i <= 6).map(r => r.weight);
+  const priorWeek = readings.filter(r => r.i >= 7).map(r => r.weight);
+  // Start weight: prefer an explicit coach-set value, fall back to the weight captured at intake for BMR
+  const startWeight = clientProfile?.start_weight || clientProfile?.bmr_inputs?.weight_lbs || null;
+  const data = {
+    thisWeekAvg: thisWeek.length ? thisWeek.reduce((a,b)=>a+b,0) / thisWeek.length : null,
+    priorWeekAvg: priorWeek.length ? priorWeek.reduce((a,b)=>a+b,0) / priorWeek.length : null,
+    thisWeekCount: thisWeek.length,
+    priorWeekCount: priorWeek.length,
+    latestWeight: readings.find(r => r.i <= 6)?.weight || null,
+    startWeight
+  };
+  weightTrendCache = { ts: Date.now(), data };
+  return data;
+}
+
+async function updateWeightTrend() {
+  const el = document.getElementById('weight-trend');
+  if (!el) return;
+  try {
+    const wt = await getWeightTrend();
+    const lines = [];
+    // Only show the weekly trend once there's enough data on both sides to smooth out noise
+    if (wt.thisWeekCount >= 2 && wt.priorWeekCount >= 2) {
+      const diff = wt.thisWeekAvg - wt.priorWeekAvg;
+      const arrow = diff < -0.05 ? '↓' : diff > 0.05 ? '↑' : '→';
+      const color = diff < -0.05 ? 'var(--green)' : 'var(--muted)';
+      lines.push(`<div style="color:${color};font-weight:700;">${arrow} ${Math.abs(diff).toFixed(1)} lbs this week</div>`);
+    }
+    if (wt.startWeight && wt.latestWeight) {
+      const diff2 = wt.latestWeight - wt.startWeight;
+      const arrow2 = diff2 < -0.05 ? '↓' : diff2 > 0.05 ? '↑' : '→';
+      const color2 = diff2 < -0.05 ? 'var(--green)' : 'var(--muted)';
+      lines.push(`<div style="color:${color2};">${arrow2} ${Math.abs(diff2).toFixed(1)} lbs since start</div>`);
+    }
+    if (lines.length) { el.style.display = 'block'; el.innerHTML = lines.join(''); }
+    else el.style.display = 'none';
+  } catch(e) { el.style.display = 'none'; }
 }
 
 function updateProgressWeeklyBalance(history) {
