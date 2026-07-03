@@ -17,7 +17,7 @@ const ADMIN_PASSWORD = "seemenow2026";
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
 :root{--black:#0a0a0a;--dark:#111111;--card:#181818;--border:#2a2a2a;--gold:#C9A84C;--gold-d:#8a6f2e;--white:#f5f5f5;--muted:#888;--green:#4caf76;--red:#e05c5c;--radius:12px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -441,28 +441,38 @@ async function loadProgressChart(clientId){
   if(weightChartInstance) weightChartInstance.destroy();
   if(macroChartInstance) macroChartInstance.destroy();
 
-  const weightCtx=document.getElementById('weight-chart').getContext('2d');
-  weightChartInstance=new Chart(weightCtx,{
-    type:'line',
-    data:{labels,datasets:[{label:'Weight (lbs)',data:weights,borderColor:'#C9A84C',backgroundColor:'rgba(201,168,76,0.1)',spanGaps:true,tension:0.3,pointRadius:3}]},
-    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}}}}
-  });
-
-  const macroCtx=document.getElementById('macro-chart').getContext('2d');
-  const barColors=calorieTotals.map((c,i)=>{
-    if(c===null) return 'rgba(136,136,136,0.25)';
-    if(!target.calories) return '#C9A84C';
-    const pct=c/target.calories;
-    return (pct>=0.9&&pct<=1.1)?'#4caf76':'#e05c5c';
-  });
-  const macroDatasets=[{type:'bar',label:'Calories Logged',data:calorieTotals,backgroundColor:barColors}];
-  if(target.calories){
-    macroDatasets.push({type:'line',label:'Target',data:labels.map(()=>target.calories),borderColor:'#C9A84C',borderDash:[6,4],pointRadius:0,fill:false});
+  if(typeof Chart === 'undefined'){
+    content.insertAdjacentHTML('beforeend','<div class="form-section" style="color:var(--red);">Chart library failed to load — check your network connection and refresh.</div>');
+    return;
   }
-  macroChartInstance=new Chart(macroCtx,{
-    data:{labels,datasets:macroDatasets},
-    options:{responsive:true,plugins:{legend:{labels:{color:'#ccc'}}},scales:{x:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}}}}
-  });
+
+  try{
+    const weightCtx=document.getElementById('weight-chart').getContext('2d');
+    weightChartInstance=new Chart(weightCtx,{
+      type:'line',
+      data:{labels,datasets:[{label:'Weight (lbs)',data:weights,borderColor:'#C9A84C',backgroundColor:'rgba(201,168,76,0.1)',spanGaps:true,tension:0.3,pointRadius:3}]},
+      options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}}}}
+    });
+  }catch(e){ document.getElementById('weight-chart').insertAdjacentHTML('afterend','<div style="color:var(--red);font-size:12px;">Could not render weight chart.</div>'); }
+
+  try{
+    const macroCtx=document.getElementById('macro-chart').getContext('2d');
+    const barColors=calorieTotals.map((c)=>{
+      if(c===null) return 'rgba(136,136,136,0.25)';
+      if(!target.calories) return '#C9A84C';
+      const pct=c/target.calories;
+      return (pct>=0.9&&pct<=1.1)?'#4caf76':'#e05c5c';
+    });
+    const macroDatasets=[{type:'bar',label:'Calories Logged',data:calorieTotals,backgroundColor:barColors}];
+    if(target.calories){
+      macroDatasets.push({type:'line',label:'Target',data:labels.map(()=>target.calories),borderColor:'#C9A84C',borderDash:[6,4],pointRadius:0,fill:false});
+    }
+    macroChartInstance=new Chart(macroCtx,{
+      type:'bar',
+      data:{labels,datasets:macroDatasets},
+      options:{responsive:true,plugins:{legend:{labels:{color:'#ccc'}}},scales:{x:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}}}}
+    });
+  }catch(e){ document.getElementById('macro-chart').insertAdjacentHTML('afterend','<div style="color:var(--red);font-size:12px;">Could not render calories chart.</div>'); }
 }
 
 async function loadClientIntoForm(id){
