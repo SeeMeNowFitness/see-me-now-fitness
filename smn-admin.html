@@ -244,6 +244,7 @@ function renderClientList(clients){
         <div class="name">${c.name||'Unnamed'}</div>
         <div class="meta">${c.email||''} ${c.phone?'· '+c.phone:''}</div>
         <div style="font-size:11px;color:var(--green);margin-top:4px;">🔥 ${c.checkin_streak||0} week streak ${c.meal_plan?'· <span style="color:var(--gold);">📋 Plan assigned</span>':''}</div>
+        <div id="progress-${c.id}" style="font-size:11px;color:var(--muted);margin-top:4px;">Checking activity…</div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
         <span class="tier-pill ${tc[c.tier]||'tier-tracker'}">${tn[c.tier]||c.tier}</span>
@@ -254,6 +255,76 @@ function renderClientList(clients){
       </div>
     </div>
   `).join('');
+  clients.forEach(c=>{
+    getClientProgress(c).then(p=>{
+      const badgeEl=document.getElementById(`progress-${c.id}`);
+      if(badgeEl) badgeEl.outerHTML = progressBadgeHTML(c.id, p);
+    });
+  });
+}
+
+// ── CLIENT PROGRESS (logging activity, adherence, weight trend) ──
+let clientProgressCache = {};
+
+async function getClientProgress(client){
+  if(!db) return null;
+  const PROGRESS_TTL = 120000;
+  const cached = clientProgressCache[client.id];
+  if(cached && (Date.now()-cached.ts) < PROGRESS_TTL) return cached.data;
+  try{
+    const snap = await db.collection('clients').doc(client.id).collection('days')
+      .orderBy(firebase.firestore.FieldPath.documentId(),'desc').limit(7).get();
+    const days = snap.docs.map(d=>({key:d.id,...d.data()}));
+    let data;
+    if(!days.length){
+      data = {daysSinceLog:null,adherencePct:null,weightTrend:null};
+    } else {
+      const [y,m,dNum] = days[0].key.split('-').map(Number);
+      const lastDate = new Date(y,m-1,dNum);
+      const today = new Date(); today.setHours(0,0,0,0);
+      const daysSinceLog = Math.round((today-lastDate)/86400000);
+      // Adherence — % of logged days within ~10% of macro targets. Zigzag clients use the average of high/low as an approximation.
+      const isZ = client.tracking_method==='zigzag';
+      const target = isZ
+        ? {calories:((client.macros_high?.calories||0)+(client.macros_low?.calories||0))/2, protein:((client.macros_high?.protein||0)+(client.macros_low?.protein||0))/2}
+        : (client.macros||{});
+      const loggedDays = days.filter(d=>(d.meals||[]).length>0);
+      let adherencePct=null;
+      if(loggedDays.length>=2 && target.calories && target.protein){
+        const onTarget = loggedDays.filter(d=>{
+          const cal=(d.meals||[]).reduce((s,m2)=>s+(m2.calories||0),0);
+          const pro=(d.meals||[]).reduce((s,m2)=>s+(m2.protein||0),0);
+          return cal/target.calories>=0.9 && cal/target.calories<=1.1 && pro/target.protein>=0.9 && pro/target.protein<=1.1;
+        });
+        adherencePct = Math.round(onTarget.length/loggedDays.length*100);
+      }
+      // Weight trend across whatever weigh-ins exist in this window, oldest vs newest
+      const weighed = days.filter(d=>d.weight).slice().reverse();
+      let weightTrend=null;
+      if(weighed.length>=2) weightTrend = weighed[weighed.length-1].weight - weighed[0].weight;
+      data = {daysSinceLog,adherencePct,weightTrend};
+    }
+    clientProgressCache[client.id] = {ts:Date.now(), data};
+    return data;
+  }catch(e){ return null; }
+}
+
+function progressBadgeHTML(clientId, p){
+  const wrapOpen = `<div id="progress-${clientId}" style="font-size:11px;margin-top:4px;">`;
+  if(!p) return `${wrapOpen}<span style="color:var(--muted);">Activity unavailable</span></div>`;
+  if(p.daysSinceLog===null) return `${wrapOpen}<span style="color:var(--muted);">⚪ No logs yet</span></div>`;
+  let icon='🟢', color='var(--green)';
+  if(p.daysSinceLog>=4){ icon='🔴'; color='var(--red)'; }
+  else if(p.daysSinceLog>=2){ icon='🟡'; color='var(--gold)'; }
+  const logLabel = p.daysSinceLog===0?'Logged today':p.daysSinceLog===1?'Logged yesterday':`${p.daysSinceLog} days since last log`;
+  const bits=[`<span style="color:${color};font-weight:700;">${icon} ${logLabel}</span>`];
+  if(p.adherencePct!==null) bits.push(`<span style="color:var(--muted);">${p.adherencePct}% adherence</span>`);
+  if(p.weightTrend!==null){
+    const arrow = p.weightTrend<-0.1?'↓':p.weightTrend>0.1?'↑':'→';
+    const wColor = p.weightTrend<-0.1?'var(--green)':'var(--muted)';
+    bits.push(`<span style="color:${wColor};">${arrow} ${Math.abs(p.weightTrend).toFixed(1)} lbs</span>`);
+  }
+  return `${wrapOpen}${bits.join(' &nbsp;·&nbsp; ')}</div>`;
 }
 
 function selectClient(id){selectedClientId=id;renderClientList(allClients);loadClientIntoForm(id);switchAdminTab('edit',document.querySelectorAll('.admin-tab')[1]);}
