@@ -17,6 +17,7 @@ const ADMIN_PASSWORD = "seemenow2026";
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <style>
 :root{--black:#0a0a0a;--dark:#111111;--card:#181818;--border:#2a2a2a;--gold:#C9A84C;--gold-d:#8a6f2e;--white:#f5f5f5;--muted:#888;--green:#4caf76;--red:#e05c5c;--radius:12px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -101,6 +102,7 @@ a{color:var(--gold);}
 <div class="admin-tabs">
 <button class="admin-tab active" onclick="switchAdminTab('clients',this)">Clients</button>
 <button class="admin-tab" onclick="switchAdminTab('edit',this)">Edit Client</button>
+<button class="admin-tab" onclick="switchAdminTab('progress',this)">📈 Progress</button>
 <button class="admin-tab" onclick="switchAdminTab('meals',this)">Blueprint Meals</button>
 <button class="admin-tab" onclick="switchAdminTab('tools',this)">📋 Plan Builder</button>
 <button class="admin-tab" onclick="switchAdminTab('new',this)">+ New Client</button>
@@ -169,6 +171,14 @@ a{color:var(--gold);}
 <div class="tracker-link-box" id="tracker-link-display"></div>
 <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="copyTrackerLink()">Copy Link</button>
 </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="admin-panel" id="panel-progress">
+<div class="form-section">
+<div class="field" style="margin-bottom:0;"><label>Select Client</label><select id="progress-client-select" onchange="loadProgressChart(this.value)"><option value="">— Choose a client —</option></select></div>
+</div>
+<div id="progress-content"></div>
 </div>
 
 <!-- BLUEPRINT MEALS -->
@@ -252,9 +262,16 @@ function renderClientList(clients){
           <button class="btn btn-sm" style="background:rgba(76,175,118,0.15);color:var(--green);border:1px solid rgba(76,175,118,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();incrementCheckin('${c.id}','${c.name}')">✓ Check In</button>
           <button class="btn btn-sm" style="background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();resetCheckin('${c.id}','${c.name}')">↺ Reset</button>
         </div>
+        <button class="btn btn-sm" style="background:rgba(201,168,76,0.1);color:var(--gold);border:1px solid rgba(201,168,76,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();goToProgress('${c.id}')">📈 Progress</button>
       </div>
     </div>
   `).join('');
+  const sel=document.getElementById('progress-client-select');
+  if(sel){
+    const currentVal=sel.value;
+    sel.innerHTML='<option value="">— Choose a client —</option>'+clients.map(c=>`<option value="${c.id}">${c.name||'Unnamed'}</option>`).join('');
+    if(currentVal) sel.value=currentVal;
+  }
   clients.forEach(c=>{
     getClientProgress(c).then(p=>{
       const badgeEl=document.getElementById(`progress-${c.id}`);
@@ -334,6 +351,119 @@ function progressBadgeHTML(clientId, p){
 }
 
 function selectClient(id){selectedClientId=id;renderClientList(allClients);loadClientIntoForm(id);switchAdminTab('edit',document.querySelectorAll('.admin-tab')[1]);}
+
+function goToProgress(id){
+  const tabs=document.querySelectorAll('.admin-tab');
+  switchAdminTab('progress',tabs[2]);
+  const sel=document.getElementById('progress-client-select');
+  if(sel){ sel.value=id; loadProgressChart(id); }
+}
+
+// ── PROGRESS CHART ──
+let weightChartInstance=null, macroChartInstance=null;
+
+async function loadProgressChart(clientId){
+  const content=document.getElementById('progress-content');
+  if(!clientId){ content.innerHTML=''; return; }
+  if(!db){ content.innerHTML='<div style="color:var(--muted);padding:20px;">Connect Firebase to view client progress.</div>'; return; }
+  content.innerHTML='<div style="color:var(--muted);font-size:14px;padding:20px;">Loading history…</div>';
+
+  const client = allClients.find(c=>c.id===clientId) || (await db.collection('clients').doc(clientId).get()).data() || {};
+  const RANGE_DAYS = 30;
+
+  // Fetch each day individually and in parallel — collection-wide queries are blocked by Firestore rules, single-doc gets are not
+  const dateKeys = [];
+  for(let i=RANGE_DAYS-1;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    dateKeys.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'));
+  }
+  const results = await Promise.all(dateKeys.map(key=>
+    db.collection('clients').doc(clientId).collection('days').doc(key).get()
+      .then(snap=>snap.exists?{key,...snap.data()}:{key,logged:false})
+      .catch(()=>({key,logged:false}))
+  ));
+
+  const isZ = client.tracking_method==='zigzag';
+  const target = isZ
+    ? {calories:((client.macros_high?.calories||0)+(client.macros_low?.calories||0))/2, protein:((client.macros_high?.protein||0)+(client.macros_low?.protein||0))/2}
+    : (client.macros||{});
+
+  const labels = results.map(r=>{const [,,d]=r.key.split('-');return d;});
+  const weights = results.map(r=>r.weight||null);
+  const calorieTotals = results.map(r=>{
+    if(!r.meals || !r.meals.length) return null;
+    return r.meals.reduce((s,m)=>s+(m.calories||0),0);
+  });
+  const proteinTotals = results.map(r=>{
+    if(!r.meals || !r.meals.length) return null;
+    return r.meals.reduce((s,m)=>s+(m.protein||0),0);
+  });
+  const loggedFlags = results.map(r=>!!(r.meals && r.meals.length));
+
+  const loggedDayCount = loggedFlags.filter(Boolean).length;
+  let onTargetCount=0;
+  results.forEach((r,i)=>{
+    if(!loggedFlags[i] || !target.calories || !target.protein) return;
+    const cal=calorieTotals[i], pro=proteinTotals[i];
+    if(cal/target.calories>=0.9 && cal/target.calories<=1.1 && pro/target.protein>=0.9 && pro/target.protein<=1.1) onTargetCount++;
+  });
+  const adherencePct = loggedDayCount>0 ? Math.round(onTargetCount/loggedDayCount*100) : null;
+
+  content.innerHTML=`
+    <div class="form-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px;">
+        <div>
+          <div style="font-size:16px;font-weight:800;">${client.name||'Client'}</div>
+          <div style="font-size:12px;color:var(--muted);">Last ${RANGE_DAYS} days</div>
+        </div>
+        <div style="display:flex;gap:20px;">
+          <div style="text-align:center;"><div style="font-size:20px;font-weight:900;color:var(--gold);">${loggedDayCount}/${RANGE_DAYS}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Days Logged</div></div>
+          <div style="text-align:center;"><div style="font-size:20px;font-weight:900;color:${adherencePct===null?'var(--muted)':'var(--green)'};">${adherencePct===null?'—':adherencePct+'%'}</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;">Adherence</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="form-section">
+      <h3>Activity — Last ${RANGE_DAYS} Days</h3>
+      <div style="display:flex;gap:3px;flex-wrap:wrap;">
+        ${results.map((r,i)=>`<div title="${r.key}${loggedFlags[i]?' — logged':' — no log'}" style="width:18px;height:18px;border-radius:4px;background:${loggedFlags[i]?'var(--green)':'var(--border)'};"></div>`).join('')}
+      </div>
+    </div>
+    <div class="form-section">
+      <h3>Weight Trend</h3>
+      <canvas id="weight-chart" height="90"></canvas>
+    </div>
+    <div class="form-section">
+      <h3>Calories Logged vs. Target</h3>
+      <canvas id="macro-chart" height="110"></canvas>
+    </div>
+  `;
+
+  if(weightChartInstance) weightChartInstance.destroy();
+  if(macroChartInstance) macroChartInstance.destroy();
+
+  const weightCtx=document.getElementById('weight-chart').getContext('2d');
+  weightChartInstance=new Chart(weightCtx,{
+    type:'line',
+    data:{labels,datasets:[{label:'Weight (lbs)',data:weights,borderColor:'#C9A84C',backgroundColor:'rgba(201,168,76,0.1)',spanGaps:true,tension:0.3,pointRadius:3}]},
+    options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}}}}
+  });
+
+  const macroCtx=document.getElementById('macro-chart').getContext('2d');
+  const barColors=calorieTotals.map((c,i)=>{
+    if(c===null) return 'rgba(136,136,136,0.25)';
+    if(!target.calories) return '#C9A84C';
+    const pct=c/target.calories;
+    return (pct>=0.9&&pct<=1.1)?'#4caf76':'#e05c5c';
+  });
+  const macroDatasets=[{type:'bar',label:'Calories Logged',data:calorieTotals,backgroundColor:barColors}];
+  if(target.calories){
+    macroDatasets.push({type:'line',label:'Target',data:labels.map(()=>target.calories),borderColor:'#C9A84C',borderDash:[6,4],pointRadius:0,fill:false});
+  }
+  macroChartInstance=new Chart(macroCtx,{
+    data:{labels,datasets:macroDatasets},
+    options:{responsive:true,plugins:{legend:{labels:{color:'#ccc'}}},scales:{x:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#888'},grid:{color:'#2a2a2a'}}}}
+  });
+}
 
 async function loadClientIntoForm(id){
   let client;
