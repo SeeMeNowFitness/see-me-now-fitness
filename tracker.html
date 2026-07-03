@@ -1522,6 +1522,8 @@ function populateMealSelector() {
 function prepareMyFood(name, cals100, protein100, carbs100, fat100, servingAmount, servingUnit) {
   // Values are already stored per-100g, so this plugs straight into the standard flow
   pendingFood = { name, cals: cals100, protein: protein100, carbs: carbs100, fat: fat100, _isMyFood: true };
+  const pieceOptionReset = document.querySelector('#add-food-unit option[value="piece"]');
+  if(pieceOptionReset) pieceOptionReset.textContent = 'piece / item';
   document.getElementById('add-food-title').textContent = '📝 ' + name;
   document.getElementById('add-food-amount').value = servingAmount || 1;
   document.getElementById('add-food-unit').value = servingUnit || 'g';
@@ -1531,6 +1533,8 @@ function prepareMyFood(name, cals100, protein100, carbs100, fat100, servingAmoun
 }
 
 function prepareBlueprintFood(name, cals, protein, carbs, fat, serving, servingG) {
+  const pieceOptionReset = document.querySelector('#add-food-unit option[value="piece"]');
+  if(pieceOptionReset) pieceOptionReset.textContent = 'piece / item';
   cals = parseFloat(cals) || 0;
   protein = parseFloat(protein) || 0;
   carbs = parseFloat(carbs) || 0;
@@ -1652,6 +1656,8 @@ async function prepareAddFood(id,name,cals,protein,carbs,fat){
   document.getElementById('add-food-title').textContent='Add: '+name;
   document.getElementById('add-food-amount').value=1;
   document.getElementById('add-food-unit').value='g';
+  const pieceOptionReset = document.querySelector('#add-food-unit option[value="piece"]');
+  if(pieceOptionReset) pieceOptionReset.textContent = 'piece / item';
   populateMealSelector();
   updateAddPreview();
   openModal('modal-add-food');
@@ -1662,6 +1668,10 @@ async function prepareAddFood(id,name,cals,protein,carbs,fat){
     if(pendingFood && pendingFood.id===id && portions){ // guard: bail if a different food's modal opened meanwhile
       pendingFood._foodPortions = portions.map;
       pendingFood._piecePortionLabel = portions.pieceLabel;
+      const pieceOption = document.querySelector('#add-food-unit option[value="piece"]');
+      if(pieceOption && portions.pieceLabel){
+        pieceOption.textContent = `${portions.pieceLabel} (~${Math.round(portions.map.piece)}g)`;
+      }
       updateAddPreview();
     }
   }
@@ -1677,13 +1687,14 @@ async function getFoodPortions(fdcId){
     const map = {};
     let pieceLabel = null;
     portions.forEach(p=>{
-      const label = (p.modifier || p.portionDescription || '').toLowerCase();
+      const raw = (p.portionDescription || p.modifier || '').trim();
+      const label = raw.toLowerCase();
       const grams = p.gramWeight;
       if(!grams || !label) return;
       if(label.includes('cup') && !map.cup) map.cup = grams;
       else if((label.includes('tbsp') || label.includes('tablespoon')) && !map.tbsp) map.tbsp = grams;
       else if((label.includes('tsp') || label.includes('teaspoon')) && !map.tsp) map.tsp = grams;
-      else if(!map.piece){ map.piece = grams; pieceLabel = p.modifier || p.portionDescription; }
+      else if(!map.piece){ map.piece = grams; pieceLabel = raw.replace(/^1\s+/,'').trim() || 'piece'; }
     });
     return Object.keys(map).length ? { map, pieceLabel } : null;
   }catch(e){ return null; }
