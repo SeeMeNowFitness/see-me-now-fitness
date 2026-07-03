@@ -1051,7 +1051,7 @@ if(noM){ze.textContent="TODAY'S PROGRESS";ze.className='balance-zone maintenance
 else{ze.textContent=zl[zone];ze.className='balance-zone '+zone;ne.textContent=(e.net>=0?'+':'')+Math.round(e.net);ne.className='balance-number '+zone;document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
 const pb=document.getElementById('projection-banner');
 if(noM)pb.innerHTML=`<div class="proj-label">👇 How to get started</div><div class="proj-val" style="font-size:15px;font-weight:700;">Tap Log → search a food → add it</div><div class="proj-sub">Your macros, deficit, and projections appear once you start logging.</div>`;
-else if(zone==='deficit'){pb.innerHTML=`<div class="proj-label">🔥 Excellent Work</div><div class="proj-val" style="font-size:16px;">On pace for meaningful fat loss this week</div><div class="proj-sub">Keep this consistency going — the Blueprint is working</div>`;}
+else if(zone==='deficit'){const lw=Math.abs(e.net*7/3500).toFixed(2),l4=Math.abs(e.net*28/3500).toFixed(1);pb.innerHTML=`<div class="proj-label">🔥 Excellent Work</div><div class="proj-val" style="font-size:16px;">On pace for meaningful fat loss this week</div><div class="proj-sub">~${lw} lbs projected this week · ~${l4} lbs over 4 weeks at this pace</div>`;}
 else if(zone==='surplus')pb.innerHTML=`<div class="proj-label">📈 Ahead of Your Blueprint</div><div class="proj-val">${Math.abs(e.net)} kcal over today's target</div><div class="proj-sub">Tighten up intake to get back into your deficit</div>`;
 else pb.innerHTML=`<div class="proj-label">⚖️ Holding Steady</div><div class="proj-val">±${Math.abs(e.net)} kcal from target</div><div class="proj-sub">Right where you want to be — well balanced</div>`;
 // Update weekly balance banner on Today tab
@@ -1384,11 +1384,15 @@ async function saveMyFood(name, cals100, protein100, carbs100, fat100, servingAm
   } catch(e) {}
 }
 
+let searchRequestId = 0;
+
 async function searchUSDA(q) {
+  const requestId = ++searchRequestId;
   const el = document.getElementById('food-search-results');
   el.innerHTML = '<div class="loading">Searching…</div>';
 
   const myFoods = await getMyFoods();
+  if (requestId !== searchRequestId) return; // a newer search started while this one was loading
   const myMatches = myFoods.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
 
   const myHtml = myMatches.map(f => {
@@ -1410,6 +1414,7 @@ async function searchUSDA(q) {
   }).join('');
 
   const bpFoods = await getBlueprintFoods();
+  if (requestId !== searchRequestId) return; // a newer search started while this one was loading
   const bpMatches = bpFoods.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
 
   const bpHtml = bpMatches.map(f => {
@@ -1432,6 +1437,7 @@ async function searchUSDA(q) {
 
   try {
     const r = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=12&api_key=${USDA_KEY}`);
+    if (requestId !== searchRequestId) return; // a newer search started while this one was loading
     const d = await r.json();
 
     let foods = (d.foods || []).map(f => ({ ...f, _cookStatus: getCookStatus(f.description) }));
@@ -1454,18 +1460,24 @@ async function searchUSDA(q) {
         : status === 'raw'
         ? `<span style="font-size:9px;font-weight:800;background:rgba(76,143,224,0.15);color:var(--blue);border-radius:4px;padding:2px 5px;margin-left:5px;text-transform:uppercase;letter-spacing:0.04em;">Raw</span>`
         : ``;
-      return `<div class="food-result"><div class="food-result-img">🥗</div><div class="food-result-info"><div class="food-result-name">${nm}${badge}</div><div class="food-result-macros">${n.calories||0} kcal/100g &nbsp;·&nbsp; P:<span>${n.protein||0}g</span> C:<span>${n.carbs||0}g</span> F:<span>${n.fat||0}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${f.description.replace(/'/g,"\\'")}',${n.calories||0},${n.protein||0},${n.carbs||0},${n.fat||0})">Add</button></div>`;
+      return `<div class="food-result"><div class="food-result-img">🥗</div><div class="food-result-info"><div class="food-result-name">${nm}${badge}</div><div class="food-result-macros">${n.calories||0} kcal/100g &nbsp;·&nbsp; P:<span>${n.protein||0}g</span> C:<span>${n.carbs||0}g</span> F:<span>${n.fat||0}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(${f.fdcId},'${f.description.replace(/'/g,"\\'")}',${n.calories||0},${n.protein||0},${n.carbs||0},${n.fat||0})">Add</button></div>`;
     }).join('');
 
     const divider = bpMatches.length && foods.length
       ? `<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);padding:8px 0 4px;">USDA Database</div>`
       : '';
 
+    if (requestId !== searchRequestId) return; // a newer search resolved first, don't clobber it
     if (!myHtml && !bpHtml && !usdaHtml) { el.innerHTML = `<div class="empty-state"><div class="icon">🔍</div><h4>No results found</h4><p>Can't find "${q}"? Enter the macros yourself from the label.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('${q.replace(/'/g,"\\'")}')">✏️ Add Custom Food</button>`; return; }
     el.innerHTML = myHtml + bpHtml + divider + usdaHtml;
 
   } catch(e) {
-    el.innerHTML = myHtml + bpHtml || demoFood(q);
+    if (requestId !== searchRequestId) return; // a newer search is already in flight, leave it alone
+    if (myHtml || bpHtml) {
+      el.innerHTML = myHtml + bpHtml + `<div style="font-size:11px;color:var(--muted);text-align:center;padding:10px 0;">⚠️ Couldn't reach the food database — showing your saved foods only.</div>`;
+    } else {
+      el.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><h4>Search hiccup</h4><p>Couldn't reach the food database. Check your connection and try again.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('${q.replace(/'/g,"\\'")}')">✏️ Add Custom Food</button>`;
+    }
   }
 }
 
@@ -1635,7 +1647,7 @@ function confirmCustomFood() {
 }
 
 // ── ADD FOOD with serving units ──
-function prepareAddFood(id,name,cals,protein,carbs,fat){
+async function prepareAddFood(id,name,cals,protein,carbs,fat){
   pendingFood={id,name,cals,protein,carbs,fat};
   document.getElementById('add-food-title').textContent='Add: '+name;
   document.getElementById('add-food-amount').value=1;
@@ -1643,27 +1655,70 @@ function prepareAddFood(id,name,cals,protein,carbs,fat){
   populateMealSelector();
   updateAddPreview();
   openModal('modal-add-food');
+  // Look up this specific food's real serving weights (e.g. what "1 cup" actually weighs for THIS food)
+  // instead of relying on the generic UNIT_TO_GRAMS guess. Runs in the background so the modal opens instantly.
+  if(id){
+    const portions = await getFoodPortions(id);
+    if(pendingFood && pendingFood.id===id && portions){ // guard: bail if a different food's modal opened meanwhile
+      pendingFood._foodPortions = portions.map;
+      pendingFood._piecePortionLabel = portions.pieceLabel;
+      updateAddPreview();
+    }
+  }
+}
+
+async function getFoodPortions(fdcId){
+  try{
+    const r = await fetch(`https://api.nal.usda.gov/fdc/v1/food/${fdcId}?api_key=${USDA_KEY}`);
+    if(!r.ok) return null;
+    const d = await r.json();
+    const portions = d.foodPortions || [];
+    if(!portions.length) return null;
+    const map = {};
+    let pieceLabel = null;
+    portions.forEach(p=>{
+      const label = (p.modifier || p.portionDescription || '').toLowerCase();
+      const grams = p.gramWeight;
+      if(!grams || !label) return;
+      if(label.includes('cup') && !map.cup) map.cup = grams;
+      else if((label.includes('tbsp') || label.includes('tablespoon')) && !map.tbsp) map.tbsp = grams;
+      else if((label.includes('tsp') || label.includes('teaspoon')) && !map.tsp) map.tsp = grams;
+      else if(!map.piece){ map.piece = grams; pieceLabel = p.modifier || p.portionDescription; }
+    });
+    return Object.keys(map).length ? { map, pieceLabel } : null;
+  }catch(e){ return null; }
+}
+
+function getUnitGrams(unit){
+  if(unit === 'piece' && pendingFood._pieceOverride) return pendingFood._pieceOverride; // Blueprint Food's coach-set weight
+  if(pendingFood._foodPortions && pendingFood._foodPortions[unit]) return pendingFood._foodPortions[unit]; // this food's real USDA weight
+  return UNIT_TO_GRAMS[unit] || 1; // generic fallback estimate
+}
+
+function isEstimatedUnit(unit){
+  if(unit==='g' || unit==='oz' || unit==='ml' || unit==='fl_oz' || unit==='l') return false; // these are always exact physical conversions
+  if(unit==='piece' && pendingFood._pieceOverride) return false;
+  if(pendingFood._foodPortions && pendingFood._foodPortions[unit]) return false;
+  return true;
 }
 
 function updateAddPreview(){
   if(!pendingFood)return;
   const amount=parseFloat(document.getElementById('add-food-amount').value)||1;
   const unit=document.getElementById('add-food-unit').value;
-  // Use piece override if set (for egg whites, scoops etc)
-  const unitGrams = unit === 'piece' && pendingFood._pieceOverride
-    ? pendingFood._pieceOverride
-    : (UNIT_TO_GRAMS[unit]||1);
+  const unitGrams = getUnitGrams(unit);
   const grams=amount*unitGrams;
   const mult=grams/100;
+  const pieceLabel = pendingFood._pieceOverride
+    ? (pendingFood._blueprintServing || 'piece')
+    : (pendingFood._piecePortionLabel || 'piece');
   const unitLabels={
     g:`${Math.round(grams)}g`,
     oz:`${amount} oz (${Math.round(grams)}g)`,
     cup:`${amount} cup${amount!==1?'s':''} (${Math.round(grams)}g)`,
     tbsp:`${amount} tbsp (${Math.round(grams)}g)`,
     tsp:`${amount} tsp (${Math.round(grams)}g)`,
-    piece:pendingFood._pieceOverride
-      ?`${amount} × ${pendingFood._blueprintServing||'piece'} (~${Math.round(grams)}g)`
-      :`${amount} piece${amount!==1?'s':''} (~${Math.round(grams)}g)`,
+    piece:`${amount} × ${pieceLabel} (~${Math.round(grams)}g)`,
     scoop:`${amount} scoop${amount!==1?'s':''} (~${Math.round(grams)}g)`,
     ml:`${Math.round(amount)}ml`,
     fl_oz:`${amount} fl oz (${Math.round(grams)}ml)`,
@@ -1673,28 +1728,33 @@ function updateAddPreview(){
   const bpBadge = pendingFood._isBlueprint
     ? `<div style="font-size:11px;color:var(--gold);margin-bottom:6px;font-weight:700;">⭐ See Me Now Verified</div>`
     : '';
+  const estimateFlag = isEstimatedUnit(unit)
+    ? `<div style="font-size:10px;color:var(--gold);margin-top:6px;">≈ Estimated conversion for this unit — grams are most accurate</div>`
+    : '';
   document.getElementById('add-food-macro-preview').innerHTML=
     bpBadge+
     `<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Serving: ${label}</div>`+
     `<strong style="color:var(--white);font-size:15px;">${Math.round((pendingFood.cals||0)*mult)} kcal</strong>`+
     `&nbsp;&nbsp; P: <strong style="color:var(--white)">${Math.round((pendingFood.protein||0)*mult*10)/10}g</strong>`+
     `&nbsp; C: <strong style="color:var(--white)">${Math.round((pendingFood.carbs||0)*mult*10)/10}g</strong>`+
-    `&nbsp; F: <strong style="color:var(--white)">${Math.round((pendingFood.fat||0)*mult*10)/10}g</strong>`;
+    `&nbsp; F: <strong style="color:var(--white)">${Math.round((pendingFood.fat||0)*mult*10)/10}g</strong>`+
+    estimateFlag;
 }
 
 function confirmAddFood(){
   if(!pendingFood)return;
   const amount=parseFloat(document.getElementById('add-food-amount').value)||1;
   const unit=document.getElementById('add-food-unit').value;
-  const unitGrams = unit === 'piece' && pendingFood._pieceOverride
-    ? pendingFood._pieceOverride
-    : (UNIT_TO_GRAMS[unit]||1);
+  const unitGrams = getUnitGrams(unit);
   const grams=amount*unitGrams;
   const mult=grams/100;
+  const pieceLabel = pendingFood._pieceOverride
+    ? (pendingFood._blueprintServing || 'piece')
+    : (pendingFood._piecePortionLabel || 'piece');
   const unitLabels={
     g:`${Math.round(grams)}g`,oz:`${amount} oz`,
     cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,
-    piece:pendingFood._pieceOverride?`${amount} × ${pendingFood._blueprintServing||'piece'}`:`${amount} piece${amount!==1?'s':''}`,
+    piece:`${amount} × ${pieceLabel}`,
     scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`,fl_oz:`${amount} fl oz`,l:`${amount}L`
   };
   const mealGroup = document.getElementById('add-food-meal')?.value || null;
