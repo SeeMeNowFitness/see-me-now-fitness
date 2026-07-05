@@ -14,6 +14,8 @@
 <script>
 const FIREBASE_CONFIG={apiKey:"AIzaSyCLUo020Q7A9S_PCM0mti7E-0-SflNIRy8",authDomain:"see-me-now-fitness.firebaseapp.com",projectId:"see-me-now-fitness",storageBucket:"see-me-now-fitness.firebasestorage.app",messagingSenderId:"505059193724",appId:"1:505059193724:web:704a12cbd0a55592612af9"};
 const SPOONACULAR_API_KEY="9dfeb2be45a740d1ade669c0e001f6ef";
+// TODO: Replace with the real Wix checkout link for the $9/mo Stand-Alone Tracker plan
+const TRACKER_UPGRADE_URL = "https://www.seemenowfitness.com/pricing";
 const URL_CLIENT_ID=new URLSearchParams(window.location.search).get("client");
 const URL_EMAIL=new URLSearchParams(window.location.search).get("email");
 const STORED_CLIENT_ID=localStorage.getItem('smn_client_id');
@@ -300,8 +302,9 @@ select option{background:var(--dark);}
 <div class="panel active" id="panel-today">
 <div id="setup-banner" style="display:none;background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.04));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
 <div style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Demo Mode</div>
-<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px;">Macros shown are sample targets</div>
-<div style="font-size:12px;color:var(--muted);line-height:1.6;">Your coach will send you a personal link with your real macro targets after your intake call.</div>
+<div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px;">You're exploring with sample data</div>
+<div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:10px;">Like what you see? Get full access to track your own meals, weight, and progress.</div>
+<a href="#" onclick="window.open(TRACKER_UPGRADE_URL,'_blank');return false;" style="display:block;text-align:center;background:var(--gold);color:var(--black);border-radius:8px;padding:10px;font-size:13px;font-weight:800;text-decoration:none;">Get Full Access — $9/mo</a>
 </div>
 
 <!-- GREETING CARD -->
@@ -310,6 +313,15 @@ select option{background:var(--dark);}
   <div id="greeting-name" style="font-family:'Anton',sans-serif;font-size:22px;letter-spacing:0.06em;color:var(--white);margin-bottom:10px;"></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap;" id="greeting-pills"></div>
   <div id="greeting-quote" style="font-size:12px;color:var(--muted);margin-top:12px;font-style:italic;border-top:1px solid var(--border);padding-top:10px;"></div>
+</div>
+
+<!-- CONSISTENCY NUDGE — shown to tracker-tier clients after a strong logging streak -->
+<div id="consistency-nudge" style="display:none;background:var(--card);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:16px;margin-bottom:12px;position:relative;">
+  <button onclick="dismissConsistencyNudge()" style="position:absolute;top:10px;right:10px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1;">×</button>
+  <div style="font-size:22px;margin-bottom:6px;">🔥</div>
+  <div style="font-size:14px;font-weight:800;color:var(--white);margin-bottom:6px;padding-right:20px;">You've been consistent — nice work.</div>
+  <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px;">You're logging regularly. Want a coach to make sure you're optimizing, not just tracking?</div>
+  <a href="#" onclick="window.open(TRACKER_UPGRADE_URL,'_blank');return false;" style="display:inline-block;background:var(--gold);color:var(--black);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:800;text-decoration:none;">See Coaching Plans</a>
 </div>
 
 <div id="zigzag-toggle" style="display:none;margin-bottom:12px;">
@@ -348,8 +360,8 @@ select option{background:var(--dark);}
 <div id="session-countdown" style="display:none;"><div class="card"><div class="card-title">Sessions Remaining</div><div style="display:flex;align-items:center;justify-content:space-between;"><div style="font-size:42px;font-weight:900;color:var(--gold);" id="sessions-remaining">—</div><div id="renew-prompt" style="display:none;"><a href="https://seemenowfitness.com/blank#in-person-training" class="btn btn-gold btn-sm">Renew</a></div></div><div style="font-size:12px;color:var(--muted);margin-top:4px;" id="next-session-label"></div></div></div>
 <div id="checkin-streak" style="display:none;"><div class="card" style="text-align:center;"><div class="card-title">Check-In Streak</div><div style="font-size:42px;font-weight:900;color:var(--green);" id="streak-count">—</div><div style="font-size:12px;color:var(--muted);">weeks in a row</div></div></div>
 <div id="upsell-block" style="display:none;">
-<div class="upsell-strip"><p><strong>Blueprint Approved meals</strong> are unlocked with coaching.</p><a href="https://seemenowfitness.com/blank#in-person-training">Upgrade</a></div>
-<div class="upsell-strip"><p>Get <strong>personalized macro targets</strong> set by your coach.</p><a href="https://seemenowfitness.com/blank#in-person-training">Learn more</a></div>
+<div class="upsell-strip"><p><strong>Blueprint Approved meals</strong> are unlocked with coaching.</p><a href="#" onclick="window.open(TRACKER_UPGRADE_URL,'_blank');return false;">Upgrade</a></div>
+<div class="upsell-strip"><p>Get <strong>personalized macro targets</strong> set by your coach.</p><a href="#" onclick="window.open(TRACKER_UPGRADE_URL,'_blank');return false;">Learn more</a></div>
 </div>
 </div>
 
@@ -819,7 +831,7 @@ function toFV(v){if(v===null||v===undefined)return{nullValue:null};if(typeof v==
 
 // PROFILE
 async function loadClientProfile(){
-if(!CLIENT_ID||CLIENT_ID==='demo'){clientProfile={name:'Demo',tier:'lifestyle',macros:{protein:180,carbs:200,fat:60,calories:2020},bmr_inputs:{weight_lbs:180,height_cm:178,age:28,gender:'male'}};}
+if(!CLIENT_ID||CLIENT_ID==='demo'){clientProfile={name:'Demo',tier:'tracker',macros:{protein:180,carbs:200,fat:60,calories:2020},bmr_inputs:{weight_lbs:180,height_cm:178,age:28,gender:'male'}};}
 else{try{clientProfile=(await fsGet(`clients/${CLIENT_ID}`))||defProfile();}catch(e){clientProfile=defProfile();}}
 applyTierUI();
 renderGreetingCard();
@@ -852,7 +864,8 @@ document.getElementById('weigh-food-note').style.display=tier==='contest_prep'?'
 document.getElementById('contest-countdown').style.display=tier==='contest_prep'?'block':'none';
 document.getElementById('session-countdown').style.display=tier==='inperson'?'block':'none';
 document.getElementById('checkin-streak').style.display='block';
-document.getElementById('upsell-block').style.display=tier==='tracker'?'block':'none';
+// Old always-on upsell strip disabled in favor of the consistency-timed nudge (see checkConsistencyNudge) — re-enable only if a different, non-timed prompt is wanted here
+document.getElementById('upsell-block').style.display='none';
 const zzt=document.getElementById('zigzag-toggle');if(zzt)zzt.style.display=clientProfile.tracking_method==='zigzag'?'block':'none';
 if(clientProfile.tracking_method==='zigzag'){const hd=clientProfile.high_days_per_week||2;const ld=7-hd;const dc=document.getElementById('zigzag-day-count');if(dc)dc.textContent=`🔥 ${hd} High Day${hd!==1?'s':''} · ❄️ ${ld} Low Day${ld!==1?'s':''} per week`;}
 const sb=document.getElementById('setup-banner');if(sb)sb.style.display=(!CLIENT_ID||CLIENT_ID==='demo')?'block':'none';
@@ -1057,6 +1070,7 @@ else pb.innerHTML=`<div class="proj-label">⚖️ Holding Steady</div><div class
 // Update weekly balance banner on Today tab
 updateWeeklyBalanceBanner();
 updateWeightTrend();
+checkConsistencyNudge();
 renderMacroBars();
 document.getElementById('stat-steps').textContent=(dayData.steps||0).toLocaleString();
 document.getElementById('stat-burned').textContent=e.totalBurned.toLocaleString();
@@ -1413,7 +1427,8 @@ async function searchUSDA(q) {
     </div>`;
   }).join('');
 
-  const bpFoods = await getBlueprintFoods();
+  // Blueprint Foods (⭐ SEE ME NOW) are a coaching-tier feature — self-serve tracker-only clients don't see them in search
+  const bpFoods = clientProfile?.tier === 'tracker' ? [] : await getBlueprintFoods();
   if (requestId !== searchRequestId) return; // a newer search started while this one was loading
   const bpMatches = bpFoods.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
 
@@ -2135,6 +2150,50 @@ async function updateWeeklyBalanceBanner() {
   } catch(e) { banner.style.display = 'none'; }
 }
 
+// ── CONSISTENCY NUDGE (tracker-tier clients only) ──
+let consistencyStreakCache = null;
+
+async function getConsistencyStreak() {
+  const ONE_HOUR = 3600000;
+  if (consistencyStreakCache && (Date.now() - consistencyStreakCache.ts) < ONE_HOUR) return consistencyStreakCache.data;
+  if (!CLIENT_ID || CLIENT_ID === 'demo') return { loggedDays: 0 };
+  const checks = [];
+  for (let i = 0; i < 14; i++) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    if (key === currentDateKey) {
+      checks.push(Promise.resolve(dayData));
+    } else {
+      checks.push(fsGet(`clients/${CLIENT_ID}/days/${key}`).catch(() => null));
+    }
+  }
+  const days = await Promise.all(checks);
+  const loggedDays = days.filter(d => d && (d.meals || []).length > 0).length;
+  const data = { loggedDays };
+  consistencyStreakCache = { ts: Date.now(), data };
+  return data;
+}
+
+async function checkConsistencyNudge() {
+  const el = document.getElementById('consistency-nudge');
+  if (!el) return;
+  // Only nudge self-serve tracker clients toward coaching — full coaching clients don't need this prompt
+  if (!clientProfile || clientProfile.tier !== 'tracker' || !CLIENT_ID || CLIENT_ID === 'demo') { el.style.display = 'none'; return; }
+  const dismissKey = `smn_nudge_dismissed_${CLIENT_ID}`;
+  if (localStorage.getItem(dismissKey)) { el.style.display = 'none'; return; }
+  try {
+    const { loggedDays } = await getConsistencyStreak();
+    // 12 of the last 14 days logged — consistent, with tolerance for a couple missed days
+    el.style.display = loggedDays >= 12 ? 'block' : 'none';
+  } catch (e) { el.style.display = 'none'; }
+}
+
+function dismissConsistencyNudge() {
+  if (CLIENT_ID) localStorage.setItem(`smn_nudge_dismissed_${CLIENT_ID}`, '1');
+  const el = document.getElementById('consistency-nudge');
+  if (el) el.style.display = 'none';
+}
+
 // ── WEIGHT TREND ──
 let weightTrendCache = null;
 
@@ -2286,11 +2345,30 @@ dayData.meals.forEach(x=>{l.protein+=x.protein||0;l.carbs+=x.carbs||0;l.fat+=x.f
 const rem={protein:Math.max(0,m.protein-l.protein),carbs:Math.max(0,m.carbs-l.carbs),fat:Math.max(0,m.fat-l.fat),calories:Math.max(0,m.calories-l.calories)};
 const pills=document.getElementById('macro-remaining-pills');
 pills.innerHTML=[{label:'Protein',val:rem.protein,unit:'g',color:'var(--gold)'},{label:'Carbs',val:rem.carbs,unit:'g',color:'var(--blue)'},{label:'Fat',val:rem.fat,unit:'g',color:'var(--orange)'},{label:'Calories',val:rem.calories,unit:'kcal',color:'var(--green)'}].map(p=>`<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 12px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${p.color};">${p.label}</div><div style="font-size:16px;font-weight:800;color:var(--white);">${Math.round(p.val)}<span style="font-size:11px;font-weight:400;color:var(--muted);">${p.unit}</span></div></div>`).join('');
+
+// Recipes (both Blueprint Approved Meals and Spoonacular) are a coaching-tier feature, not included in self-serve tracker access
+const isTrackerOnly = clientProfile?.tier === 'tracker';
+const upgradeGateHTML = `<div style="background:var(--card);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:20px 16px;text-align:center;">
+  <div style="font-size:28px;margin-bottom:8px;">🔒</div>
+  <div style="font-size:14px;font-weight:800;color:var(--white);margin-bottom:6px;">Recipes are part of coaching plans</div>
+  <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Upgrade to unlock Blueprint Approved meals and personalized recipe recommendations.</div>
+  <a href="#" onclick="window.open(TRACKER_UPGRADE_URL,'_blank');return false;" style="display:inline-block;background:var(--gold);color:var(--black);border-radius:8px;padding:10px 20px;font-size:13px;font-weight:800;text-decoration:none;">See Coaching Plans</a>
+</div>`;
+
 // Blueprint approved meals
 const bpEl=document.getElementById('blueprint-approved-content');
-try{const meals=await fsList('blueprint_meals');if(meals.length){bpEl.innerHTML=meals.slice(0,4).map(m=>`<div class="recipe-card"><div class="recipe-card-body"><div class="recipe-card-name">${m.emoji||'🥗'} ${m.name}</div><div class="recipe-card-macros"><div class="recipe-macro"><span>${m.calories}</span>kcal</div><div class="recipe-macro"><span>${m.protein}g</span>protein</div><div class="recipe-macro"><span>${m.carbs}g</span>carbs</div><div class="recipe-macro"><span>${m.fat}g</span>fat</div></div>${m.notes?`<div style="font-size:12px;color:var(--muted);margin-top:4px;">${m.notes}</div>`:''}<div class="recipe-card-actions" style="margin-top:10px;"><button class="btn btn-gold btn-sm" onclick="addBlueprintMealToLog('${m.name}',${m.calories},${m.protein},${m.carbs},${m.fat})">Add to Log</button></div></div></div>`).join('');}else{bpEl.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0;">Blueprint meals will appear here once your coach adds them.</div>';}}catch(e){bpEl.innerHTML='';}
+if(isTrackerOnly){
+  bpEl.innerHTML=upgradeGateHTML;
+} else {
+  try{const meals=await fsList('blueprint_meals');if(meals.length){bpEl.innerHTML=meals.slice(0,4).map(m=>`<div class="recipe-card"><div class="recipe-card-body"><div class="recipe-card-name">${m.emoji||'🥗'} ${m.name}</div><div class="recipe-card-macros"><div class="recipe-macro"><span>${m.calories}</span>kcal</div><div class="recipe-macro"><span>${m.protein}g</span>protein</div><div class="recipe-macro"><span>${m.carbs}g</span>carbs</div><div class="recipe-macro"><span>${m.fat}g</span>fat</div></div>${m.notes?`<div style="font-size:12px;color:var(--muted);margin-top:4px;">${m.notes}</div>`:''}<div class="recipe-card-actions" style="margin-top:10px;"><button class="btn btn-gold btn-sm" onclick="addBlueprintMealToLog('${m.name}',${m.calories},${m.protein},${m.carbs},${m.fat})">Add to Log</button></div></div></div>`).join('');}else{bpEl.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0;">Blueprint meals will appear here once your coach adds them.</div>';}}catch(e){bpEl.innerHTML='';}
+}
+
 // Spoonacular
 const sp=document.getElementById('spoonacular-results');
+if(isTrackerOnly){
+  sp.innerHTML=upgradeGateHTML;
+  return;
+}
 const cacheKey=`smn_recipes_${Math.round(rem.protein/10)*10}_${Math.round(rem.calories/100)*100}`;
 const cached=localStorage.getItem(cacheKey);
 if(cached){
