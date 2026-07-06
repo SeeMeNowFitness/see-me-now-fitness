@@ -13,9 +13,10 @@ storageBucket: "see-me-now-fitness.firebasestorage.app",
 messagingSenderId: "505059193724",
 appId: "1:505059193724:web:704a12cbd0a55592612af9"
 };
-const ADMIN_PASSWORD = "seemenow2026";
+// Admin access is now controlled by real Firebase Authentication — see checkLogin() and onAuthStateChanged below
 </script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
 <style>
@@ -27,7 +28,8 @@ a{color:var(--gold);}
 .login-box{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:40px;max-width:360px;width:100%;text-align:center;}
 .login-box h1{font-size:20px;font-weight:800;color:var(--gold);margin-bottom:6px;letter-spacing:0.06em;text-transform:uppercase;}
 .login-box p{font-size:13px;color:var(--muted);margin-bottom:24px;}
-.login-box input{background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);font-size:15px;padding:12px;width:100%;outline:none;margin-bottom:12px;letter-spacing:0.1em;}
+.login-box input{background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);font-size:15px;padding:12px;width:100%;outline:none;margin-bottom:12px;}
+.login-box input[type="password"]{letter-spacing:0.1em;}
 .login-box input:focus{border-color:var(--gold);}
 .login-box button{background:var(--gold);color:var(--black);border:none;border-radius:8px;padding:12px;width:100%;font-size:14px;font-weight:800;cursor:pointer;}
 .login-error{color:var(--red);font-size:13px;margin-top:10px;display:none;}
@@ -87,9 +89,10 @@ a{color:var(--gold);}
 <div class="login-box">
 <h1>SMN Admin</h1>
 <p>Coach access only</p>
-<input type="password" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')checkLogin()">
+<input type="email" id="email-input" placeholder="Email" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('pw-input').focus()">
+<input type="password" id="pw-input" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')checkLogin()">
 <button onclick="checkLogin()">Enter</button>
-<div class="login-error" id="login-error">Wrong password</div>
+<div class="login-error" id="login-error">Incorrect email or password</div>
 </div>
 </div>
 
@@ -97,6 +100,7 @@ a{color:var(--gold);}
 <div class="admin-header">
 <h1>See Me Now — Coach Dashboard</h1>
 <span id="firebase-status">Connecting…</span>
+<button onclick="logoutAdmin()" style="margin-left:14px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;">Log Out</button>
 </div>
 
 <div class="admin-tabs">
@@ -256,13 +260,45 @@ a{color:var(--gold);}
 </div>
 
 <script>
-function checkLogin(){const pw=document.getElementById('pw-input').value;if(pw===ADMIN_PASSWORD){document.getElementById('login-screen').style.display='none';document.getElementById('admin-app').style.display='block';initAdmin();}else{document.getElementById('login-error').style.display='block';}}
-
 let db=null,allClients=[],selectedClientId=null;
 
+// Initialize Firebase once, immediately — must happen before any firebase.auth() calls below
+try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.firestore(); }
+catch(e){ console.error('Firebase init failed', e); }
+
+function checkLogin(){
+  const email=document.getElementById('email-input').value.trim();
+  const pw=document.getElementById('pw-input').value;
+  const errEl=document.getElementById('login-error');
+  errEl.style.display='none';
+  if(!email||!pw){ errEl.textContent='Enter both email and password'; errEl.style.display='block'; return; }
+  firebase.auth().signInWithEmailAndPassword(email,pw)
+    .catch(err=>{
+      errEl.textContent='Incorrect email or password';
+      errEl.style.display='block';
+    });
+  // On success, onAuthStateChanged (below) handles showing the admin app — no manual redirect needed here
+}
+
+// Real, persistent auth guard — runs on every page load, not just at login.
+// This is what actually protects the admin panel: even if someone bypasses the login form
+// itself (e.g. via browser dev tools), initAdmin() only ever runs once Firebase confirms a real signed-in user.
+firebase.auth().onAuthStateChanged(function(user){
+  if(user){
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('admin-app').style.display='block';
+    initAdmin();
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('admin-app').style.display='none';
+  }
+});
+
+function logoutAdmin(){ firebase.auth().signOut(); }
+
 async function initAdmin(){
-  try{firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();document.getElementById('firebase-status').textContent='🟢 Firebase connected';document.getElementById('firebase-status').style.color='#4caf76';}
-  catch(e){document.getElementById('firebase-status').textContent='🔴 Firebase not configured';document.getElementById('firebase-status').style.color='#e05c5c';}
+  if(db){document.getElementById('firebase-status').textContent='🟢 Firebase connected';document.getElementById('firebase-status').style.color='#4caf76';}
+  else{document.getElementById('firebase-status').textContent='🔴 Firebase not configured';document.getElementById('firebase-status').style.color='#e05c5c';}
   loadClients();loadBlueprintMeals();loadBlueprintFoodsList();
 }
 
