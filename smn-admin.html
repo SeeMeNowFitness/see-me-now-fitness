@@ -274,8 +274,9 @@ function checkLogin(){
   if(!email||!pw){ errEl.textContent='Enter both email and password'; errEl.style.display='block'; return; }
   firebase.auth().signInWithEmailAndPassword(email,pw)
     .catch(err=>{
-      errEl.textContent='Incorrect email or password';
+      errEl.textContent='Error: '+err.code+' — '+err.message;
       errEl.style.display='block';
+      console.error('Firebase Auth error:', err);
     });
   // On success, onAuthStateChanged (below) handles showing the admin app — no manual redirect needed here
 }
