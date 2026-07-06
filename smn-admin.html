@@ -6,7 +6,7 @@
 <title>SMN Admin — Coach Dashboard</title>
 <script>
 const FIREBASE_CONFIG = {
-apiKey: "AIzaSyCLUo020Q7A9S_PCM0mti7E-0-SflNIRy8",
+apiKey: "AIzaSyCLUo02OQ7A9S_PCM0mti7E-0-SflNIRy8",
 authDomain: "see-me-now-fitness.firebaseapp.com",
 projectId: "see-me-now-fitness",
 storageBucket: "see-me-now-fitness.firebasestorage.app",
@@ -274,9 +274,8 @@ function checkLogin(){
   if(!email||!pw){ errEl.textContent='Enter both email and password'; errEl.style.display='block'; return; }
   firebase.auth().signInWithEmailAndPassword(email,pw)
     .catch(err=>{
-      errEl.textContent='Error: '+err.code+' — '+err.message;
+      errEl.textContent='Incorrect email or password';
       errEl.style.display='block';
-      console.error('Firebase Auth error:', err);
     });
   // On success, onAuthStateChanged (below) handles showing the admin app — no manual redirect needed here
 }
