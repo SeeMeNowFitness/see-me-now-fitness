@@ -104,6 +104,7 @@ a{color:var(--gold);}
 <button class="admin-tab" onclick="switchAdminTab('edit',this)">Edit Client</button>
 <button class="admin-tab" onclick="switchAdminTab('progress',this)">📈 Progress</button>
 <button class="admin-tab" onclick="switchAdminTab('meals',this)">Blueprint Meals</button>
+<button class="admin-tab" onclick="switchAdminTab('bpfoods',this)">⭐ Blueprint Foods</button>
 <button class="admin-tab" onclick="switchAdminTab('tools',this)">📋 Plan Builder</button>
 <button class="admin-tab" onclick="switchAdminTab('new',this)">+ New Client</button>
 </div>
@@ -151,7 +152,14 @@ a{color:var(--gold);}
 <div class="form-section" id="edit-contest" style="display:none;"><h3>Contest Prep Details</h3><div class="grid-3"><div class="field"><label>Competition Type</label><select id="e-competition-type"><option value="">— No countdown —</option><option value="bodybuilding">Bodybuilding</option><option value="powerlifting">Powerlifting</option><option value="lifestyle">Lifestyle Event</option><option value="goal">Personal Goal</option></select></div><div class="field"><label>Show Name</label><input type="text" id="e-show-name"></div><div class="field"><label>Federation</label><input type="text" id="e-federation" placeholder="e.g. OCB, NGA, INBA, USAPL"></div><div class="field"><label>Show Date</label><input type="date" id="e-show-date"></div></div></div>
 <div class="form-section" id="edit-inperson" style="display:none;"><h3>In-Person Sessions</h3><div class="grid-3"><div class="field"><label>Sessions Purchased</label><input type="number" id="e-sessions-purchased"></div><div class="field"><label>Sessions Used</label><input type="number" id="e-sessions-used"></div><div class="field"><label>Next Session Date</label><input type="date" id="e-next-session"></div></div></div>
 <div class="form-section" id="edit-online" style="display:none;"><h3>Check-In Settings</h3><div class="grid-2"><div class="field"><label>Check-in Streak (weeks)</label><input type="number" id="e-checkin-streak"></div><div class="field"><label>Check-in Schedule</label><select id="e-checkin-schedule"><option value="biweekly">Bi-weekly</option><option value="weekly">Weekly</option></select></div></div></div>
-<div class="form-section" id="edit-notes-sec" style="display:none;"><h3>Coach Notes</h3><div class="field"><label>Internal Notes (not visible to client)</label><textarea id="e-notes" rows="4" placeholder="Injury history, preferences, goals…"></textarea></div></div>
+<div class="form-section" id="edit-notes-sec" style="display:none;">
+<h3>Coach Notes</h3>
+<div class="field"><label>Internal Notes (not visible to client)</label><textarea id="e-notes" rows="4" placeholder="Injury history, preferences, goals…"></textarea></div>
+<div class="field" style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px;">
+<label style="color:var(--red);">⚠ Health Considerations (private — never shown in the tracker)</label>
+<textarea id="e-health-considerations" rows="5" placeholder="Known conditions, restrictions the client has reported, open questions for their care team… This is your private reference only. Do not treat this as medical guidance — verify anything critical with the client's actual doctor/dietitian."></textarea>
+</div>
+</div>
 <div class="btn-row" id="edit-save-row" style="display:none;">
 <button class="btn btn-gold" onclick="saveClient()">Save Client</button>
 <button class="btn btn-outline" onclick="switchAdminTab('clients',document.querySelectorAll('.admin-tab')[0])">Cancel</button>
@@ -196,6 +204,27 @@ a{color:var(--gold);}
 <div id="blueprint-meals-list"><div style="color:var(--muted);font-size:14px;">Loading…</div></div>
 </div>
 
+<!-- BLUEPRINT FOODS (⭐ SEE ME NOW) -->
+<div class="admin-panel" id="panel-bpfoods">
+<div class="form-section">
+<h3>Bulk Import Blueprint Foods</h3>
+<div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6;">Paste a categorized list — a category name on its own line (e.g. "PROTEINS"), followed by "• Food Name" bullets underneath. Nutrition data is pulled automatically from the USDA database per 100g — review and correct before saving. Foods already in your list are skipped automatically, and anything under a "Fast Food" category is excluded.</div>
+<div class="field"><textarea id="bpfoods-bulk-input" rows="10" placeholder="PROTEINS&#10;• Chicken Breast&#10;• Salmon&#10;&#10;VEGETABLES&#10;• Broccoli&#10;• Spinach"></textarea></div>
+<div class="btn-row"><button class="btn btn-gold" onclick="parseAndFetchBlueprintFoods()">Parse &amp; Fetch Nutrition Data</button></div>
+<div id="bpfoods-fetch-progress" style="display:none;font-size:12px;color:var(--muted);margin-top:10px;"></div>
+</div>
+
+<div class="form-section" id="bpfoods-review-section" style="display:none;">
+<h3>Review Before Saving</h3>
+<div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Values are per 100g. Fix anything that looks wrong or wasn't found before saving — this becomes what clients see in search.</div>
+<div id="bpfoods-review-table"></div>
+<div class="btn-row" style="margin-top:14px;"><button class="btn btn-gold" onclick="saveAllBlueprintFoods()">Save All to Blueprint Foods</button><span class="save-feedback" id="bpfoods-save-feedback">✓ Saved</span></div>
+</div>
+
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);margin-bottom:10px;">Existing Blueprint Foods <span id="bpfoods-count-badge" style="color:var(--gold);"></span></div>
+<div id="blueprint-foods-list"><div style="color:var(--muted);font-size:14px;">Loading…</div></div>
+</div>
+
 <!-- PLAN BUILDER TAB -->
 <div class="admin-panel" id="panel-tools">
 <div class="builder-card">
@@ -234,7 +263,7 @@ let db=null,allClients=[],selectedClientId=null;
 async function initAdmin(){
   try{firebase.initializeApp(FIREBASE_CONFIG);db=firebase.firestore();document.getElementById('firebase-status').textContent='🟢 Firebase connected';document.getElementById('firebase-status').style.color='#4caf76';}
   catch(e){document.getElementById('firebase-status').textContent='🔴 Firebase not configured';document.getElementById('firebase-status').style.color='#e05c5c';}
-  loadClients();loadBlueprintMeals();
+  loadClients();loadBlueprintMeals();loadBlueprintFoodsList();
 }
 
 async function loadClients(){
@@ -497,6 +526,7 @@ async function loadClientIntoForm(id){
   document.getElementById('e-sessions-purchased').value=client.sessions_purchased||'';document.getElementById('e-sessions-used').value=client.sessions_used||'';document.getElementById('e-next-session').value=client.next_session||'';
   document.getElementById('e-checkin-streak').value=client.checkin_streak||0;document.getElementById('e-checkin-schedule').value=client.checkin_schedule||'biweekly';
   document.getElementById('e-notes').value=client.notes||'';
+  document.getElementById('e-health-considerations').value=client.health_considerations||'';
   ['edit-form','edit-macros','edit-bmr','edit-notes-sec','edit-save-row','notify-section'].forEach(id=>document.getElementById(id).style.display='');
   updateTierFields();calcBMRPreview();
   const link=`https://seemenowfitness.github.io/see-me-now-fitness/tracker.html?client=${id}`;
@@ -550,7 +580,7 @@ function calcBMRPreview(){const w=parseFloat(document.getElementById('e-weight-l
 async function saveClient(){
   if(!selectedClientId)return;
   const tier=document.getElementById('e-tier').value;
-  const data={name:document.getElementById('e-name').value,email:document.getElementById('e-email').value,email_lower:document.getElementById('e-email').value.trim().toLowerCase(),tier,phone:document.getElementById('e-phone').value,tracking_method:currentTrackingMethod,macros:{protein:parseInt(document.getElementById('e-protein').value)||0,carbs:parseInt(document.getElementById('e-carbs').value)||0,fat:parseInt(document.getElementById('e-fat').value)||0,calories:parseInt(document.getElementById('e-calories').value)||0},macros_high:{protein:parseInt(document.getElementById('e-protein-high').value)||0,carbs:parseInt(document.getElementById('e-carbs-high').value)||0,fat:parseInt(document.getElementById('e-fat-high').value)||0,calories:parseInt(document.getElementById('e-calories-high').value)||0},macros_low:{protein:parseInt(document.getElementById('e-protein-low').value)||0,carbs:parseInt(document.getElementById('e-carbs-low').value)||0,fat:parseInt(document.getElementById('e-fat-low').value)||0,calories:parseInt(document.getElementById('e-calories-low').value)||0},high_days_per_week:currentHighDays,bmr_inputs:{weight_lbs:parseFloat(document.getElementById('e-weight-lbs').value)||0,height_cm:parseFloat(document.getElementById('e-height-cm').value)||0,age:parseInt(document.getElementById('e-age').value)||0,gender:document.getElementById('e-gender').value},notes:document.getElementById('e-notes').value,updated_at:new Date().toISOString()};
+  const data={name:document.getElementById('e-name').value,email:document.getElementById('e-email').value,email_lower:document.getElementById('e-email').value.trim().toLowerCase(),tier,phone:document.getElementById('e-phone').value,tracking_method:currentTrackingMethod,macros:{protein:parseInt(document.getElementById('e-protein').value)||0,carbs:parseInt(document.getElementById('e-carbs').value)||0,fat:parseInt(document.getElementById('e-fat').value)||0,calories:parseInt(document.getElementById('e-calories').value)||0},macros_high:{protein:parseInt(document.getElementById('e-protein-high').value)||0,carbs:parseInt(document.getElementById('e-carbs-high').value)||0,fat:parseInt(document.getElementById('e-fat-high').value)||0,calories:parseInt(document.getElementById('e-calories-high').value)||0},macros_low:{protein:parseInt(document.getElementById('e-protein-low').value)||0,carbs:parseInt(document.getElementById('e-carbs-low').value)||0,fat:parseInt(document.getElementById('e-fat-low').value)||0,calories:parseInt(document.getElementById('e-calories-low').value)||0},high_days_per_week:currentHighDays,bmr_inputs:{weight_lbs:parseFloat(document.getElementById('e-weight-lbs').value)||0,height_cm:parseFloat(document.getElementById('e-height-cm').value)||0,age:parseInt(document.getElementById('e-age').value)||0,gender:document.getElementById('e-gender').value},notes:document.getElementById('e-notes').value,health_considerations:document.getElementById('e-health-considerations').value,updated_at:new Date().toISOString()};
   if(tier==='contest_prep'){data.competition_type=document.getElementById('e-competition-type').value;data.show_name=document.getElementById('e-show-name').value;data.federation=document.getElementById('e-federation').value;data.show_date=document.getElementById('e-show-date').value;}
   if(tier==='inperson'){data.sessions_purchased=parseInt(document.getElementById('e-sessions-purchased').value)||0;data.sessions_used=parseInt(document.getElementById('e-sessions-used').value)||0;data.next_session=document.getElementById('e-next-session').value;}
   data.checkin_streak=parseInt(document.getElementById('e-checkin-streak').value)||0;data.checkin_schedule=document.getElementById('e-checkin-schedule').value;
@@ -581,6 +611,160 @@ async function loadBlueprintMeals(){
 async function saveBlueprintMeal(){const name=document.getElementById('m-name').value.trim();if(!name)return;const data={name,emoji:document.getElementById('m-emoji').value||'🥗',calories:parseInt(document.getElementById('m-calories').value)||0,protein:parseInt(document.getElementById('m-protein').value)||0,carbs:parseInt(document.getElementById('m-carbs').value)||0,fat:parseInt(document.getElementById('m-fat').value)||0,tags:document.getElementById('m-tags').value,prep_time:document.getElementById('m-preptime').value,notes:document.getElementById('m-notes').value,created_at:new Date().toISOString()};if(db)await db.collection('blueprint_meals').add(data);['m-name','m-emoji','m-calories','m-protein','m-carbs','m-fat','m-tags','m-preptime'].forEach(id=>document.getElementById(id).value='');document.getElementById('m-notes').value='';const fb=document.getElementById('meal-feedback');fb.style.display='inline';setTimeout(()=>fb.style.display='none',2000);loadBlueprintMeals();}
 
 async function deleteBlueprintMeal(id){if(!confirm('Delete this meal?'))return;if(db)await db.collection('blueprint_meals').doc(id).delete();loadBlueprintMeals();}
+
+// ── APPROVED FOODS (BULK IMPORT) ──
+const USDA_KEY_ADMIN = 'aLAQ0gLcU06f7ZeHlpt28KzKnK6TxsQ3DWFFzJve';
+let parsedFoodsBuffer = [];
+
+function parseBulkFoodText(raw){
+  const lines = raw.split('\n').map(l=>l.trim()).filter(l=>l.length);
+  const items = [];
+  let currentCategory = 'General';
+  lines.forEach(line=>{
+    const bulletMatch = line.match(/^[•\-\*]\s*(.+)/);
+    if(bulletMatch){
+      items.push({category: currentCategory, name: bulletMatch[1].trim()});
+    } else {
+      // Treat any non-bullet line as a new category header
+      currentCategory = line.replace(/:$/,'').trim();
+    }
+  });
+  // Dedupe by lowercase name — keep the first category a food appears under
+  const seen = new Map();
+  items.forEach(it=>{
+    const key = it.name.toLowerCase();
+    if(!seen.has(key)) seen.set(key, it);
+  });
+  return Array.from(seen.values());
+}
+
+async function fetchUSDANutrition(foodName){
+  try{
+    const r = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(foodName)}&pageSize=1&api_key=${USDA_KEY_ADMIN}`);
+    if(!r.ok) return null;
+    const d = await r.json();
+    const food = d.foods?.[0];
+    if(!food) return null;
+    const n = {};
+    (food.foodNutrients||[]).forEach(x=>{
+      if(x.nutrientName==='Energy') n.calories=Math.round(x.value||0);
+      if(x.nutrientName==='Protein') n.protein=Math.round(x.value||0);
+      if(x.nutrientName==='Carbohydrate, by difference') n.carbs=Math.round(x.value||0);
+      if(x.nutrientName==='Total lipid (fat)') n.fat=Math.round(x.value||0);
+    });
+    return n;
+  }catch(e){ return null; }
+}
+
+// ── BLUEPRINT FOODS (⭐ SEE ME NOW) — bulk import tool ──
+let parsedBpFoodsBuffer = [];
+
+async function parseAndFetchBlueprintFoods(){
+  const raw = document.getElementById('bpfoods-bulk-input').value;
+  if(!raw.trim()) return;
+  let items = parseBulkFoodText(raw);
+  if(!items.length) return;
+
+  // Never import anything listed under a "Fast Food" category
+  items = items.filter(it => !/fast\s*food/i.test(it.category));
+  if(!items.length) return;
+
+  // Skip anything already saved in Blueprint Foods, so bulk imports never create duplicates
+  const progressEl = document.getElementById('bpfoods-fetch-progress');
+  progressEl.style.display='block';
+  progressEl.textContent = 'Checking for existing foods…';
+  let existingNames = new Set();
+  if(db){
+    try{
+      const snap = await db.collection('blueprint_foods').get();
+      existingNames = new Set(snap.docs.map(d => (d.data().name||'').toLowerCase()));
+    }catch(e){}
+  }
+  const newItems = items.filter(it => !existingNames.has(it.name.toLowerCase()));
+  const skippedCount = items.length - newItems.length;
+
+  if(!newItems.length){
+    progressEl.textContent = `All ${skippedCount} food(s) pasted are already in your list — nothing new to add.`;
+    parsedBpFoodsBuffer = [];
+    document.getElementById('bpfoods-review-section').style.display='none';
+    return;
+  }
+
+  parsedBpFoodsBuffer = [];
+  for(let i=0;i<newItems.length;i++){
+    progressEl.textContent = `Fetching ${i+1} of ${newItems.length}: ${newItems[i].name}…`;
+    const nutrition = await fetchUSDANutrition(newItems[i].name);
+    parsedBpFoodsBuffer.push({
+      category: newItems[i].category,
+      name: newItems[i].name,
+      calories: nutrition?.calories ?? '',
+      protein: nutrition?.protein ?? '',
+      carbs: nutrition?.carbs ?? '',
+      fat: nutrition?.fat ?? '',
+      notFound: !nutrition
+    });
+  }
+  progressEl.textContent = `Done — ${parsedBpFoodsBuffer.length} new foods parsed.${skippedCount ? ` (${skippedCount} already in your list were skipped.)` : ''}`;
+  renderBpFoodsReviewTable();
+}
+
+function renderBpFoodsReviewTable(){
+  const section = document.getElementById('bpfoods-review-section');
+  const el = document.getElementById('bpfoods-review-table');
+  section.style.display='block';
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 70px 70px 70px 70px;gap:6px;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);padding:0 4px 6px;">
+      <div>Food</div><div>Category</div><div>Cals</div><div>Prot</div><div>Carbs</div><div>Fat</div>
+    </div>
+    ${parsedBpFoodsBuffer.map((f,i)=>`
+    <div style="display:grid;grid-template-columns:1.2fr 1fr 70px 70px 70px 70px;gap:6px;padding:6px 4px;border-top:1px solid var(--border);align-items:center;${f.notFound?'background:rgba(224,92,92,0.06);':''}">
+      <div style="font-size:13px;${f.notFound?'color:var(--red);':''}">${f.name}${f.notFound?' <span style="font-size:10px;">(not found — fill manually)</span>':''}</div>
+      <input type="text" value="${f.category}" oninput="parsedBpFoodsBuffer[${i}].category=this.value" style="font-size:12px;padding:5px;">
+      <input type="number" value="${f.calories}" oninput="parsedBpFoodsBuffer[${i}].calories=this.value" style="font-size:12px;padding:5px;">
+      <input type="number" value="${f.protein}" oninput="parsedBpFoodsBuffer[${i}].protein=this.value" style="font-size:12px;padding:5px;">
+      <input type="number" value="${f.carbs}" oninput="parsedBpFoodsBuffer[${i}].carbs=this.value" style="font-size:12px;padding:5px;">
+      <input type="number" value="${f.fat}" oninput="parsedBpFoodsBuffer[${i}].fat=this.value" style="font-size:12px;padding:5px;">
+    </div>`).join('')}
+  `;
+}
+
+async function saveAllBlueprintFoods(){
+  if(!db || !parsedBpFoodsBuffer.length) return;
+  const batchWrites = parsedBpFoodsBuffer.map(f => db.collection('blueprint_foods').add({
+    name: f.name,
+    cals: parseFloat(f.calories)||0,
+    protein: parseFloat(f.protein)||0,
+    carbs: parseFloat(f.carbs)||0,
+    fat: parseFloat(f.fat)||0,
+    serving: '100g',
+    servingG: 100,
+    category: f.category,
+    created_at: new Date().toISOString()
+  }));
+  await Promise.all(batchWrites);
+  parsedBpFoodsBuffer = [];
+  document.getElementById('bpfoods-bulk-input').value='';
+  document.getElementById('bpfoods-review-section').style.display='none';
+  document.getElementById('bpfoods-fetch-progress').style.display='none';
+  const fb=document.getElementById('bpfoods-save-feedback');
+  fb.style.display='inline';setTimeout(()=>fb.style.display='none',2500);
+  loadBlueprintFoodsList();
+}
+
+async function loadBlueprintFoodsList(){
+  const el=document.getElementById('blueprint-foods-list');
+  if(!el) return;
+  if(!db){el.innerHTML='<div style="color:var(--muted);">Connect Firebase to manage Blueprint Foods.</div>';return;}
+  try{
+    const snap=await db.collection('blueprint_foods').get();
+    const foods=snap.docs.map(d=>({id:d.id,...d.data()}));
+    document.getElementById('bpfoods-count-badge').textContent=`(${foods.length})`;
+    if(!foods.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0;">No Blueprint Foods yet.</div>';return;}
+    el.innerHTML=foods.map(f=>`<div class="meal-admin-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div class="meal-name">⭐ ${f.name}</div><div class="meal-macros">${f.cals} kcal · P: ${f.protein}g · C: ${f.carbs}g · F: ${f.fat}g /100g${f.category?` · <span style="color:var(--muted);">${f.category}</span>`:''}</div></div><button class="btn btn-red btn-sm" onclick="deleteBlueprintFoodItem('${f.id}')">Delete</button></div></div>`).join('');
+  }catch(e){el.innerHTML='<div style="color:var(--red);">Could not load Blueprint Foods.</div>';}
+}
+
+async function deleteBlueprintFoodItem(id){if(!confirm('Delete this food?'))return;if(db)await db.collection('blueprint_foods').doc(id).delete();loadBlueprintFoodsList();}
 
 function switchAdminTab(name,el){document.querySelectorAll('.admin-panel').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.admin-tab').forEach(t=>t.classList.remove('active'));document.getElementById('panel-'+name).classList.add('active');el.classList.add('active');}
 
