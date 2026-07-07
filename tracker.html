@@ -239,6 +239,11 @@ select option{background:var(--dark);}
       appId: "076bb653-8360-4302-910c-4834686c6564",
       safari_web_id: "web.onesignal.auto.253751a8-ac24-4181-97da-883dbdadac49",
       notifyButton: { enable: false },
+      // Site is hosted in a subdirectory (GitHub Pages project page), not the domain root —
+      // OneSignal assumes root scope by default, which silently breaks subscription registration
+      // (local permission still shows "granted" even though nothing reaches OneSignal's backend)
+      serviceWorkerParam: { scope: "/see-me-now-fitness/" },
+      serviceWorkerPath: "/see-me-now-fitness/sw.js",
       welcomeNotification: {
         title: "See Me Now Fitness",
         message: "You're subscribed to Blueprint updates from Coach Charles."
