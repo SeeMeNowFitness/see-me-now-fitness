@@ -308,20 +308,14 @@ select option{background:var(--dark);}
   <div id="greeting-quote" style="font-size:12px;color:var(--muted);margin-top:12px;font-style:italic;border-top:1px solid var(--border);padding-top:10px;"></div>
 </div>
 
-<!-- Notification Opt-In Banner (must be a real tap — Safari ignores requestPermission() called automatically) -->
-<div id="notif-banner" style="display:none;background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.04));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-    <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-      <div style="font-size:20px;flex-shrink:0;">🔔</div>
-      <div style="min-width:0;">
-        <div style="font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.08em;color:var(--white);">STAY ON TRACK</div>
-        <div style="font-size:11px;color:var(--muted);margin-top:1px;">Turn on reminders from Coach Charles</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:6px;flex-shrink:0;">
-      <button class="btn btn-gold btn-sm" id="notif-enable-btn" onclick="enableNotifications()">Enable</button>
-      <button style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px;" onclick="dismissNotifBanner()">✕</button>
-    </div>
+<!-- Notification Opt-In Modal (must be a real tap — Safari ignores requestPermission() called automatically) -->
+<div id="notif-banner" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:400;align-items:center;justify-content:center;padding:24px;">
+  <div style="width:100%;max-width:340px;background:var(--card);border:1px solid var(--gold-dim);border-radius:16px;padding:24px 20px;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,0.5);">
+    <div style="font-size:32px;margin-bottom:10px;">🔔</div>
+    <div style="font-family:'Anton',sans-serif;font-size:16px;letter-spacing:0.08em;color:var(--white);margin-bottom:6px;">STAY ON TRACK</div>
+    <div style="font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:18px;">Turn on reminders and updates from Coach Charles so you never miss a check-in.</div>
+    <button class="btn btn-gold btn-full" id="notif-enable-btn" onclick="enableNotifications()" style="margin-bottom:10px;">Enable Notifications</button>
+    <button style="background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:6px;" onclick="dismissNotifBanner()">Not now</button>
   </div>
 </div>
 
@@ -840,19 +834,16 @@ function dismissPWA(){localStorage.setItem('smn_pwa_dismissed','1');document.get
 // inside a genuine user gesture with nothing async in between, or it silently no-ops.
 async function enableNotifications(){
   const btn=document.getElementById('notif-enable-btn');
-  if(btn){btn.disabled=true;btn.textContent='…';}
-  const standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-  const notifSupported = 'Notification' in window;
-  let result = 'not attempted';
+  if(btn){btn.disabled=true;btn.textContent='Enabling…';}
   const run = async (OneSignal) => {
     try{
       await OneSignal.Notifications.requestPermission();
       const granted = await OneSignal.Notifications.permission;
-      result = granted ? 'granted' : 'not granted';
       if(granted && CLIENT_ID && CLIENT_ID!=='demo'){
+        try { await OneSignal.login(CLIENT_ID); } catch(e) {}
         await OneSignal.User.addTags({client_id:CLIENT_ID,name:(clientProfile&&clientProfile.name)||''});
       }
-    }catch(e){ result = 'error: '+(e&&e.message?e.message:e); }
+    }catch(e){}
   };
   try{
     if(window._oneSignalReady){
@@ -860,23 +851,9 @@ async function enableNotifications(){
     } else {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(run);
-      await new Promise(r=>setTimeout(r,1500));
-      if(result==='not attempted') result='OneSignal was not ready in time';
     }
-  }catch(e){ result = 'outer error: '+(e&&e.message?e.message:e); }
-  showNotifDebug('Standalone: '+standalone+'\nNotification API: '+notifSupported+'\nOneSignal ready: '+!!window._oneSignalReady+'\nResult: '+result);
-}
-// TEMPORARY DIAGNOSTIC — on-page panel instead of alert(), since alert()/confirm()/prompt()
-// are unreliable inside standalone iOS Home Screen web apps. Remove once push is confirmed working.
-function showNotifDebug(text){
-  let panel = document.getElementById('notif-debug-panel');
-  if(!panel){
-    panel = document.createElement('div');
-    panel.id = 'notif-debug-panel';
-    panel.style.cssText = 'position:fixed;top:50%;left:16px;right:16px;transform:translateY(-50%);background:#181818;border:2px solid var(--gold);border-radius:12px;padding:18px;z-index:9999;font-size:13px;line-height:1.6;color:#fff;white-space:pre-wrap;box-shadow:0 8px 30px rgba(0,0,0,0.6);';
-    document.body.appendChild(panel);
-  }
-  panel.innerHTML = text.replace(/\n/g,'<br>') + '<br><br><button style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:8px 16px;font-weight:800;cursor:pointer;" onclick="document.getElementById(\'notif-debug-panel\').remove();dismissNotifBanner();">Close</button>';
+  }catch(e){}
+  dismissNotifBanner();
 }
 function dismissNotifBanner(){localStorage.setItem('smn_notif_dismissed','1');const b=document.getElementById('notif-banner');if(b)b.style.display='none';}
 
@@ -909,13 +886,16 @@ if(CLIENT_ID && CLIENT_ID !== 'demo') {
   try {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
+      // Assign a stable External ID so the admin can target this exact client reliably —
+      // tag-based filtering alone isn't consistently reliable for Web Push subscriptions.
+      try { await OneSignal.login(CLIENT_ID); } catch(e) {}
       const permission = await OneSignal.Notifications.permission;
       if (permission) {
         // Already granted — keep tags fresh
         await OneSignal.User.addTags({ client_id: CLIENT_ID, name: clientProfile.name || '' });
       } else if (!localStorage.getItem('smn_notif_dismissed')) {
         const banner = document.getElementById('notif-banner');
-        if (banner) banner.style.display = 'block';
+        if (banner) banner.style.display = 'flex';
       }
     });
   } catch(e) {}
