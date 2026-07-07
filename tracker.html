@@ -979,7 +979,8 @@ function calcWCals(type, min) {
   return Math.round(met * weightKg * (min / 60));
 }
 function calcSCals(s,lbs){return Math.round(s*lbs*0.0005);}
-function calcBal(){const bmr=calcBMR(),wl=dayData.weight||(clientProfile?.bmr_inputs?.weight_lbs||160),sc=calcSCals(dayData.steps||0,wl),wc=dayData.workout.calories||0,tb=bmr+sc+wc,tc=dayData.meals.reduce((s,m)=>s+(m.calories||0),0);return{bmr,stepCals:sc,workoutCals:wc,totalBurned:tb,totalConsumed:tc,net:tb-tc};}
+function getWorkoutsList(){return dayData.workouts?.length?dayData.workouts:(dayData.workout?.type?[dayData.workout]:[]);}
+function calcBal(){const bmr=calcBMR(),wl=dayData.weight||(clientProfile?.bmr_inputs?.weight_lbs||160),sc=calcSCals(dayData.steps||0,wl),wc=getWorkoutsList().reduce((s,w)=>s+(w.calories||0),0),tb=bmr+sc+wc,tc=dayData.meals.reduce((s,m)=>s+(m.calories||0),0);return{bmr,stepCals:sc,workoutCals:wc,totalBurned:tb,totalConsumed:tc,net:tb-tc};}
 
 let currentDayType='high';
 function setDayType(t){
@@ -1129,7 +1130,7 @@ document.getElementById('stat-consumed').textContent=e.totalConsumed.toLocaleStr
 document.getElementById('stat-weight').textContent=dayData.weight?dayData.weight+' lbs':'—';
 document.getElementById('de-bmr').textContent=e.bmr+' kcal';
 document.getElementById('de-steps').textContent=e.stepCals+' kcal';
-document.getElementById('de-workout').textContent=e.workoutCals+(dayData.workout.calSource==='device'?' kcal (device)':' kcal');
+document.getElementById('de-workout').textContent=e.workoutCals+(getWorkoutsList().some(w=>w.calSource==='device')?' kcal (device)':' kcal');
 document.getElementById('de-total-burned').textContent=e.totalBurned+' kcal';
 document.getElementById('de-consumed').textContent=e.totalConsumed+' kcal';
 document.getElementById('de-net').textContent=(e.net>=0?'+':'')+e.net+' kcal';
@@ -1174,7 +1175,7 @@ function renderMealsTodayDetail(){
 
   // Workouts — energy breakdown card
   const wel=document.getElementById('workouts-list-today');
-  const workouts=dayData.workouts?.length?dayData.workouts:(dayData.workout?.type?[dayData.workout]:[]);
+  const workouts=getWorkoutsList();
   if(wel){
     if(!workouts.length){wel.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0;">No workouts logged today.</div>';}
     else{wel.innerHTML=workouts.map((w,i)=>`<div class="detail-line" style="align-items:flex-start;"><div><div style="font-size:13px;font-weight:700;color:var(--white);">${w.type||'Workout'}</div><div style="font-size:12px;color:var(--muted);">${w.duration?w.duration+' min':''} ${w.notes?'· '+w.notes:''}</div></div><div style="display:flex;gap:8px;align-items:center;"><span class="val">${w.calories} kcal</span><button onclick="deleteWorkout(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0;">✕</button></div></div>`).join('');}
@@ -3492,7 +3493,7 @@ function renderSupplements() {
 
     <div style="background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.03));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:16px;margin-bottom:16px;">
       <div style="font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">Coach Recommendation</div>
-      <div style="font-size:13px;color:var(--white);line-height:1.6;margin-bottom:12px;">These supplements are recommended as part of The Blueprint System. We trust <strong>NutraBio</strong> for quality and third-party tested ingredients — use code <strong style="color:var(--gold);">${NUTRABIO_CODE}</strong> to save on every order.</div>
+      <div style="font-size:13px;color:var(--white);line-height:1.6;margin-bottom:12px;">These supplements are recommended as part of The Blueprint System. We trust <a href="#" onclick="window.open(NUTRABIO_URL,'_blank');return false;" style="color:var(--gold);font-weight:700;text-decoration:none;">NutraBio</a> for quality and third-party tested ingredients — use code <strong style="color:var(--gold);">${NUTRABIO_CODE}</strong> to save on every order.</div>
       <a href="#" onclick="window.open(NUTRABIO_URL,'_blank');return false;" style="display:block;text-align:center;background:var(--gold);color:var(--black);border-radius:8px;padding:11px;font-size:13px;font-weight:800;text-decoration:none;">Shop NutraBio →</a>
     </div>
 
