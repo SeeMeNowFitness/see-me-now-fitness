@@ -2,7 +2,7 @@
   "name": "Blueprint Tracker — See Me Now Fitness",
   "short_name": "Blueprint",
   "description": "Your personal macro & fitness tracker",
-  "start_url": "/tracker.html",
+  "start_url": "./tracker.html",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#0a0a0a",
