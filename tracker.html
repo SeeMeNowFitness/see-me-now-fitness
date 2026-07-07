@@ -244,6 +244,8 @@ select option{background:var(--dark);}
         message: "You're subscribed to Blueprint updates from Coach Charles."
       }
     });
+    // Keep a direct reference — don't rely on window.OneSignal timing elsewhere in the app
+    window._oneSignalReady = OneSignal;
   });
 </script>
 </head>
@@ -834,15 +836,32 @@ function dismissPWA(){localStorage.setItem('smn_pwa_dismissed','1');document.get
 async function enableNotifications(){
   const btn=document.getElementById('notif-enable-btn');
   if(btn){btn.disabled=true;btn.textContent='…';}
-  try{
-    if(window.OneSignal && window.OneSignal.Notifications){
-      await window.OneSignal.Notifications.requestPermission();
-      const granted=await window.OneSignal.Notifications.permission;
+  const standalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+  const notifSupported = 'Notification' in window;
+  let result = 'not attempted';
+  const run = async (OneSignal) => {
+    try{
+      await OneSignal.Notifications.requestPermission();
+      const granted = await OneSignal.Notifications.permission;
+      result = granted ? 'granted' : 'not granted';
       if(granted && CLIENT_ID && CLIENT_ID!=='demo'){
-        await window.OneSignal.User.addTags({client_id:CLIENT_ID,name:(clientProfile&&clientProfile.name)||''});
+        await OneSignal.User.addTags({client_id:CLIENT_ID,name:(clientProfile&&clientProfile.name)||''});
       }
+    }catch(e){ result = 'error: '+(e&&e.message?e.message:e); }
+  };
+  try{
+    if(window._oneSignalReady){
+      await run(window._oneSignalReady);
+    } else {
+      window.OneSignalDeferred = window.OneSignalDeferred || [];
+      OneSignalDeferred.push(run);
+      // give the queued call a brief moment to resolve before reporting
+      await new Promise(r=>setTimeout(r,1500));
+      if(result==='not attempted') result='OneSignal was not ready in time';
     }
-  }catch(e){}
+  }catch(e){ result = 'outer error: '+(e&&e.message?e.message:e); }
+  // TEMPORARY DIAGNOSTIC — remove once push is confirmed working
+  alert('Notif debug:\nStandalone: '+standalone+'\nNotification API: '+notifSupported+'\nOneSignal ready: '+!!window._oneSignalReady+'\nResult: '+result);
   dismissNotifBanner();
 }
 function dismissNotifBanner(){localStorage.setItem('smn_notif_dismissed','1');const b=document.getElementById('notif-banner');if(b)b.style.display='none';}
