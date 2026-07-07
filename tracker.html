@@ -840,14 +840,14 @@ if(CLIENT_ID && CLIENT_ID !== 'demo') {
   try {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
-      const permission = await OneSignal.Notifications.permission;
+      let permission = await OneSignal.Notifications.permission;
       if (!permission) {
-        // Ask for permission after a short delay so it doesn't interrupt load
-        setTimeout(async () => {
-          try { await OneSignal.Notifications.requestPermission(); } catch(e) {}
-        }, 3000);
+        // Give the page a moment to load before prompting, then actually wait for the result
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        try { await OneSignal.Notifications.requestPermission(); } catch(e) {}
+        permission = await OneSignal.Notifications.permission;
       }
-      // Tag client with their ID so admin can target them specifically
+      // Tag client with their ID so admin can target them specifically — now happens AFTER permission resolves
       await OneSignal.User.addTags({ client_id: CLIENT_ID, name: clientProfile.name || '' });
     });
   } catch(e) {}
