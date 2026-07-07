@@ -16,6 +16,9 @@ const FIREBASE_CONFIG={apiKey:"AIzaSyCLUoO2OQ7A9S_PCM0mti7E-0-SflNIRy8",authDoma
 const SPOONACULAR_API_KEY="9dfeb2be45a740d1ade669c0e001f6ef";
 // TODO: Replace with the real Wix checkout link for the $9/mo Stand-Alone Tracker plan
 const TRACKER_UPGRADE_URL = "https://www.seemenowfitness.com/pricing";
+// NutraBio affiliate link and discount code
+const NUTRABIO_URL = "https://rstr.co/nutrabiolabs/see_me_now";
+const NUTRABIO_CODE = "SEEMENOW";
 const URL_CLIENT_ID=new URLSearchParams(window.location.search).get("client");
 const URL_EMAIL=new URLSearchParams(window.location.search).get("email");
 const STORED_CLIENT_ID=localStorage.getItem('smn_client_id');
@@ -1148,7 +1151,8 @@ if(profile.tracking_method==='zigzag'&&profile.macros_high&&profile.macros_low){
   const avgF=Math.round((profile.macros_high.fat*hd+profile.macros_low.fat*ld)/7);
   const existing=document.getElementById('weekly-avg-bar');
   const html=`<div id="weekly-avg-bar" style="margin-top:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:6px;">📊 Weekly Average (${hd} High / ${ld} Low days)</div>
+    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:2px;">📊 Weekly Target Average (${hd} High / ${ld} Low days)</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">Your blended daily target — not what you've actually eaten</div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
       <span style="font-size:13px;font-weight:800;color:var(--white);">${avgCal} <span style="font-size:11px;color:var(--muted);font-weight:400;">kcal</span></span>
       <span style="font-size:13px;font-weight:700;color:var(--muted);">P: <strong style="color:var(--white);">${avgP}g</strong></span>
@@ -3477,6 +3481,7 @@ function renderSupplements() {
         </div>
       `).join('')}
     </div>
+    <div style="font-size:11px;color:var(--muted);text-align:center;padding:10px 0 4px;">💊 We get ours from <a href="#" onclick="window.open(NUTRABIO_URL,'_blank');return false;" style="color:var(--gold);font-weight:700;text-decoration:none;">NutraBio</a> — code <strong style="color:var(--white);">${NUTRABIO_CODE}</strong> saves you a bit at checkout.</div>
     <div style="font-size:10px;color:var(--muted);line-height:1.6;padding:8px 0;">⚠️ Please consult a qualified healthcare practitioner before taking any supplements.</div>
   `;
 }
