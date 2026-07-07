@@ -506,6 +506,22 @@ async function loadProgressChart(clientId){
       <h3>Calories Logged vs. Target</h3>
       <canvas id="macro-chart" height="110"></canvas>
     </div>
+    <div class="form-section">
+      <h3>🏋️ Workout History — Last ${RANGE_DAYS} Days</h3>
+      ${(() => {
+        const workoutDays = results
+          .map(r => ({ key: r.key, workouts: r.workouts?.length ? r.workouts : (r.workout?.type ? [r.workout] : []) }))
+          .filter(r => r.workouts.length)
+          .reverse();
+        if (!workoutDays.length) return `<div style="color:var(--muted);font-size:13px;">No workouts logged in this window.</div>`;
+        return workoutDays.map(d => `
+          <div style="border-bottom:1px solid var(--border);padding:8px 0;">
+            <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:3px;">${d.key}</div>
+            ${d.workouts.map(w => `<div style="font-size:12px;color:var(--white);">${w.type || 'Workout'} — ${w.duration || 0} min · ${w.calories || 0} kcal${w.notes ? ` <span style="color:var(--muted);">(${w.notes})</span>` : ''}</div>`).join('')}
+          </div>
+        `).join('');
+      })()}
+    </div>
   `;
 
   if(weightChartInstance) weightChartInstance.destroy();
