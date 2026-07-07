@@ -837,7 +837,6 @@ async function sendClientNotification() {
   const inAppOk = await setInAppFlag(message);
 
   let pushOk = false;
-  let recipientCount = 0;
   let pushErrorDetail = '';
   try {
     const r = await fetch(PUSH_WORKER_URL, {
@@ -846,21 +845,16 @@ async function sendClientNotification() {
       body: JSON.stringify({ clientId: selectedClientId, message })
     });
     const data = await r.json();
-    recipientCount = data.recipients ?? 0;
     if (data.errors) { pushErrorDetail = Array.isArray(data.errors) ? data.errors.join(', ') : JSON.stringify(data.errors); }
-    // TEMPORARY DEBUG — remove once targeting is confirmed working
-    console.log('OneSignal raw response:', JSON.stringify(data));
-    window.__lastOneSignalResponse = data;
-    // A 200 OK from OneSignal does NOT mean it actually reached anyone — check recipients specifically
-    pushOk = r.ok && recipientCount > 0 && !pushErrorDetail;
+    // Note: OneSignal doesn't reliably return a "recipients" count for tag-filtered sends,
+    // even when delivery genuinely succeeds — so we treat a clean 200 with no errors as sent.
+    // Exact delivered-device counts are visible in OneSignal → Delivery → Sent Messages.
+    pushOk = r.ok && !pushErrorDetail;
   } catch(e) { pushOk = false; pushErrorDetail = e.message; }
 
   if (inAppOk && pushOk) {
-    fb.textContent = `✓ Sent — in-app banner set, and the push notification actually reached ${recipientCount} device${recipientCount!==1?'s':''}.`;
+    fb.textContent = '✓ Sent — in-app banner set, and the push notification request succeeded. Check OneSignal → Delivery → Sent Messages for the confirmed device count.';
     fb.style.color = '#4caf76';
-  } else if (inAppOk && recipientCount === 0 && !pushErrorDetail) {
-    fb.textContent = '⚠ In-app banner set, but the push notification reached 0 devices — this client likely hasn\'t granted notification permission in the tracker yet (or is on an iPhone using Safari without adding the tracker to their home screen).';
-    fb.style.color = '#C9A84C';
   } else if (inAppOk && pushErrorDetail) {
     fb.textContent = `⚠ In-app banner set, but the push notification failed: ${pushErrorDetail}`;
     fb.style.color = '#C9A84C';
@@ -870,12 +864,6 @@ async function sendClientNotification() {
   } else {
     fb.textContent = '✗ Failed to send.';
     fb.style.color = '#e05c5c';
-  }
-  // TEMPORARY DEBUG — shows OneSignal's raw response on-screen so we can see specific error
-  // fields (like invalid_external_user_ids) without needing dev tools. Remove once confirmed working.
-  if (window.__lastOneSignalResponse) {
-    fb.textContent += '\n\nRAW RESPONSE: ' + JSON.stringify(window.__lastOneSignalResponse);
-    fb.style.whiteSpace = 'pre-wrap';
   }
   if (inAppOk) document.getElementById('notify-message').value = '';
 }
