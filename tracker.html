@@ -2715,12 +2715,30 @@ const DEFAULT_MEAL_PLAN = [
 ];
 
 const DEFAULT_SUPPLEMENTS = [
-  { name: 'Whey Protein', dose: '1 scoop (25g protein)', timing: 'Post Workout' },
-  { name: 'Creatine Monohydrate', dose: '5g', timing: 'Daily — any time' },
-  { name: 'Multivitamin', dose: '1 tablet', timing: 'With breakfast' },
-  { name: 'Fish Oil', dose: '2 capsules (1g EPA/DHA)', timing: 'With meals' },
-  { name: 'Pre-Workout', dose: '1 scoop', timing: '20-30 min before training' },
-  { name: 'Vitamin D3', dose: '2000 IU', timing: 'With breakfast' },
+  { name: 'Whey Protein', dose: '1 scoop (25g protein)', timing: 'Post Workout', category: 'performance',
+    benefit: 'Supports muscle repair and growth after training',
+    why: 'A convenient way to hit your daily protein target, especially on training days when whole-food meals aren\'t always practical.',
+    research: 'Post-exercise protein intake supports muscle protein synthesis, particularly when whole food isn\'t immediately available.' },
+  { name: 'Creatine Monohydrate', dose: '5g', timing: 'Daily — any time', category: 'performance',
+    benefit: 'Increases strength, power output, and muscle volume',
+    why: 'One of the most well-researched supplements in sports nutrition — consistent daily use (not timing) is what drives results.',
+    research: 'Meta-analyses consistently show creatine improves strength and lean mass gains when combined with resistance training.' },
+  { name: 'Multivitamin', dose: '1 tablet', timing: 'With breakfast', category: 'foundation',
+    benefit: 'Fills micronutrient gaps to support overall health',
+    why: 'Helps cover nutrient gaps that can occur even with a well-planned diet, especially during a calorie deficit.',
+    research: 'Supported as an insurance policy against micronutrient shortfalls — not a substitute for whole foods.' },
+  { name: 'Fish Oil', dose: '2 capsules (1g EPA/DHA)', timing: 'With meals', category: 'foundation',
+    benefit: 'Reduces inflammation, supports joints and heart health',
+    why: 'Most people don\'t get enough omega-3s from diet alone — this helps close that gap for recovery and long-term health.',
+    research: 'Omega-3 fatty acids (EPA/DHA) are linked to reduced inflammation markers and improved cardiovascular health.' },
+  { name: 'Pre-Workout', dose: '1 scoop', timing: '20-30 min before training', category: 'performance',
+    benefit: 'Boosts energy, focus, and training intensity',
+    why: 'Helpful on tougher training days, but entirely optional — some clients prefer to train without stimulants.',
+    research: 'Caffeine, the primary active ingredient in most pre-workouts, has strong evidence for improving exercise performance.' },
+  { name: 'Vitamin D3', dose: '2000 IU', timing: 'With breakfast', category: 'foundation',
+    benefit: 'Supports immune function, bone health, and testosterone',
+    why: 'Many people are deficient, especially with limited sun exposure — one of the most commonly recommended standalone supplements.',
+    research: 'Vitamin D deficiency is linked to reduced strength, immune function, and hormone regulation.' },
 ];
 
 const TRACKER_BT_FOODS = {
@@ -3461,28 +3479,113 @@ function renderMealPlan() {
   }).join('');
 }
 
+function timingIcon(timing) {
+  const t = (timing || '').toLowerCase();
+  if (t.includes('workout') || t.includes('training')) return { icon: '⚡', color: '#e07c2a', label: 'Workout' };
+  if (t.includes('breakfast') || t.includes('morning')) return { icon: '☀️', color: '#C9A84C', label: 'Morning' };
+  if (t.includes('meal')) return { icon: '🍽', color: '#4c8fe0', label: 'Meals' };
+  if (t.includes('bed') || t.includes('night') || t.includes('evening')) return { icon: '🌙', color: '#8a6fe0', label: 'Night' };
+  return { icon: '🕐', color: 'var(--muted)', label: 'Anytime' };
+}
+
+function toggleSuppRow(idx) {
+  const body = document.getElementById(`supp-body-${idx}`);
+  const chev = document.getElementById(`supp-chev-${idx}`);
+  if (!body) return;
+  const open = body.classList.contains('open');
+  body.classList.toggle('open', !open);
+  if (chev) chev.classList.toggle('open', !open);
+}
+
+function suppCheckKey() {
+  return `smn_supp_check_${CLIENT_ID || 'demo'}_${todayKey()}`;
+}
+
+function getSuppChecked() {
+  try { return JSON.parse(localStorage.getItem(suppCheckKey()) || '{}'); } catch(e) { return {}; }
+}
+
+function toggleSuppCheck(name) {
+  const checked = getSuppChecked();
+  checked[name] = !checked[name];
+  localStorage.setItem(suppCheckKey(), JSON.stringify(checked));
+  renderSupplements();
+}
+
 function renderSupplements() {
   const el = document.getElementById('plan-supplements-content');
   const profile = clientProfile || {};
   const supps = profile.supplements || DEFAULT_SUPPLEMENTS;
   const isTemplate = !profile.supplements;
+  const checked = getSuppChecked();
+
+  const categoryLabels = { foundation: '🧱 Foundation', performance: '⚡ Performance', recovery: '🌱 Recovery' };
+  const grouped = {};
+  supps.forEach(s => { const cat = s.category || 'foundation'; (grouped[cat] = grouped[cat] || []).push(s); });
 
   el.innerHTML = `
     ${isTemplate ? `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">📋 <strong style="color:var(--gold);">General Recommendations</strong> — Your coach may adjust these for you.</div>` : ''}
-    <div class="card">
+
+    <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px;">Supplements don't replace nutrition — they help fill nutritional gaps and support recovery, performance, and long-term health.</div>
+
+    <div style="background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.03));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:16px;margin-bottom:16px;">
+      <div style="font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">Coach Recommendation</div>
+      <div style="font-size:13px;color:var(--white);line-height:1.6;margin-bottom:12px;">These supplements are recommended as part of The Blueprint System. We trust <strong>NutraBio</strong> for quality and third-party tested ingredients — use code <strong style="color:var(--gold);">${NUTRABIO_CODE}</strong> to save on every order.</div>
+      <a href="#" onclick="window.open(NUTRABIO_URL,'_blank');return false;" style="display:block;text-align:center;background:var(--gold);color:var(--black);border-radius:8px;padding:11px;font-size:13px;font-weight:800;text-decoration:none;">Shop NutraBio →</a>
+    </div>
+
+    <div class="card" style="margin-bottom:16px;">
+      <div style="font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;">Today's Supplements</div>
       ${supps.map(s => `
-        <div class="supp-row">
-          <div style="flex:1;">
-            <div class="supp-name">${s.name}</div>
-            <div class="supp-dose">${s.dose}</div>
-            ${s.benefit ? `<div style="font-size:11px;color:var(--muted);margin-top:3px;font-style:italic;">${s.benefit}</div>` : ''}
-          </div>
-          <div class="supp-timing">${s.timing}</div>
-        </div>
+        <label style="display:flex;align-items:center;gap:10px;padding:7px 0;cursor:pointer;">
+          <input type="checkbox" ${checked[s.name] ? 'checked' : ''} onchange="toggleSuppCheck('${s.name.replace(/'/g,"\\'")}')" style="width:18px;height:18px;accent-color:var(--gold);flex-shrink:0;">
+          <span style="font-size:13px;${checked[s.name] ? 'color:var(--muted);text-decoration:line-through;' : 'color:var(--white);'}">${s.name}</span>
+        </label>
       `).join('')}
     </div>
-    <div style="font-size:11px;color:var(--muted);text-align:center;padding:10px 0 4px;">💊 We get ours from <a href="#" onclick="window.open(NUTRABIO_URL,'_blank');return false;" style="color:var(--gold);font-weight:700;text-decoration:none;">NutraBio</a> — code <strong style="color:var(--white);">${NUTRABIO_CODE}</strong> saves you a bit at checkout.</div>
-    <div style="font-size:10px;color:var(--muted);line-height:1.6;padding:8px 0;">⚠️ Please consult a qualified healthcare practitioner before taking any supplements.</div>
+
+    <div class="card">
+      ${supps.map((s, i) => {
+        const ti = timingIcon(s.timing);
+        return `
+        <div class="supp-row-expandable" style="border-bottom:1px solid var(--border);${i === supps.length - 1 ? 'border-bottom:none;' : ''}">
+          <div onclick="toggleSuppRow(${i})" style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;cursor:pointer;">
+            <div style="flex:1;min-width:0;">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-size:13px;color:var(--green);">✔</span>
+                <span class="supp-name">NutraBio ${s.name}</span>
+                <span style="font-size:9px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--muted);background:var(--border);padding:2px 6px;border-radius:99px;">Optional</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;margin-top:3px;">
+                <span style="font-size:11px;">${ti.icon}</span>
+                <span class="supp-dose">${s.dose} · <span style="color:${ti.color};">${s.timing}</span></span>
+              </div>
+            </div>
+            <span class="chevron" id="supp-chev-${i}" style="margin-left:8px;">▼</span>
+          </div>
+          <div id="supp-body-${i}" class="detail-card-body" style="padding:0 0 14px;">
+            ${s.benefit ? `<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);margin-bottom:2px;">Benefit</div><div style="font-size:12px;color:var(--white);line-height:1.5;">${s.benefit}</div></div>` : ''}
+            ${s.why ? `<div style="margin-bottom:8px;"><div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);margin-bottom:2px;">Why Coach Charles Recommends It</div><div style="font-size:12px;color:var(--muted);line-height:1.5;">${s.why}</div></div>` : ''}
+            ${s.research ? `<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--gold);margin-bottom:2px;">Research</div><div style="font-size:12px;color:var(--muted);line-height:1.5;font-style:italic;">${s.research}</div></div>` : ''}
+            <a href="#" onclick="window.open(NUTRABIO_URL,'_blank');return false;" style="font-size:12px;font-weight:700;color:var(--gold);text-decoration:none;">Shop on NutraBio →</a>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div style="margin-top:16px;">
+      <div style="font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.1em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;">💊 Blueprint Supplement Stack</div>
+      <div class="card">
+        ${Object.keys(categoryLabels).filter(cat => grouped[cat]?.length).map(cat => `
+          <div style="margin-bottom:10px;">
+            <div style="font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">${categoryLabels[cat]}</div>
+            ${grouped[cat].map(s => `<div style="font-size:13px;color:var(--white);padding:2px 0;">✔ ${s.name}</div>`).join('')}
+          </div>
+        `).join('')}
+      </div>
+    </div>
+
+    <div style="font-size:10px;color:var(--muted);line-height:1.6;padding:12px 0 4px;">⚠️ Please consult a qualified healthcare practitioner before taking any supplements.</div>
   `;
 }
 
