@@ -301,6 +301,23 @@ select option{background:var(--dark);}
   <div id="greeting-quote" style="font-size:12px;color:var(--muted);margin-top:12px;font-style:italic;border-top:1px solid var(--border);padding-top:10px;"></div>
 </div>
 
+<!-- Notification Opt-In Banner (must be a real tap — Safari ignores requestPermission() called automatically) -->
+<div id="notif-banner" style="display:none;background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.04));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+      <div style="font-size:20px;flex-shrink:0;">🔔</div>
+      <div style="min-width:0;">
+        <div style="font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.08em;color:var(--white);">STAY ON TRACK</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:1px;">Turn on reminders from Coach Charles</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;flex-shrink:0;">
+      <button class="btn btn-gold btn-sm" id="notif-enable-btn" onclick="enableNotifications()">Enable</button>
+      <button style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:4px;" onclick="dismissNotifBanner()">✕</button>
+    </div>
+  </div>
+</div>
+
 <!-- Coach Update Banner -->
 <div id="coach-update-banner" style="display:none;background:linear-gradient(135deg,#C9A84C,#e07c2a);padding:12px 16px;margin-bottom:12px;border-radius:10px;cursor:pointer;" onclick="handleUpdateBannerTap()">
   <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -812,6 +829,24 @@ function dismissUpdateBanner() {
 
 function dismissPWA(){localStorage.setItem('smn_pwa_dismissed','1');document.getElementById('pwa-banner').style.display='none';}
 
+// Must be called directly from a tap/click handler — Safari requires requestPermission() to run
+// inside a genuine user gesture with nothing async in between, or it silently no-ops.
+async function enableNotifications(){
+  const btn=document.getElementById('notif-enable-btn');
+  if(btn){btn.disabled=true;btn.textContent='…';}
+  try{
+    if(window.OneSignal && window.OneSignal.Notifications){
+      await window.OneSignal.Notifications.requestPermission();
+      const granted=await window.OneSignal.Notifications.permission;
+      if(granted && CLIENT_ID && CLIENT_ID!=='demo'){
+        await window.OneSignal.User.addTags({client_id:CLIENT_ID,name:(clientProfile&&clientProfile.name)||''});
+      }
+    }
+  }catch(e){}
+  dismissNotifBanner();
+}
+function dismissNotifBanner(){localStorage.setItem('smn_notif_dismissed','1');const b=document.getElementById('notif-banner');if(b)b.style.display='none';}
+
 // DATE
 function todayKey(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 function keyToDate(k){return new Date(k+'T12:00:00');}
@@ -835,20 +870,20 @@ if(!CLIENT_ID||CLIENT_ID==='demo'){clientProfile={name:'Demo',tier:'tracker',mac
 else{try{clientProfile=(await fsGet(`clients/${CLIENT_ID}`))||defProfile();}catch(e){clientProfile=defProfile();}}
 applyTierUI();
 renderGreetingCard();
-// OneSignal — tag this client so we can send them targeted notifications
+// OneSignal — check permission status. Actual requestPermission() must fire from a real tap
+// (see enableNotifications()) — Safari silently ignores it if called automatically on load/timer.
 if(CLIENT_ID && CLIENT_ID !== 'demo') {
   try {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     OneSignalDeferred.push(async function(OneSignal) {
-      let permission = await OneSignal.Notifications.permission;
-      if (!permission) {
-        // Give the page a moment to load before prompting, then actually wait for the result
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        try { await OneSignal.Notifications.requestPermission(); } catch(e) {}
-        permission = await OneSignal.Notifications.permission;
+      const permission = await OneSignal.Notifications.permission;
+      if (permission) {
+        // Already granted — keep tags fresh
+        await OneSignal.User.addTags({ client_id: CLIENT_ID, name: clientProfile.name || '' });
+      } else if (!localStorage.getItem('smn_notif_dismissed')) {
+        const banner = document.getElementById('notif-banner');
+        if (banner) banner.style.display = 'block';
       }
-      // Tag client with their ID so admin can target them specifically — now happens AFTER permission resolves
-      await OneSignal.User.addTags({ client_id: CLIENT_ID, name: clientProfile.name || '' });
     });
   } catch(e) {}
   // Check for coach update notification
