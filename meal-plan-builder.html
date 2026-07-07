@@ -336,7 +336,7 @@ Enable Flex Dieting for this client
 let db=null,allClients=[],selectedClient=null,meals=[],supplements=[],approvedFoods={protein:[],carbs:[],fats:[]},currentAFTab='protein',searchTimers={};
 
 // ── MEAL DEFAULTS ──
-const MEAL_NAMES={3:['Meal 1 — Breakfast','Meal 2 — Lunch','Meal 3 — Dinner'],4:['Meal 1 — Breakfast','Meal 2 — Lunch','Meal 3 — Pre Workout','Meal 4 — Dinner'],5:['Meal 1 — Breakfast','Meal 2 — Mid Morning','Meal 3 — Lunch','Meal 4 — Pre Workout','Meal 5 — Dinner'],6:['Meal 1 — Breakfast','Meal 2 — Mid Morning','Meal 3 — Lunch','Meal 4 — Pre Workout','Meal 5 — Post Workout','Meal 6 — Dinner']};
+const MEAL_NAMES={3:['Meal 1','Meal 2','Meal 3'],4:['Meal 1','Meal 2','Meal 3','Meal 4'],5:['Meal 1','Meal 2','Meal 3','Meal 4','Meal 5'],6:['Meal 1','Meal 2','Meal 3','Meal 4','Meal 5','Meal 6']};
 const MEAL_TIMES={3:['7:00 AM','12:00 PM','7:00 PM'],4:['7:00 AM','12:00 PM','4:00 PM','7:00 PM'],5:['7:00 AM','10:00 AM','1:00 PM','4:00 PM','7:00 PM'],6:['7:00 AM','10:00 AM','1:00 PM','4:00 PM','6:30 PM','9:00 PM']};
 
 // ── SUPPLEMENT DATA ──
@@ -990,7 +990,7 @@ function updateBlueprintFoodCalc(mi,fi,val){
   }
   updateTotals();
 }
-function getMealCals(mi){return Math.round(meals[mi].foods.reduce((s,f)=>s+(f.cals||0),0));}
+function getMealCals(mi){return Math.round(meals[mi].foods.reduce((s,f)=>s+((f.protein||0)*4+(f.carbs||0)*4+(f.fat||0)*9),0));}
 function getMealMacro(mi,key){return Math.round(meals[mi].foods.reduce((s,f)=>s+(f[key]||0),0)*10)/10;}
 function recalcFoodCals(mi,fi){
   const f=meals[mi].foods[fi];
