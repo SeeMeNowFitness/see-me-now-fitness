@@ -172,10 +172,10 @@ a{color:var(--gold);}
 <div id="notify-section" style="display:none;margin-top:16px;background:#1a1a1a;border:1px solid #333;border-radius:10px;padding:14px;">
 <div style="font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.1em;color:#C9A84C;margin-bottom:10px;">📱 SEND CLIENT NOTIFICATION</div>
 <div class="field" style="margin-bottom:10px;">
-  <label>Message (shown as in-app banner when client opens tracker)</label>
+  <label>Message (sent as a real push notification + shown as an in-app banner next time they open the tracker)</label>
   <input type="text" id="notify-message" placeholder="e.g. Your meal plan has been updated — check My Plan!" style="width:100%;">
 </div>
-<button class="btn btn-gold" onclick="sendClientNotification()" style="width:100%;">📋 Send In-App Banner</button>
+<button class="btn btn-gold" onclick="sendClientNotification()" style="width:100%;">📲 Send Notification</button>
 <span class="save-feedback" id="notify-feedback" style="display:block;margin-top:6px;"></span>
 </div>
 <div id="tracker-link-section" style="display:none;margin-top:20px;">
@@ -824,16 +824,51 @@ async function setInAppFlag(message) {
   } catch(e) { return false; }
 }
 
+// TODO: replace with your deployed Cloudflare Worker URL once created
+const PUSH_WORKER_URL = 'https://floral-wave-4115.seemenowfitness.workers.dev/';
+
 async function sendClientNotification() {
   const message = document.getElementById('notify-message').value.trim();
   const fb = document.getElementById('notify-feedback');
   if (!message) { fb.textContent = 'Enter a message first.'; fb.style.color = '#e05c5c'; fb.style.display = 'block'; return; }
   if (!selectedClientId) { fb.textContent = 'No client selected.'; fb.style.color = '#e05c5c'; fb.style.display = 'block'; return; }
   fb.textContent = 'Sending…'; fb.style.color = '#C9A84C'; fb.style.display = 'block';
-  const ok = await setInAppFlag(message);
-  fb.textContent = ok ? '✓ In-app banner set — client will see it next time they open the tracker.' : '✗ Failed.';
-  fb.style.color = ok ? '#4caf76' : '#e05c5c';
-  if (ok) document.getElementById('notify-message').value = '';
+
+  const inAppOk = await setInAppFlag(message);
+
+  let pushOk = false;
+  let recipientCount = 0;
+  let pushErrorDetail = '';
+  try {
+    const r = await fetch(PUSH_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId: selectedClientId, message })
+    });
+    const data = await r.json();
+    recipientCount = data.recipients ?? 0;
+    if (data.errors) { pushErrorDetail = Array.isArray(data.errors) ? data.errors.join(', ') : JSON.stringify(data.errors); }
+    // A 200 OK from OneSignal does NOT mean it actually reached anyone — check recipients specifically
+    pushOk = r.ok && recipientCount > 0 && !pushErrorDetail;
+  } catch(e) { pushOk = false; pushErrorDetail = e.message; }
+
+  if (inAppOk && pushOk) {
+    fb.textContent = `✓ Sent — in-app banner set, and the push notification actually reached ${recipientCount} device${recipientCount!==1?'s':''}.`;
+    fb.style.color = '#4caf76';
+  } else if (inAppOk && recipientCount === 0 && !pushErrorDetail) {
+    fb.textContent = '⚠ In-app banner set, but the push notification reached 0 devices — this client likely hasn\'t granted notification permission in the tracker yet (or is on an iPhone using Safari without adding the tracker to their home screen).';
+    fb.style.color = '#C9A84C';
+  } else if (inAppOk && pushErrorDetail) {
+    fb.textContent = `⚠ In-app banner set, but the push notification failed: ${pushErrorDetail}`;
+    fb.style.color = '#C9A84C';
+  } else if (inAppOk && !pushOk) {
+    fb.textContent = '⚠ In-app banner set, but the push notification request itself failed — check the Worker is deployed and reachable.';
+    fb.style.color = '#C9A84C';
+  } else {
+    fb.textContent = '✗ Failed to send.';
+    fb.style.color = '#e05c5c';
+  }
+  if (inAppOk) document.getElementById('notify-message').value = '';
 }
 
 async function sendInAppOnly() {
