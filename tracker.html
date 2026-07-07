@@ -855,14 +855,23 @@ async function enableNotifications(){
     } else {
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(run);
-      // give the queued call a brief moment to resolve before reporting
       await new Promise(r=>setTimeout(r,1500));
       if(result==='not attempted') result='OneSignal was not ready in time';
     }
   }catch(e){ result = 'outer error: '+(e&&e.message?e.message:e); }
-  // TEMPORARY DIAGNOSTIC — remove once push is confirmed working
-  alert('Notif debug:\nStandalone: '+standalone+'\nNotification API: '+notifSupported+'\nOneSignal ready: '+!!window._oneSignalReady+'\nResult: '+result);
-  dismissNotifBanner();
+  showNotifDebug('Standalone: '+standalone+'\nNotification API: '+notifSupported+'\nOneSignal ready: '+!!window._oneSignalReady+'\nResult: '+result);
+}
+// TEMPORARY DIAGNOSTIC — on-page panel instead of alert(), since alert()/confirm()/prompt()
+// are unreliable inside standalone iOS Home Screen web apps. Remove once push is confirmed working.
+function showNotifDebug(text){
+  let panel = document.getElementById('notif-debug-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.id = 'notif-debug-panel';
+    panel.style.cssText = 'position:fixed;top:50%;left:16px;right:16px;transform:translateY(-50%);background:#181818;border:2px solid var(--gold);border-radius:12px;padding:18px;z-index:9999;font-size:13px;line-height:1.6;color:#fff;white-space:pre-wrap;box-shadow:0 8px 30px rgba(0,0,0,0.6);';
+    document.body.appendChild(panel);
+  }
+  panel.innerHTML = text.replace(/\n/g,'<br>') + '<br><br><button style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:8px 16px;font-weight:800;cursor:pointer;" onclick="document.getElementById(\'notif-debug-panel\').remove();dismissNotifBanner();">Close</button>';
 }
 function dismissNotifBanner(){localStorage.setItem('smn_notif_dismissed','1');const b=document.getElementById('notif-banner');if(b)b.style.display='none';}
 
