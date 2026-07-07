@@ -1060,7 +1060,7 @@ function renderGreetingCard() {
   // Time-based greeting
   const hour = new Date().getHours();
   const timeLabel = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
-  const firstName = (clientProfile.name || 'Champion').split(' ')[0];
+  const firstName = (clientProfile.nickname || clientProfile.name || 'Champion').split(' ')[0];
   document.getElementById('greeting-time').textContent = timeLabel;
   document.getElementById('greeting-name').textContent = firstName + ' 👊';
 
