@@ -336,8 +336,7 @@ Enable Flex Dieting for this client
 let db=null,allClients=[],selectedClient=null,meals=[],supplements=[],approvedFoods={protein:[],carbs:[],fats:[]},currentAFTab='protein',searchTimers={};
 
 // ── MEAL DEFAULTS ──
-const MEAL_NAMES={3:['Meal 1','Meal 2','Meal 3'],4:['Meal 1','Meal 2','Meal 3','Meal 4'],5:['Meal 1','Meal 2','Meal 3','Meal 4','Meal 5'],6:['Meal 1','Meal 2','Meal 3','Meal 4','Meal 5','Meal 6']};
-const MEAL_TIMES={3:['7:00 AM','12:00 PM','7:00 PM'],4:['7:00 AM','12:00 PM','4:00 PM','7:00 PM'],5:['7:00 AM','10:00 AM','1:00 PM','4:00 PM','7:00 PM'],6:['7:00 AM','10:00 AM','1:00 PM','4:00 PM','6:30 PM','9:00 PM']};
+const MEAL_NAMES={3:['Breakfast','Meal 2','Dinner'],4:['Breakfast','Meal 2','Meal 3','Dinner'],5:['Breakfast','Meal 2','Meal 3','Meal 4','Dinner'],6:['Breakfast','Meal 2','Meal 3','Meal 4','Meal 5','Dinner']};
 
 // ── SUPPLEMENT DATA ──
 const SUPP_BENEFITS={
@@ -368,8 +367,8 @@ const SUPP_BENEFITS={
   'Casein Protein':'Slow-digesting protein ideal for overnight recovery. Take before bed.',
   'CoQ10':'Supports cellular energy production and heart health. Beneficial during intense training phases.',
 };
-const DEFAULT_SUPPLEMENTS=[{name:'Whey Protein',dose:'1 scoop (25g protein)',timing:'Post Workout',benefit:'Supports muscle repair and growth after training'},{name:'Creatine Monohydrate',dose:'5g',timing:'Daily — any time',benefit:'Increases strength, power output, and muscle volume'},{name:'Multivitamin',dose:'1 tablet',timing:'With breakfast',benefit:'Fills micronutrient gaps to support overall health'},{name:'Fish Oil',dose:'2 capsules',timing:'With meals',benefit:'Reduces inflammation, supports joints and heart health'},{name:'Vitamin D3',dose:'2000 IU',timing:'With breakfast',benefit:'Supports immune function, bone health, and testosterone'}];
-const TIMING_OPTIONS=['Pre Workout','Post Workout','With breakfast','With meals','Before bed','Daily — any time','Morning','Evening'];
+const DEFAULT_SUPPLEMENTS=[{name:'Whey Protein',dose:'1 scoop (25g protein)',timing:'Post Workout',benefit:'Supports muscle repair and growth after training'},{name:'Creatine Monohydrate',dose:'5g',timing:'Daily — any time',benefit:'Increases strength, power output, and muscle volume'},{name:'Multivitamin',dose:'1 tablet',timing:'With breakfast',benefit:'Fills micronutrient gaps to support overall health'},{name:'Fish Oil',dose:'2 capsules',timing:'With meals',benefit:'Reduces inflammation, supports joints and heart health'},{name:'Vitamin D3',dose:'2000 IU',timing:'With breakfast',benefit:'Supports immune function, bone health, and testosterone'},{name:'Electrolytes',dose:'1 packet or scoop',timing:'Intra-Workout',benefit:'Replaces sodium, potassium, and other minerals lost through sweat — supports hydration, performance, and reduces cramping'}];
+const TIMING_OPTIONS=['Pre Workout','Intra-Workout','Post Workout','With Largest Meal','With Meal 1','With Meal 2','With Meal 3','With Meal 4','With Meal 5','With Meal 6','With breakfast','With meals','Before bed','Daily — any time','Morning','Evening'];
 
 // ── BLOOD TYPE FOODS ──
 const BT_FOODS={
@@ -704,7 +703,6 @@ function loadExistingPlan(plan){
   document.getElementById('meal-count').value=Math.min(6,Math.max(3,count));
   meals=plan.map(m=>({
     name:m.name,
-    time:m.time,
     foods:(m.foods||[]).map(f=>({
       ...f,
       unit: f.unit || 'g',
@@ -724,7 +722,7 @@ function loadExistingPlan(plan){
 }
 
 // ── MEALS ──
-function initMeals(count){const names=MEAL_NAMES[count]||MEAL_NAMES[5];const times=MEAL_TIMES[count]||MEAL_TIMES[5];meals=Array.from({length:count},(_,i)=>({name:names[i],time:times[i],foods:[]}));renderMeals();updateTotals();}
+function initMeals(count){const names=MEAL_NAMES[count]||MEAL_NAMES[5];meals=Array.from({length:count},(_,i)=>({name:names[i],foods:[]}));renderMeals();updateTotals();}
 function onMealCountChange(){initMeals(parseInt(document.getElementById('meal-count').value));}
 function clearPlan(){if(!confirm('Clear all meals?'))return;initMeals(parseInt(document.getElementById('meal-count').value));}
 
@@ -743,9 +741,8 @@ function renderMeals(){
         </div>
       </div>
       <div class="meal-card-body" id="meal-body-${mi}" style="display:${openMeals.has(mi)?'block':'none'};">
-        <div class="grid-2" style="margin-bottom:12px;">
+        <div style="margin-bottom:12px;">
           <div class="field" style="margin-bottom:0;"><label>Meal Name</label><input type="text" value="${meal.name}" oninput="meals[${mi}].name=this.value;this.closest('.meal-builder-card').querySelector('h4').textContent='🍽 '+this.value;"></div>
-          <div class="field" style="margin-bottom:0;"><label>Time</label><input type="text" value="${meal.time}" oninput="meals[${mi}].time=this.value;"></div>
         </div>
         <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">Search & Add Food (USDA Auto-fill)</div>
         <div class="food-search-wrap">
@@ -883,7 +880,6 @@ function copyCurrentToOtherDay() {
   // Deep copy current meals into the other day's slot on selectedClient
   const copiedPlan = meals.map(meal => ({
     name: meal.name,
-    time: meal.time,
     foods: meal.foods.map(f => ({ ...f }))
   }));
 
@@ -2335,7 +2331,7 @@ async function savePlan() {
   if (!selectedClient) { alert('Please select a client first.'); return; }
   const planType = document.getElementById('plan-type').value;
   const planData = meals.map(meal => ({
-    name: meal.name, time: meal.time,
+    name: meal.name,
     foods: meal.foods.map(f => ({
       name: f.name,
       amount: f.amount || '100',

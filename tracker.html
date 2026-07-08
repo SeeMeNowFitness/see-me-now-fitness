@@ -2847,6 +2847,10 @@ const DEFAULT_SUPPLEMENTS = [
     benefit: 'Supports immune function, bone health, and testosterone',
     why: 'Many people are deficient, especially with limited sun exposure — one of the most commonly recommended standalone supplements.',
     research: 'Vitamin D deficiency is linked to reduced strength, immune function, and hormone regulation.' },
+  { name: 'Electrolytes', dose: '1 packet or scoop', timing: 'Intra-Workout', category: 'performance',
+    benefit: 'Replaces sodium, potassium, and other minerals lost through sweat',
+    why: 'Supports hydration and performance during longer or more intense training sessions, and can help reduce cramping.',
+    research: 'Sodium and other electrolytes lost through sweat play a key role in fluid balance, muscle function, and endurance performance.' },
 ];
 
 const TRACKER_BT_FOODS = {
@@ -3541,7 +3545,6 @@ function renderMealPlan() {
       <div class="meal-plan-card-header" onclick="togglePlanCard('meal-${i}')">
         <div>
           <div class="meal-title">${getMealDisplayName(meal, i)}</div>
-          <div style="font-size:11px;color:var(--muted);margin-top:2px;">${meal.time || ''}</div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <div class="meal-cals">${totalCal} kcal</div>
@@ -3884,7 +3887,6 @@ function generateMealPlanPDF() {
         <div class="pdf-meal-header">
           <div>
             <div class="pdf-meal-name">${displayName}</div>
-            ${meal.time ? `<div class="pdf-meal-time">${meal.time}</div>` : ''}
           </div>
           <div class="pdf-meal-cals">${totalCal} kcal</div>
         </div>
