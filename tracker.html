@@ -979,16 +979,6 @@ function calcSCals(s,lbs){return Math.round(s*lbs*0.0005);}
 function getWorkoutsList(){return dayData.workouts?.length?dayData.workouts:(dayData.workout?.type?[dayData.workout]:[]);}
 function calcBal(){const bmr=calcBMR(),wl=dayData.weight||(clientProfile?.bmr_inputs?.weight_lbs||160),sc=calcSCals(dayData.steps||0,wl),wc=getWorkoutsList().reduce((s,w)=>s+(w.calories||0),0),tb=bmr+sc+wc,tc=dayData.meals.reduce((s,m)=>s+(m.calories||0),0);return{bmr,stepCals:sc,workoutCals:wc,totalBurned:tb,totalConsumed:tc,net:tb-tc};}
 
-function showNotifDebugPanel2(text){
-  let panel = document.getElementById('daytype-debug-panel');
-  if(!panel){
-    panel = document.createElement('div');
-    panel.id = 'daytype-debug-panel';
-    panel.style.cssText = 'position:fixed;top:50%;left:16px;right:16px;transform:translateY(-50%);background:#181818;border:2px solid var(--gold);border-radius:12px;padding:18px;z-index:9999;font-size:11px;line-height:1.6;color:#fff;white-space:pre-wrap;box-shadow:0 8px 30px rgba(0,0,0,0.6);word-break:break-all;max-height:80vh;overflow-y:auto;';
-    document.body.appendChild(panel);
-  }
-  panel.innerHTML = text.replace(/\n/g,'<br>') + '<br><br><button style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:8px 16px;font-weight:800;cursor:pointer;" onclick="document.getElementById(\'daytype-debug-panel\').remove();">Close</button>';
-}
 let currentDayType='high';
 function setDayType(t){
   currentDayType=t;
@@ -1002,8 +992,6 @@ function setDayType(t){
     dayData.target_day_type = t;
     saveDay();
   }
-  // TEMPORARY DIAGNOSTIC — remove once the High/Low toggle bug is confirmed fixed
-  showNotifDebugPanel2(`setDayType(${t}) called.\ntracking_method: ${profile.tracking_method}\nmacros_high.calories: ${profile.macros_high?.calories}\nmacros_low.calories: ${profile.macros_low?.calories}\ndayData.target_macros.calories AFTER assignment: ${dayData.target_macros?.calories}\ngetMacros() result RIGHT NOW: ${JSON.stringify(getMacros())}`);
   const h=document.getElementById('zz-high'),l=document.getElementById('zz-low');
   if(t==='high'){
     h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
@@ -1754,11 +1742,23 @@ function submitManualBarcode(){
   if(code)lookupBarcode(code);
 }
 function closeBarcodeScanner(){document.getElementById('barcode-overlay').style.display='none';if(barcodeReader){try{barcodeReader.reset();}catch(e){}barcodeReader=null;}if(barcodeStream){try{barcodeStream.getTracks?.().forEach(t=>t.stop());}catch(e){}barcodeStream=null;}}
-async function lookupBarcode(barcode){const el=document.getElementById('food-search-results');el.innerHTML=`<div class="loading">Looking up barcode ${barcode}…</div>`;try{const r=await fetch(`https://api.spoonacular.com/food/products/upc/${barcode}?apiKey=${SPOONACULAR_API_KEY}`);if(r.ok){const d=await r.json();const n=d.nutrition?.nutrients||[];const g=nm=>Math.round(n.find(x=>x.name===nm)?.amount||0);const cals=g('Calories'),p=g('Protein'),c=g('Carbohydrates'),f=g('Fat');
+async function lookupBarcode(barcode){const el=document.getElementById('food-search-results');el.innerHTML=`<div class="loading">Looking up barcode ${barcode}…</div>`;try{const r=await fetch(`https://api.spoonacular.com/food/products/upc/${barcode}?apiKey=${SPOONACULAR_API_KEY}`);if(r.ok){const d=await r.json();const n=d.nutrition?.nutrients||[];const g=nm=>n.find(x=>x.name===nm)?.amount||0;const rawCals=g('Calories'),rawP=g('Protein'),rawC=g('Carbohydrates'),rawF=g('Fat');
+  // Spoonacular reports nutrition per the product's actual serving size (d.servingSize),
+  // NOT per 100g — but the rest of the app always assumes per-100g for scaling. Normalize
+  // here using Spoonacular's own reported serving weight, or these numbers silently undercount
+  // (or overcount) for any serving size that isn't coincidentally exactly 100g.
+  const servingG = parseFloat(d.servingSize)||0;
+  const servingUnit = (d.servingSizeUnit||'g').toLowerCase();
+  let cals=rawCals,p=rawP,c=rawC,f=rawF;
+  if(servingG>0 && (servingUnit==='g'||servingUnit==='grams'||servingUnit==='gram')){
+    const factor=100/servingG;
+    cals=rawCals*factor; p=rawP*factor; c=rawC*factor; f=rawF*factor;
+  }
+  cals=Math.round(cals);p=Math.round(p*10)/10;c=Math.round(c*10)/10;f=Math.round(f*10)/10;
   // Only accept this match if it actually has usable macro data — Spoonacular sometimes
   // matches a product name but returns an empty nutrition profile, which used to show
   // as a real result with all-zero macros instead of falling back to OpenFoodFacts.
-  if(cals>0||p>0||c>0||f>0){showBarcodeResult(d.title||'Scanned Product',cals,p,c,f,d.servingSize);return;}}}catch(e){}try{const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);const d=await r.json();if(d.status===1&&d.product){const p=d.product,n=p.nutriments||{};showBarcodeResult(p.product_name||'Scanned Product',Math.round(n['energy-kcal_100g']||0),Math.round(n['proteins_100g']||0),Math.round(n['carbohydrates_100g']||0),Math.round(n['fat_100g']||0),p.serving_size||'100g');}else{el.innerHTML=`<div class="empty-state"><div class="icon">🔍</div><h4>Product not found</h4><p>This barcode isn't in our database yet.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;}}catch(e){el.innerHTML=`<div class="empty-state"><div class="icon">📦</div><h4>Could not look up barcode</h4><p>Check your connection, or enter the macros manually.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;}}
+  if(cals>0||p>0||c>0||f>0){showBarcodeResult(d.title||'Scanned Product',cals,p,c,f,'/100g');return;}}}catch(e){}try{const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);const d=await r.json();if(d.status===1&&d.product){const p=d.product,n=p.nutriments||{};showBarcodeResult(p.product_name||'Scanned Product',Math.round(n['energy-kcal_100g']||0),Math.round(n['proteins_100g']||0),Math.round(n['carbohydrates_100g']||0),Math.round(n['fat_100g']||0),'/100g');}else{el.innerHTML=`<div class="empty-state"><div class="icon">🔍</div><h4>Product not found</h4><p>This barcode isn't in our database yet.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;}}catch(e){el.innerHTML=`<div class="empty-state"><div class="icon">📦</div><h4>Could not look up barcode</h4><p>Check your connection, or enter the macros manually.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;}}
 function showBarcodeResult(name,cals,p,c,f,serving){const el=document.getElementById('food-search-results'),dn=name.length>40?name.slice(0,40)+'…':name;el.innerHTML=`<div style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">✓ Barcode scanned</div><div class="food-result"><div class="food-result-img">📦</div><div class="food-result-info"><div class="food-result-name">${dn}</div><div class="food-result-macros">${cals} kcal${serving?' · '+serving:'/100g'} &nbsp;·&nbsp; P:<span>${p}g</span> C:<span>${c}g</span> F:<span>${f}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${name.replace(/'/g,"\\'")}',${cals},${p},${c},${f})">Add</button></div>`;}
 
 // ── CUSTOM FOOD ENTRY (manual macros when food can't be found) ──
