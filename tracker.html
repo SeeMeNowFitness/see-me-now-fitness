@@ -645,7 +645,7 @@ select option{background:var(--dark);}
 <div id="workout-cal-preview" style="font-size:11px;color:var(--muted);margin-top:4px;margin-bottom:2px;min-height:16px;"></div>
 <div style="font-size:11px;color:var(--muted);margin-bottom:2px;">💡 Got an Apple Watch or Fitbit? Enter your device's number above for more accurate tracking.</div>
 <label>Notes (optional)</label>
-<input type="text" id="workout-notes" placeholder="e.g. Legs day, felt strong">
+<textarea id="workout-notes" rows="4" placeholder="e.g.&#10;Squats: 3x8 @ 185lbs&#10;Bench: 3x10 @ 135lbs&#10;Felt strong today" style="width:100%;resize:vertical;"></textarea>
 <div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-workout')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWorkout()">Save</button></div>
 </div></div>
 
@@ -1178,7 +1178,7 @@ function renderMealsTodayDetail(){
   const workouts=getWorkoutsList();
   if(wel){
     if(!workouts.length){wel.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0;">No workouts logged today.</div>';}
-    else{wel.innerHTML=workouts.map((w,i)=>`<div class="detail-line" style="align-items:flex-start;"><div><div style="font-size:13px;font-weight:700;color:var(--white);">${w.type||'Workout'}</div><div style="font-size:12px;color:var(--muted);">${w.duration?w.duration+' min':''} ${w.notes?'· '+w.notes:''}</div></div><div style="display:flex;gap:8px;align-items:center;"><span class="val">${w.calories} kcal</span><button onclick="deleteWorkout(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0;">✕</button></div></div>`).join('');}
+    else{wel.innerHTML=workouts.map((w,i)=>`<div class="detail-line" style="align-items:flex-start;"><div><div style="font-size:13px;font-weight:700;color:var(--white);">${w.type||'Workout'}</div><div style="font-size:12px;color:var(--muted);">${w.duration?w.duration+' min':''}</div>${w.notes?`<div style="font-size:12px;color:var(--muted);white-space:pre-line;margin-top:2px;">${w.notes}</div>`:''}</div><div style="display:flex;gap:8px;align-items:center;"><span class="val">${w.calories} kcal</span><button onclick="deleteWorkout(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0;">✕</button></div></div>`).join('');}
   }
 
   // Workouts — Log tab section
@@ -1197,7 +1197,7 @@ function renderMealsTodayDetail(){
               <button onclick="deleteWorkout(${i})" class="delete-btn">✕</button>
             </div>
           </div>
-          ${w.notes?`<div style="font-size:12px;color:var(--muted);margin-top:2px;">${w.notes}</div>`:''}
+          ${w.notes?`<div style="font-size:12px;color:var(--muted);margin-top:2px;white-space:pre-line;">${w.notes}</div>`:''}
         </div>`).join('');
     }
   }
@@ -2417,7 +2417,7 @@ if(hasW)buildChart('chart-weight','line',labels,[{data:wData,borderColor:'#C9A84
 buildChart('chart-macros','bar',labels,[{data:history.map(h=>h.protein>0?Math.min(120,Math.round(h.protein/target.protein*100)):null),backgroundColor:'#C9A84C',label:'Protein %'},{data:history.map(h=>h.calories>0?Math.min(120,Math.round(h.calories/target.calories*100)):null),backgroundColor:'#4c8fe0',label:'Calories %'}],{...cd,plugins:{legend:{display:true,labels:{color:'#888',font:{size:10},boxWidth:12}}},scales:{...cd.scales,y:{...cd.scales.y,max:120,ticks:{...cd.scales.y.ticks,callback:v=>v+'%'}}}});
 buildChart('chart-steps','bar',labels,[{data:history.map(h=>h.steps||0),backgroundColor:history.map(h=>h.steps>=10000?'#4caf76':'#4c8fe0')}],cd);
 const he=document.getElementById('energy-history-list');
-he.innerHTML=history.slice().reverse().map(h=>{const workoutLine=h.workouts&&h.workouts.length?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">${h.workouts.map(w=>`<div style="font-size:11px;color:var(--muted);">🏋️ ${w.type||'Workout'} — ${w.duration||0} min · ${w.calories||0} kcal</div>`).join('')}</div>`:'';if(!h.calories)return`<div class="card" style="margin-bottom:8px;opacity:0.5;"><div class="row-between"><div style="font-size:13px;font-weight:700;">${friendlyDate(h.key)}</div><div style="font-size:12px;color:var(--muted);">Not logged</div></div>${workoutLine}</div>`;const zone=h.calories<target.calories*0.95?'deficit':h.calories>target.calories*1.05?'surplus':'maintenance';const zc={deficit:'var(--green)',maintenance:'var(--gold)',surplus:'var(--red)'};const zl={deficit:'↓ Deficit',maintenance:'= Maintenance',surplus:'↑ Surplus'};return`<div class="card" style="margin-bottom:8px;"><div class="row-between" style="margin-bottom:6px;"><div style="font-size:13px;font-weight:700;">${friendlyDate(h.key)}</div><div style="font-size:12px;font-weight:800;color:${zc[zone]}">${zl[zone]}</div></div><div style="display:flex;gap:16px;flex-wrap:wrap;"><span style="font-size:12px;color:var(--white);font-weight:700;">${h.calories.toLocaleString()} kcal</span><span style="font-size:12px;color:var(--muted);">P: ${Math.round(h.protein)}g</span><span style="font-size:12px;color:var(--muted);">C: ${Math.round(h.carbs)}g</span><span style="font-size:12px;color:var(--muted);">F: ${Math.round(h.fat)}g</span></div>${workoutLine}</div>`;}).join('');
+he.innerHTML=history.slice().reverse().map(h=>{const workoutLine=h.workouts&&h.workouts.length?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">${h.workouts.map(w=>`<div style="font-size:11px;color:var(--muted);">🏋️ ${w.type||'Workout'} — ${w.duration||0} min · ${w.calories||0} kcal${w.notes?`<div style="white-space:pre-line;margin-top:2px;">${w.notes}</div>`:''}</div>`).join('')}</div>`:'';if(!h.calories)return`<div class="card" style="margin-bottom:8px;opacity:0.5;"><div class="row-between"><div style="font-size:13px;font-weight:700;">${friendlyDate(h.key)}</div><div style="font-size:12px;color:var(--muted);">Not logged</div></div>${workoutLine}</div>`;const zone=h.calories<target.calories*0.95?'deficit':h.calories>target.calories*1.05?'surplus':'maintenance';const zc={deficit:'var(--green)',maintenance:'var(--gold)',surplus:'var(--red)'};const zl={deficit:'↓ Deficit',maintenance:'= Maintenance',surplus:'↑ Surplus'};return`<div class="card" style="margin-bottom:8px;"><div class="row-between" style="margin-bottom:6px;"><div style="font-size:13px;font-weight:700;">${friendlyDate(h.key)}</div><div style="font-size:12px;font-weight:800;color:${zc[zone]}">${zl[zone]}</div></div><div style="display:flex;gap:16px;flex-wrap:wrap;"><span style="font-size:12px;color:var(--white);font-weight:700;">${h.calories.toLocaleString()} kcal</span><span style="font-size:12px;color:var(--muted);">P: ${Math.round(h.protein)}g</span><span style="font-size:12px;color:var(--muted);">C: ${Math.round(h.carbs)}g</span><span style="font-size:12px;color:var(--muted);">F: ${Math.round(h.fat)}g</span></div>${workoutLine}</div>`;}).join('');
 }
 
 function buildChart(id,type,labels,datasets,options){if(charts[id]){charts[id].destroy();}const ctx=document.getElementById(id);if(!ctx)return;charts[id]=new Chart(ctx,{type,data:{labels,datasets},options});}
