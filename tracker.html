@@ -1001,6 +1001,10 @@ function setDayType(t){
     h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
   }
   renderToday();
+  // Update the My Plan tab's summary card immediately too (Calories/Protein/Carbs/Fat + Focus) —
+  // previously this only updated after an async profile re-fetch below, causing a noticeable
+  // delay (or apparent "frozen" numbers) instead of the instant update the Today tab already has.
+  if(document.getElementById('plan-summary-pills')) { try { renderPlanSummary(); } catch(e) {} }
   // Sync My Plan tab toggle
   currentPlanDay = t === 'high' ? 'nonleg' : 'leg';
   const nonleg = document.getElementById('plan-nonleg');
