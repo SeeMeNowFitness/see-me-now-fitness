@@ -354,6 +354,7 @@ select option{background:var(--dark);}
 </div>
 <div class="balance-hero"><div class="balance-zone" id="balance-zone-label">Calculating…</div><div class="balance-number" id="balance-number">—</div><div class="balance-label">energy balance</div><div class="balance-sub" id="balance-sub"></div></div>
 <div class="card"><div class="card-title">Macros Today</div><div id="macro-bars"></div></div>
+<div class="card"><div class="card-title">Steps &amp; Hydration</div><div id="activity-bars"></div></div>
 <div class="stat-grid">
 <div class="stat-tile"><div class="lbl">Weight</div><div class="val" id="stat-weight">—</div><div class="unit">lbs today</div><div id="weight-trend" style="display:none;margin-top:6px;font-size:10px;line-height:1.6;"></div></div>
 <div class="stat-tile"><div class="lbl">Steps</div><div class="val" id="stat-steps">—</div><div class="unit">today</div></div>
@@ -392,7 +393,7 @@ select option{background:var(--dark);}
 <div class="quick-btn" onclick="openModal('modal-steps')"><div class="icon">👟</div><div class="lbl">Log Steps</div></div>
 <div class="quick-btn" onclick="openModal('modal-workout')"><div class="icon">🏋️</div><div class="lbl">Log Workout</div></div>
 <div class="quick-btn" onclick="openModal('modal-weight')"><div class="icon">⚖️</div><div class="lbl">Log Weight</div></div>
-<div class="quick-btn" onclick="openModal('modal-water')"><div class="icon">💧</div><div class="lbl">Log Water</div></div>
+<div class="quick-btn" onclick="openWaterModal()"><div class="icon">💧</div><div class="lbl">Log Water</div></div>
 </div>
 <div class="section-label">Log Nutrition</div>
 <div style="display:flex;gap:6px;margin-bottom:10px;">
@@ -452,16 +453,11 @@ select option{background:var(--dark);}
 <div style="font-size:11px;color:var(--muted);margin-top:2px;">kcal/day</div>
 </div>
 </div>
-<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
 <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;">
-<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">Projected</div>
+<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">This Week's Pace</div>
 <div style="font-size:16px;font-weight:900;" id="ws-projected-lbs">—</div>
 <div style="font-size:11px;color:var(--muted);margin-top:2px;">lbs/week</div>
-</div>
-<div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;">
-<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">4-Week</div>
-<div style="font-size:16px;font-weight:900;" id="ws-projected-4wk">—</div>
-<div style="font-size:11px;color:var(--muted);margin-top:2px;">lbs projected</div>
 </div>
 <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;">
 <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:4px;">Days Logged</div>
@@ -651,7 +647,7 @@ select option{background:var(--dark);}
 
 <div class="modal-overlay" id="modal-weight" onclick="closeModalOutside(event,'modal-weight')"><div class="modal"><div class="modal-handle"></div><h3>⚖️ Log Weight</h3><label>Weight (lbs)</label><input type="number" id="weight-input" placeholder="e.g. 185.4" inputmode="decimal" step="0.1"><div style="font-size:12px;color:var(--muted);margin-top:8px;">Weigh first thing in the morning, after using the bathroom.</div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-weight')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWeight()">Save</button></div></div></div>
 
-<div class="modal-overlay" id="modal-water" onclick="closeModalOutside(event,'modal-water')"><div class="modal"><div class="modal-handle"></div><h3>💧 Log Water</h3><label>Ounces today</label><input type="number" id="water-input" placeholder="e.g. 100" inputmode="numeric"><div class="steps-quick"><button class="steps-chip" onclick="document.getElementById('water-input').value=32">32 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=64">64 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=100">100 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=128">128 oz</button></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-water')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWater()">Save</button></div></div></div>
+<div class="modal-overlay" id="modal-water" onclick="closeModalOutside(event,'modal-water')"><div class="modal"><div class="modal-handle"></div><h3>💧 Add Water</h3><div id="water-current-total" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div><label>Ounces to add</label><input type="number" id="water-input" placeholder="e.g. 16" inputmode="numeric"><div class="steps-quick"><button class="steps-chip" onclick="document.getElementById('water-input').value=8">+8 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=16">+16 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=24">+24 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=32">+32 oz</button></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-water')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWater()">Add</button></div></div></div>
 
 <!-- EDIT FOOD MODAL -->
 <div class="modal-overlay" id="modal-edit-food" onclick="closeModalOutside(event,'modal-edit-food')"><div class="modal"><div class="modal-handle"></div>
@@ -1116,7 +1112,7 @@ if(noM){ze.textContent="TODAY'S PROGRESS";ze.className='balance-zone maintenance
 else{ze.textContent=zl[zone];ze.className='balance-zone '+zone;ne.textContent=(e.net>=0?'+':'')+Math.round(e.net);ne.className='balance-number '+zone;document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
 const pb=document.getElementById('projection-banner');
 if(noM)pb.innerHTML=`<div class="proj-label">👇 How to get started</div><div class="proj-val" style="font-size:15px;font-weight:700;">Tap Log → search a food → add it</div><div class="proj-sub">Your macros, deficit, and projections appear once you start logging.</div>`;
-else if(zone==='deficit'){const lw=Math.abs(e.net*7/3500).toFixed(2),l4=Math.abs(e.net*28/3500).toFixed(1);pb.innerHTML=`<div class="proj-label">🔥 Excellent Work</div><div class="proj-val" style="font-size:16px;">On pace for meaningful fat loss this week</div><div class="proj-sub">~${lw} lbs projected this week · ~${l4} lbs over 4 weeks at this pace</div>`;}
+else if(zone==='deficit')pb.innerHTML=`<div class="proj-label">🟢 Excellent Consistency</div><div class="proj-val" style="font-size:15px;font-weight:700;">Your nutrition and activity today support continued fat loss while helping preserve muscle.</div><div class="proj-sub">Stay consistent and trust the weekly trend — not any single day.</div>`;
 else if(zone==='surplus')pb.innerHTML=`<div class="proj-label">📈 Ahead of Your Blueprint</div><div class="proj-val">${Math.abs(e.net)} kcal over today's target</div><div class="proj-sub">Tighten up intake to get back into your deficit</div>`;
 else pb.innerHTML=`<div class="proj-label">⚖️ Holding Steady</div><div class="proj-val">±${Math.abs(e.net)} kcal from target</div><div class="proj-sub">Right where you want to be — well balanced</div>`;
 // Update weekly balance banner on Today tab
@@ -1124,6 +1120,7 @@ updateWeeklyBalanceBanner();
 updateWeightTrend();
 checkConsistencyNudge();
 renderMacroBars();
+renderActivityBars();
 document.getElementById('stat-steps').textContent=(dayData.steps||0).toLocaleString();
 document.getElementById('stat-burned').textContent=e.totalBurned.toLocaleString();
 document.getElementById('stat-consumed').textContent=e.totalConsumed.toLocaleString();
@@ -1137,6 +1134,19 @@ document.getElementById('de-net').textContent=(e.net>=0?'+':'')+e.net+' kcal';
 renderMealsTodayDetail();
 }
 
+function renderActivityBars(){
+  const profile=clientProfile||{};
+  const stepGoal=profile.step_goal||10000, waterGoal=profile.water_goal||100;
+  const steps=dayData.steps||0, water=dayData.water||0;
+  const items=[
+    {label:'Steps',logged:steps,goal:stepGoal,unit:'',key:'steps'},
+    {label:'Water',logged:water,goal:waterGoal,unit:'oz',key:'water'},
+  ];
+  document.getElementById('activity-bars').innerHTML=items.map(i=>{
+    const pct=Math.min(100,Math.round(i.logged/i.goal*100)),over=i.logged>i.goal;
+    return `<div class="macro-row"><div class="macro-row-top"><span class="macro-name">${i.label}</span><span class="macro-nums"><span>${i.logged.toLocaleString()}${i.unit}</span> / ${i.goal.toLocaleString()}${i.unit}</span></div><div class="bar-track"><div class="bar-fill ${over?'bar-over':'bar-calories'}" style="width:${pct}%"></div></div></div>`;
+  }).join('');
+}
 function renderMacroBars(){
 const m=getMacros(),l={protein:0,carbs:0,fat:0,calories:0};
 dayData.meals.forEach(x=>{l.protein+=x.protein||0;l.carbs+=x.carbs||0;l.fat+=x.fat||0;l.calories+=x.calories||0;});
@@ -1152,21 +1162,40 @@ if(profile.tracking_method==='zigzag'&&profile.macros_high&&profile.macros_low){
   const avgF=Math.round((profile.macros_high.fat*hd+profile.macros_low.fat*ld)/7);
   const existing=document.getElementById('weekly-avg-bar');
   const html=`<div id="weekly-avg-bar" style="margin-top:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;">
-    <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:2px;">📊 Weekly Target Average (${hd} High / ${ld} Low days)</div>
-    <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">Your blended daily target — not what you've actually eaten</div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-      <span style="font-size:13px;font-weight:800;color:var(--white);">${avgCal} <span style="font-size:11px;color:var(--muted);font-weight:400;">kcal</span></span>
-      <span style="font-size:13px;font-weight:700;color:var(--muted);">P: <strong style="color:var(--white);">${avgP}g</strong></span>
-      <span style="font-size:13px;font-weight:700;color:var(--muted);">C: <strong style="color:var(--white);">${avgC}g</strong></span>
-      <span style="font-size:13px;font-weight:700;color:var(--muted);">F: <strong style="color:var(--white);">${avgF}g</strong></span>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:2px;">📊 Weekly Target</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">${hd} High / ${ld} Low days</div>
+        <div style="font-size:13px;font-weight:800;color:var(--white);margin-bottom:2px;">${avgCal} <span style="font-size:11px;color:var(--muted);font-weight:400;">kcal</span></div>
+        <div style="font-size:11px;color:var(--muted);">P: <strong style="color:var(--white);">${avgP}g</strong> · C: <strong style="color:var(--white);">${avgC}g</strong> · F: <strong style="color:var(--white);">${avgF}g</strong></div>
+      </div>
+      <div style="border-left:1px solid var(--border);padding-left:12px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:2px;">✅ Weekly Average</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:6px;">What you've actually logged</div>
+        <div id="weekly-actual-cal" style="font-size:13px;font-weight:800;color:var(--white);margin-bottom:2px;">— <span style="font-size:11px;color:var(--muted);font-weight:400;">kcal</span></div>
+        <div id="weekly-actual-macros" style="font-size:11px;color:var(--muted);">P: <strong style="color:var(--white);">—</strong> · C: <strong style="color:var(--white);">—</strong> · F: <strong style="color:var(--white);">—</strong></div>
+      </div>
     </div>
   </div>`;
   if(existing) existing.outerHTML=html;
   else document.getElementById('macro-bars').insertAdjacentHTML('afterend',html);
+  loadWeeklyActualAverage();
 } else {
   const existing=document.getElementById('weekly-avg-bar');
   if(existing) existing.remove();
 }
+}
+
+async function loadWeeklyActualAverage(){
+  if(!CLIENT_ID||CLIENT_ID==='demo')return;
+  const days=[];
+  for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');try{const dd=await fsGet(`clients/${CLIENT_ID}/days/${key}`);if(dd&&(dd.meals||[]).length){days.push({calories:dd.meals.reduce((s,m)=>s+(m.calories||0),0),protein:dd.meals.reduce((s,m)=>s+(m.protein||0),0),carbs:dd.meals.reduce((s,m)=>s+(m.carbs||0),0),fat:dd.meals.reduce((s,m)=>s+(m.fat||0),0)});}}catch(e){}}
+  const calEl=document.getElementById('weekly-actual-cal'),macroEl=document.getElementById('weekly-actual-macros');
+  if(!calEl||!macroEl)return;
+  if(!days.length){calEl.innerHTML='— <span style="font-size:11px;color:var(--muted);font-weight:400;">kcal</span>';macroEl.innerHTML='No days logged yet';return;}
+  const avg=k=>Math.round(days.reduce((s,d)=>s+d[k],0)/days.length);
+  calEl.innerHTML=`${avg('calories')} <span style="font-size:11px;color:var(--muted);font-weight:400;">kcal</span>`;
+  macroEl.innerHTML=`P: <strong style="color:var(--white);">${avg('protein')}g</strong> · C: <strong style="color:var(--white);">${avg('carbs')}g</strong> · F: <strong style="color:var(--white);">${avg('fat')}g</strong>`;
 }
 function renderMealsTodayDetail(){
   // Meals detail (energy breakdown card)
@@ -2153,7 +2182,8 @@ function saveWorkout(){
 }
 
 function saveWeight(){const v=parseFloat(document.getElementById('weight-input').value);if(!v||v<=0)return;dayData.weight=v;saveDay();closeModal('modal-weight');renderToday();showToast('Weight saved ✓');}
-function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=v;saveDay();closeModal('modal-water');showToast('Water saved ✓');}
+function openWaterModal(){document.getElementById('water-current-total').textContent=`Today's total so far: ${dayData.water||0} oz`;openModal('modal-water');}
+function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=(dayData.water||0)+v;saveDay();closeModal('modal-water');renderToday();showToast(`Water logged — ${dayData.water}oz today ✓`);}
 
 // FIREBASE IO
 async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},workouts:d.workouts||[],weight:d.weight||null,water:d.water||0}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};}renderToday();renderMealLog();}
@@ -2318,20 +2348,25 @@ async function updateWeightTrend() {
   try {
     const wt = await getWeightTrend();
     const lines = [];
+    // 7-Day Average — the single best fix for daily-scale-weight anxiety (water/sodium/glycogen
+    // swings make the daily number noisy; the rolling average is what actually matters)
+    if (wt.thisWeekCount >= 2) {
+      lines.push(`<div style="display:flex;justify-content:space-between;padding:4px 0;"><span style="color:var(--muted);">7-Day Average</span><span style="color:var(--white);font-weight:700;">${wt.thisWeekAvg.toFixed(1)} lbs</span></div>`);
+    }
     // Only show the weekly trend once there's enough data on both sides to smooth out noise
     if (wt.thisWeekCount >= 2 && wt.priorWeekCount >= 2) {
       const diff = wt.thisWeekAvg - wt.priorWeekAvg;
-      const arrow = diff < -0.05 ? '↓' : diff > 0.05 ? '↑' : '→';
+      const arrow = diff < -0.05 ? '⬇️' : diff > 0.05 ? '⬆️' : '➡️';
       const color = diff < -0.05 ? 'var(--green)' : 'var(--muted)';
-      lines.push(`<div style="color:${color};font-weight:700;">${arrow} ${Math.abs(diff).toFixed(1)} lbs this week</div>`);
+      lines.push(`<div style="display:flex;justify-content:space-between;padding:4px 0;"><span style="color:var(--muted);">Weekly Trend</span><span style="color:${color};font-weight:700;">${arrow} ${diff<0?'-':diff>0?'+':''}${Math.abs(diff).toFixed(1)} lbs</span></div>`);
     }
     if (wt.startWeight && wt.latestWeight) {
       const diff2 = wt.latestWeight - wt.startWeight;
       const arrow2 = diff2 < -0.05 ? '↓' : diff2 > 0.05 ? '↑' : '→';
       const color2 = diff2 < -0.05 ? 'var(--green)' : 'var(--muted)';
-      lines.push(`<div style="color:${color2};">${arrow2} ${Math.abs(diff2).toFixed(1)} lbs since start</div>`);
+      lines.push(`<div style="display:flex;justify-content:space-between;padding:4px 0;"><span style="color:var(--muted);">Since Start</span><span style="color:${color2};">${arrow2} ${Math.abs(diff2).toFixed(1)} lbs</span></div>`);
     }
-    if (lines.length) { el.style.display = 'block'; el.innerHTML = lines.join(''); }
+    if (lines.length) { el.style.display = 'block'; el.style.borderTop='1px solid var(--border)'; el.style.marginTop='8px'; el.style.paddingTop='6px'; el.innerHTML = lines.join(''); }
     else el.style.display = 'none';
   } catch(e) { el.style.display = 'none'; }
 }
@@ -2354,7 +2389,6 @@ function updateProgressWeeklyBalance(history) {
     document.getElementById('ws-total-balance').textContent = '—';
     document.getElementById('ws-daily-avg-bal').textContent = '—';
     document.getElementById('ws-projected-lbs').textContent = '—';
-    document.getElementById('ws-projected-4wk').textContent = '—';
     document.getElementById('ws-days-logged').textContent = daysLogged;
     document.getElementById('ws-balance-message').textContent = `📊 Continue logging to unlock your projection — ${daysLogged}/4 days logged this week.`;
     document.getElementById('ws-balance-message').style.color = 'var(--muted)';
@@ -2371,11 +2405,9 @@ function updateProgressWeeklyBalance(history) {
   document.getElementById('ws-daily-avg-bal').style.color = zoneColor;
   document.getElementById('ws-projected-lbs').textContent = sign + projLbs.toFixed(2);
   document.getElementById('ws-projected-lbs').style.color = zoneColor;
-  document.getElementById('ws-projected-4wk').textContent = sign + (projLbs * 4).toFixed(1);
-  document.getElementById('ws-projected-4wk').style.color = zoneColor;
   document.getElementById('ws-days-logged').textContent = daysLogged;
   const msgs = {
-    deficit: `🔥 Excellent work. Your consistency this week projects approximately ${projLbs.toFixed(2)} lbs of fat loss — and ~${(projLbs * 4).toFixed(1)} lbs if you keep this pace for 4 weeks.`,
+    deficit: `🟢 Excellent consistency. Your nutrition and activity this week are supporting fat loss while helping preserve muscle — this week's pace is about ${projLbs.toFixed(2)} lbs. Stay consistent and trust the trend.`,
     surplus: `📈 You're running ahead of your Blueprint this week. Tighten up intake or add activity to get back into your deficit.`,
     maintenance: `⚖️ You're holding steady at maintenance this week. A slight pull toward your deficit will keep the progress moving.`
   };
