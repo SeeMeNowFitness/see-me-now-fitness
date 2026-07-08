@@ -979,6 +979,16 @@ function calcSCals(s,lbs){return Math.round(s*lbs*0.0005);}
 function getWorkoutsList(){return dayData.workouts?.length?dayData.workouts:(dayData.workout?.type?[dayData.workout]:[]);}
 function calcBal(){const bmr=calcBMR(),wl=dayData.weight||(clientProfile?.bmr_inputs?.weight_lbs||160),sc=calcSCals(dayData.steps||0,wl),wc=getWorkoutsList().reduce((s,w)=>s+(w.calories||0),0),tb=bmr+sc+wc,tc=dayData.meals.reduce((s,m)=>s+(m.calories||0),0);return{bmr,stepCals:sc,workoutCals:wc,totalBurned:tb,totalConsumed:tc,net:tb-tc};}
 
+function showNotifDebugPanel2(text){
+  let panel = document.getElementById('daytype-debug-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.id = 'daytype-debug-panel';
+    panel.style.cssText = 'position:fixed;top:50%;left:16px;right:16px;transform:translateY(-50%);background:#181818;border:2px solid var(--gold);border-radius:12px;padding:18px;z-index:9999;font-size:11px;line-height:1.6;color:#fff;white-space:pre-wrap;box-shadow:0 8px 30px rgba(0,0,0,0.6);word-break:break-all;max-height:80vh;overflow-y:auto;';
+    document.body.appendChild(panel);
+  }
+  panel.innerHTML = text.replace(/\n/g,'<br>') + '<br><br><button style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:8px 16px;font-weight:800;cursor:pointer;" onclick="document.getElementById(\'daytype-debug-panel\').remove();">Close</button>';
+}
 let currentDayType='high';
 function setDayType(t){
   currentDayType=t;
@@ -992,6 +1002,8 @@ function setDayType(t){
     dayData.target_day_type = t;
     saveDay();
   }
+  // TEMPORARY DIAGNOSTIC — remove once the High/Low toggle bug is confirmed fixed
+  showNotifDebugPanel2(`setDayType(${t}) called.\ntracking_method: ${profile.tracking_method}\nmacros_high.calories: ${profile.macros_high?.calories}\nmacros_low.calories: ${profile.macros_low?.calories}\ndayData.target_macros.calories AFTER assignment: ${dayData.target_macros?.calories}\ngetMacros() result RIGHT NOW: ${JSON.stringify(getMacros())}`);
   const h=document.getElementById('zz-high'),l=document.getElementById('zz-low');
   if(t==='high'){
     h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
