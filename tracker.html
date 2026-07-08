@@ -1029,7 +1029,14 @@ function setDayType(t){
     if(document.getElementById('plan-meal-content')) renderMealPlan();
   }
 }
-function getMacros(){if(!clientProfile)return{protein:150,carbs:175,fat:55,calories:1795};if(clientProfile.tracking_method==='zigzag')return currentDayType==='high'?(clientProfile.macros_high||clientProfile.macros):(clientProfile.macros_low||clientProfile.macros);return clientProfile.macros||{protein:150,carbs:175,fat:55,calories:1795};}
+function getMacros(){
+  // If this specific day already has a frozen target snapshot (set the first time it was
+  // saved), use it — so later coach changes to macros don't retroactively alter history.
+  if(dayData && dayData.target_macros) return dayData.target_macros;
+  if(!clientProfile)return{protein:150,carbs:175,fat:55,calories:1795};
+  if(clientProfile.tracking_method==='zigzag')return currentDayType==='high'?(clientProfile.macros_high||clientProfile.macros):(clientProfile.macros_low||clientProfile.macros);
+  return clientProfile.macros||{protein:150,carbs:175,fat:55,calories:1795};
+}
 function getZone(n){return n>100?'deficit':(n>-100?'maintenance':'surplus');}
 
 // GREETING CARD
@@ -1137,7 +1144,7 @@ renderMealsTodayDetail();
 
 function renderActivityBars(){
   const profile=clientProfile||{};
-  const stepGoal=profile.step_goal||10000, waterGoal=profile.water_goal||100;
+  const stepGoal=dayData.target_step_goal||profile.step_goal||10000, waterGoal=dayData.target_water_goal||profile.water_goal||100;
   const steps=dayData.steps||0, water=dayData.water||0;
   // Self-serve tracker-tier and demo clients can set their own goals; coached clients
   // have goals set by their coach in admin, kept locked here to preserve coach oversight.
@@ -2210,8 +2217,24 @@ async function saveOwnGoals(){
 function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=(dayData.water||0)+v;saveDay();closeModal('modal-water');renderToday();showToast(`Water logged — ${dayData.water}oz today ✓`);}
 
 // FIREBASE IO
-async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},workouts:d.workouts||[],weight:d.weight||null,water:d.water||0}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};}renderToday();renderMealLog();}
-async function saveDay(){if(!CLIENT_ID||CLIENT_ID==='demo')return;try{await fsSet(`clients/${CLIENT_ID}/days/${currentDateKey}`,dayData);}catch(e){}}
+async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},workouts:d.workouts||[],weight:d.weight||null,water:d.water||0,target_macros:d.target_macros||null,target_day_type:d.target_day_type||null,target_step_goal:d.target_step_goal||null,target_water_goal:d.target_water_goal||null}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};}renderToday();renderMealLog();}
+async function saveDay(){
+  if(!CLIENT_ID||CLIENT_ID==='demo')return;
+  // Freeze this day's target the first time it's saved — so later changes to the client's
+  // profile (macros, step goal, water goal) don't retroactively alter what was already logged.
+  if(!dayData.target_macros){
+    const profile=clientProfile||{};
+    if(profile.tracking_method==='zigzag'){
+      dayData.target_macros = currentDayType==='high' ? (profile.macros_high||profile.macros) : (profile.macros_low||profile.macros);
+      dayData.target_day_type = currentDayType;
+    } else {
+      dayData.target_macros = profile.macros || {protein:150,carbs:175,fat:55,calories:1795};
+    }
+    dayData.target_step_goal = profile.step_goal || 10000;
+    dayData.target_water_goal = profile.water_goal || 100;
+  }
+  try{await fsSet(`clients/${CLIENT_ID}/days/${currentDateKey}`,dayData);}catch(e){}
+}
 
 // ── WEEKLY BALANCE ──
 let weeklyBalanceCache = null;
@@ -2444,14 +2467,20 @@ let charts={},chartJsLoaded=false;
 function loadChartJS(){return new Promise((res,rej)=>{if(chartJsLoaded||window.Chart){chartJsLoaded=true;res();return;}const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';s.onload=()=>{chartJsLoaded=true;res();};s.onerror=rej;document.head.appendChild(s);});}
 async function loadProgressData(){
 await loadChartJS();
+const liveTarget=getMacros(); // fallback only, for days saved before target-snapshotting existed
 const history=[];
-for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');let en={key,calories:0,protein:0,carbs:0,fat:0,steps:0,weight:null,workouts:[]};
-if(CLIENT_ID&&CLIENT_ID!=='demo'){try{const dd=await fsGet(`clients/${CLIENT_ID}/days/${key}`);if(dd){en.calories=(dd.meals||[]).reduce((s,m)=>s+(m.calories||0),0);en.protein=(dd.meals||[]).reduce((s,m)=>s+(m.protein||0),0);en.carbs=(dd.meals||[]).reduce((s,m)=>s+(m.carbs||0),0);en.fat=(dd.meals||[]).reduce((s,m)=>s+(m.fat||0),0);en.steps=dd.steps||0;en.weight=dd.weight||null;en.workouts=dd.workouts?.length?dd.workouts:(dd.workout?.type?[dd.workout]:[]);}}catch(e){}}
+for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');let en={key,calories:0,protein:0,carbs:0,fat:0,steps:0,weight:null,workouts:[],target:liveTarget,stepGoal:clientProfile?.step_goal||10000};
+if(CLIENT_ID&&CLIENT_ID!=='demo'){try{const dd=await fsGet(`clients/${CLIENT_ID}/days/${key}`);if(dd){en.calories=(dd.meals||[]).reduce((s,m)=>s+(m.calories||0),0);en.protein=(dd.meals||[]).reduce((s,m)=>s+(m.protein||0),0);en.carbs=(dd.meals||[]).reduce((s,m)=>s+(m.carbs||0),0);en.fat=(dd.meals||[]).reduce((s,m)=>s+(m.fat||0),0);en.steps=dd.steps||0;en.weight=dd.weight||null;en.workouts=dd.workouts?.length?dd.workouts:(dd.workout?.type?[dd.workout]:[]);
+  // Use this day's own frozen target if it has one (locked in the first time it was saved) —
+  // days logged before this feature existed fall back to today's live target as a best guess.
+  if(dd.target_macros) en.target=dd.target_macros;
+  if(dd.target_step_goal) en.stepGoal=dd.target_step_goal;
+}}catch(e){}}
 else{en.calories=1600+Math.floor(Math.random()*600);en.protein=140+Math.floor(Math.random()*40);en.steps=6000+Math.floor(Math.random()*6000);en.weight=183+(Math.random()*2-1);}
 history.push(en);}
 const labels=history.map(h=>keyToDate(h.key).toLocaleDateString('en-US',{weekday:'short'}));
-const target=getMacros(),isZ=clientProfile?.tracking_method==='zigzag',ld=history.filter(h=>h.calories>0).length;
-const dh=history.filter(h=>h.calories&&h.protein/target.protein>=0.9&&h.protein/target.protein<=1.1&&h.calories/target.calories>=0.9&&h.calories/target.calories<=1.1).length;
+const target=liveTarget,isZ=clientProfile?.tracking_method==='zigzag',ld=history.filter(h=>h.calories>0).length;
+const dh=history.filter(h=>h.calories&&h.protein/h.target.protein>=0.9&&h.protein/h.target.protein<=1.1&&h.calories/h.target.calories>=0.9&&h.calories/h.target.calories<=1.1).length;
 document.getElementById('adherence-pct').textContent=ld>0?Math.round(dh/ld*100)+'%':'—%';
 const tc=history.reduce((s,h)=>s+h.calories,0),avg=ld>0?Math.round(tc/ld):0;
 document.getElementById('ws-weekly-avg').textContent=avg>0?avg.toLocaleString():'—';
@@ -2465,15 +2494,15 @@ updateProgressWeeklyBalance(history);
 const cd={responsive:true,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#888',font:{size:11}},grid:{color:'#2a2a2a'}},y:{ticks:{color:'#888',font:{size:11}},grid:{color:'#2a2a2a'}}}};
 const calDs=[{data:history.map(h=>h.calories||null),borderColor:'#4caf76',backgroundColor:'rgba(76,175,118,0.1)',tension:0.3,fill:true,spanGaps:true,label:'Calories'}];
 if(isZ){calDs.push({data:history.map(()=>clientProfile.macros_high?.calories||null),borderColor:'rgba(201,168,76,0.5)',borderDash:[4,4],pointRadius:0,label:'High target'});calDs.push({data:history.map(()=>clientProfile.macros_low?.calories||null),borderColor:'rgba(76,143,224,0.5)',borderDash:[4,4],pointRadius:0,label:'Low target'});}
-else calDs.push({data:history.map(()=>target.calories),borderColor:'rgba(201,168,76,0.4)',borderDash:[4,4],pointRadius:0,label:'Target'});
+else calDs.push({data:history.map(h=>h.target.calories),borderColor:'rgba(201,168,76,0.4)',borderDash:[4,4],pointRadius:0,label:'Target'});
 buildChart('chart-calories','line',labels,calDs,{...cd,plugins:{legend:{display:true,labels:{color:'#888',font:{size:10},boxWidth:12}}}});
 const wData=history.map(h=>h.weight||null),hasW=wData.some(Boolean);
 document.getElementById('chart-weight-wrap').style.display=hasW?'':'none';document.getElementById('no-weight-data').style.display=hasW?'none':'block';
 if(hasW)buildChart('chart-weight','line',labels,[{data:wData,borderColor:'#C9A84C',backgroundColor:'rgba(201,168,76,0.1)',tension:0.3,fill:true,spanGaps:true}],cd);
-buildChart('chart-macros','bar',labels,[{data:history.map(h=>h.protein>0?Math.min(120,Math.round(h.protein/target.protein*100)):null),backgroundColor:'#C9A84C',label:'Protein %'},{data:history.map(h=>h.calories>0?Math.min(120,Math.round(h.calories/target.calories*100)):null),backgroundColor:'#4c8fe0',label:'Calories %'}],{...cd,plugins:{legend:{display:true,labels:{color:'#888',font:{size:10},boxWidth:12}}},scales:{...cd.scales,y:{...cd.scales.y,max:120,ticks:{...cd.scales.y.ticks,callback:v=>v+'%'}}}});
-buildChart('chart-steps','bar',labels,[{data:history.map(h=>h.steps||0),backgroundColor:history.map(h=>h.steps>=10000?'#4caf76':'#4c8fe0')}],cd);
+buildChart('chart-macros','bar',labels,[{data:history.map(h=>h.protein>0?Math.min(120,Math.round(h.protein/h.target.protein*100)):null),backgroundColor:'#C9A84C',label:'Protein %'},{data:history.map(h=>h.calories>0?Math.min(120,Math.round(h.calories/h.target.calories*100)):null),backgroundColor:'#4c8fe0',label:'Calories %'}],{...cd,plugins:{legend:{display:true,labels:{color:'#888',font:{size:10},boxWidth:12}}},scales:{...cd.scales,y:{...cd.scales.y,max:120,ticks:{...cd.scales.y.ticks,callback:v=>v+'%'}}}});
+buildChart('chart-steps','bar',labels,[{data:history.map(h=>h.steps||0),backgroundColor:history.map(h=>h.steps>=h.stepGoal?'#4caf76':'#4c8fe0')}],cd);
 const he=document.getElementById('energy-history-list');
-he.innerHTML=history.slice().reverse().map(h=>{const workoutLine=h.workouts&&h.workouts.length?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">${h.workouts.map(w=>`<div style="font-size:11px;color:var(--muted);">🏋️ ${w.type||'Workout'} — ${w.duration||0} min · ${w.calories||0} kcal${w.notes?`<div style="white-space:pre-line;margin-top:2px;">${w.notes}</div>`:''}</div>`).join('')}</div>`:'';if(!h.calories)return`<div class="card" style="margin-bottom:8px;opacity:0.5;"><div class="row-between"><div style="font-size:13px;font-weight:700;">${friendlyDate(h.key)}</div><div style="font-size:12px;color:var(--muted);">Not logged</div></div>${workoutLine}</div>`;const zone=h.calories<target.calories*0.95?'deficit':h.calories>target.calories*1.05?'surplus':'maintenance';const zc={deficit:'var(--green)',maintenance:'var(--gold)',surplus:'var(--red)'};const zl={deficit:'↓ Deficit',maintenance:'= Maintenance',surplus:'↑ Surplus'};return`<div class="card" style="margin-bottom:8px;"><div class="row-between" style="margin-bottom:6px;"><div style="font-size:13px;font-weight:700;">${friendlyDate(h.key)}</div><div style="font-size:12px;font-weight:800;color:${zc[zone]}">${zl[zone]}</div></div><div style="display:flex;gap:16px;flex-wrap:wrap;"><span style="font-size:12px;color:var(--white);font-weight:700;">${h.calories.toLocaleString()} kcal</span><span style="font-size:12px;color:var(--muted);">P: ${Math.round(h.protein)}g</span><span style="font-size:12px;color:var(--muted);">C: ${Math.round(h.carbs)}g</span><span style="font-size:12px;color:var(--muted);">F: ${Math.round(h.fat)}g</span></div>${workoutLine}</div>`;}).join('');
+he.innerHTML=history.slice().reverse().map(h=>{const workoutLine=h.workouts&&h.workouts.length?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border);">${h.workouts.map(w=>`<div style="font-size:11px;color:var(--muted);">🏋️ ${w.type||'Workout'} — ${w.duration||0} min · ${w.calories||0} kcal${w.notes?`<div style="white-space:pre-line;margin-top:2px;">${w.notes}</div>`:''}</div>`).join('')}</div>`:'';if(!h.calories)return`<div class="card" style="margin-bottom:8px;opacity:0.5;"><div class="row-between"><div style="font-size:13px;font-weight:700;">${friendlyDate(h.key)}</div><div style="font-size:12px;color:var(--muted);">Not logged</div></div>${workoutLine}</div>`;const zone=h.calories<h.target.calories*0.95?'deficit':h.calories>h.target.calories*1.05?'surplus':'maintenance';const zc={deficit:'var(--green)',maintenance:'var(--gold)',surplus:'var(--red)'};const zl={deficit:'↓ Deficit',maintenance:'= Maintenance',surplus:'↑ Surplus'};return`<div class="card" style="margin-bottom:8px;"><div class="row-between" style="margin-bottom:6px;"><div style="font-size:13px;font-weight:700;">${friendlyDate(h.key)}</div><div style="font-size:12px;font-weight:800;color:${zc[zone]}">${zl[zone]}</div></div><div style="display:flex;gap:16px;flex-wrap:wrap;"><span style="font-size:12px;color:var(--white);font-weight:700;">${h.calories.toLocaleString()} kcal</span><span style="font-size:12px;color:var(--muted);">P: ${Math.round(h.protein)}g</span><span style="font-size:12px;color:var(--muted);">C: ${Math.round(h.carbs)}g</span><span style="font-size:12px;color:var(--muted);">F: ${Math.round(h.fat)}g</span></div>${workoutLine}</div>`;}).join('');
 }
 
 function buildChart(id,type,labels,datasets,options){if(charts[id]){charts[id].destroy();}const ctx=document.getElementById(id);if(!ctx)return;charts[id]=new Chart(ctx,{type,data:{labels,datasets},options});}

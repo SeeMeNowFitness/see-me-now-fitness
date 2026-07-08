@@ -380,18 +380,22 @@ async function getClientProgress(client){
       const lastDate = new Date(y,m-1,dNum);
       const today = new Date(); today.setHours(0,0,0,0);
       const daysSinceLog = Math.round((today-lastDate)/86400000);
-      // Adherence — % of logged days within ~10% of macro targets. Zigzag clients use the average of high/low as an approximation.
+      // Adherence — % of logged days within ~10% of macro targets. Uses each day's own frozen
+      // target snapshot when available, falling back to the current live target for days saved
+      // before target-snapshotting existed. Zigzag clients use the average of high/low as an approximation for the fallback.
       const isZ = client.tracking_method==='zigzag';
-      const target = isZ
+      const liveTarget = isZ
         ? {calories:((client.macros_high?.calories||0)+(client.macros_low?.calories||0))/2, protein:((client.macros_high?.protein||0)+(client.macros_low?.protein||0))/2}
         : (client.macros||{});
       const loggedDays = days.filter(d=>(d.meals||[]).length>0);
       let adherencePct=null;
-      if(loggedDays.length>=2 && target.calories && target.protein){
+      if(loggedDays.length>=2){
         const onTarget = loggedDays.filter(d=>{
+          const t = d.target_macros || liveTarget;
+          if(!t.calories || !t.protein) return false;
           const cal=(d.meals||[]).reduce((s,m2)=>s+(m2.calories||0),0);
           const pro=(d.meals||[]).reduce((s,m2)=>s+(m2.protein||0),0);
-          return cal/target.calories>=0.9 && cal/target.calories<=1.1 && pro/target.protein>=0.9 && pro/target.protein<=1.1;
+          return cal/t.calories>=0.9 && cal/t.calories<=1.1 && pro/t.protein>=0.9 && pro/t.protein<=1.1;
         });
         adherencePct = Math.round(onTarget.length/loggedDays.length*100);
       }
@@ -458,9 +462,13 @@ async function loadProgressChart(clientId){
   ));
 
   const isZ = client.tracking_method==='zigzag';
-  const target = isZ
+  const liveTarget = isZ
     ? {calories:((client.macros_high?.calories||0)+(client.macros_low?.calories||0))/2, protein:((client.macros_high?.protein||0)+(client.macros_low?.protein||0))/2}
     : (client.macros||{});
+  // Each day uses its own frozen target snapshot if it has one (locked in the first time
+  // that day was saved) — days logged before this feature existed fall back to the live target.
+  const dayTargets = results.map(r => r.target_macros || liveTarget);
+  const target = liveTarget; // still used for the summary header stat and dashed reference line
 
   const labels = results.map(r=>{const [,,d]=r.key.split('-');return d;});
   const weights = results.map(r=>r.weight||null);
@@ -477,9 +485,10 @@ async function loadProgressChart(clientId){
   const loggedDayCount = loggedFlags.filter(Boolean).length;
   let onTargetCount=0;
   results.forEach((r,i)=>{
-    if(!loggedFlags[i] || !target.calories || !target.protein) return;
+    const t=dayTargets[i];
+    if(!loggedFlags[i] || !t.calories || !t.protein) return;
     const cal=calorieTotals[i], pro=proteinTotals[i];
-    if(cal/target.calories>=0.9 && cal/target.calories<=1.1 && pro/target.protein>=0.9 && pro/target.protein<=1.1) onTargetCount++;
+    if(cal/t.calories>=0.9 && cal/t.calories<=1.1 && pro/t.protein>=0.9 && pro/t.protein<=1.1) onTargetCount++;
   });
   const adherencePct = loggedDayCount>0 ? Math.round(onTargetCount/loggedDayCount*100) : null;
 
@@ -547,15 +556,16 @@ async function loadProgressChart(clientId){
 
   try{
     const macroCtx=document.getElementById('macro-chart').getContext('2d');
-    const barColors=calorieTotals.map((c)=>{
+    const barColors=calorieTotals.map((c,i)=>{
       if(c===null) return 'rgba(136,136,136,0.25)';
-      if(!target.calories) return '#C9A84C';
-      const pct=c/target.calories;
+      const t=dayTargets[i];
+      if(!t.calories) return '#C9A84C';
+      const pct=c/t.calories;
       return (pct>=0.9&&pct<=1.1)?'#4caf76':'#e05c5c';
     });
     const macroDatasets=[{type:'bar',label:'Calories Logged',data:calorieTotals,backgroundColor:barColors}];
     if(target.calories){
-      macroDatasets.push({type:'line',label:'Target',data:labels.map(()=>target.calories),borderColor:'#C9A84C',borderDash:[6,4],pointRadius:0,fill:false});
+      macroDatasets.push({type:'line',label:'Target',data:dayTargets.map(t=>t.calories||null),borderColor:'#C9A84C',borderDash:[6,4],pointRadius:0,fill:false});
     }
     macroChartInstance=new Chart(macroCtx,{
       type:'bar',
