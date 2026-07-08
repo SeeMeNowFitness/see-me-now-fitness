@@ -775,6 +775,8 @@ async function parseAndFetchBlueprintFoods(){
       protein: nutrition?.protein ?? '',
       carbs: nutrition?.carbs ?? '',
       fat: nutrition?.fat ?? '',
+      serving: '100g',
+      servingG: 100,
       notFound: !nutrition
     });
   }
@@ -787,18 +789,21 @@ function renderBpFoodsReviewTable(){
   const el = document.getElementById('bpfoods-review-table');
   section.style.display='block';
   el.innerHTML = `
-    <div style="display:grid;grid-template-columns:1.2fr 1fr 70px 70px 70px 70px;gap:6px;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);padding:0 4px 6px;">
-      <div>Food</div><div>Category</div><div>Cals</div><div>Prot</div><div>Carbs</div><div>Fat</div>
+    <div style="display:grid;grid-template-columns:1.1fr 0.9fr 60px 60px 60px 60px 80px 70px;gap:6px;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--muted);padding:0 4px 6px;">
+      <div>Food</div><div>Category</div><div>Cals</div><div>Prot</div><div>Carbs</div><div>Fat</div><div>Serving</div><div>Serving g</div>
     </div>
     ${parsedBpFoodsBuffer.map((f,i)=>`
-    <div style="display:grid;grid-template-columns:1.2fr 1fr 70px 70px 70px 70px;gap:6px;padding:6px 4px;border-top:1px solid var(--border);align-items:center;${f.notFound?'background:rgba(224,92,92,0.06);':''}">
+    <div style="display:grid;grid-template-columns:1.1fr 0.9fr 60px 60px 60px 60px 80px 70px;gap:6px;padding:6px 4px;border-top:1px solid var(--border);align-items:center;${f.notFound?'background:rgba(224,92,92,0.06);':''}">
       <div style="font-size:13px;${f.notFound?'color:var(--red);':''}">${f.name}${f.notFound?' <span style="font-size:10px;">(not found — fill manually)</span>':''}</div>
       <input type="text" value="${f.category}" oninput="parsedBpFoodsBuffer[${i}].category=this.value" style="font-size:12px;padding:5px;">
       <input type="number" value="${f.calories}" oninput="parsedBpFoodsBuffer[${i}].calories=this.value" style="font-size:12px;padding:5px;">
       <input type="number" value="${f.protein}" oninput="parsedBpFoodsBuffer[${i}].protein=this.value" style="font-size:12px;padding:5px;">
       <input type="number" value="${f.carbs}" oninput="parsedBpFoodsBuffer[${i}].carbs=this.value" style="font-size:12px;padding:5px;">
       <input type="number" value="${f.fat}" oninput="parsedBpFoodsBuffer[${i}].fat=this.value" style="font-size:12px;padding:5px;">
+      <input type="text" value="${f.serving}" oninput="parsedBpFoodsBuffer[${i}].serving=this.value" placeholder="e.g. 1 slice" style="font-size:12px;padding:5px;">
+      <input type="number" value="${f.servingG}" oninput="parsedBpFoodsBuffer[${i}].servingG=this.value" style="font-size:12px;padding:5px;">
     </div>`).join('')}
+    <div style="font-size:11px;color:var(--muted);margin-top:8px;">💡 Leave Serving as "100g" for foods you weigh out (like chicken or rice). For foods sold in natural units — bread, eggs, bars — change Serving to something like "1 slice" and Serving g to that unit's actual gram weight, so quantity scaling works correctly for clients.</div>
   `;
 }
 
@@ -810,8 +815,8 @@ async function saveAllBlueprintFoods(){
     protein: parseFloat(f.protein)||0,
     carbs: parseFloat(f.carbs)||0,
     fat: parseFloat(f.fat)||0,
-    serving: '100g',
-    servingG: 100,
+    serving: f.serving || '100g',
+    servingG: parseFloat(f.servingG)||100,
     category: f.category,
     created_at: new Date().toISOString()
   }));
@@ -834,7 +839,7 @@ async function loadBlueprintFoodsList(){
     const foods=snap.docs.map(d=>({id:d.id,...d.data()}));
     document.getElementById('bpfoods-count-badge').textContent=`(${foods.length})`;
     if(!foods.length){el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:10px 0;">No Blueprint Foods yet.</div>';return;}
-    el.innerHTML=foods.map(f=>`<div class="meal-admin-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div class="meal-name">⭐ ${f.name}</div><div class="meal-macros">${f.cals} kcal · P: ${f.protein}g · C: ${f.carbs}g · F: ${f.fat}g /100g${f.category?` · <span style="color:var(--muted);">${f.category}</span>`:''}</div></div><button class="btn btn-red btn-sm" onclick="deleteBlueprintFoodItem('${f.id}')">Delete</button></div></div>`).join('');
+    el.innerHTML=foods.map(f=>`<div class="meal-admin-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div class="meal-name">⭐ ${f.name}</div><div class="meal-macros">${f.cals} kcal · P: ${f.protein}g · C: ${f.carbs}g · F: ${f.fat}g / ${f.serving||'100g'}${f.category?` · <span style="color:var(--muted);">${f.category}</span>`:''}</div></div><button class="btn btn-red btn-sm" onclick="deleteBlueprintFoodItem('${f.id}')">Delete</button></div></div>`).join('');
   }catch(e){el.innerHTML='<div style="color:var(--red);">Could not load Blueprint Foods.</div>';}
 }
 
