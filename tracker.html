@@ -982,6 +982,16 @@ function calcBal(){const bmr=calcBMR(),wl=dayData.weight||(clientProfile?.bmr_in
 let currentDayType='high';
 function setDayType(t){
   currentDayType=t;
+  // This is the client's own choice for TODAY — always update the day's target immediately,
+  // even if a snapshot was already frozen earlier today. (Freezing only exists to stop a
+  // *coach's* later macro changes from retroactively altering past days — it was never meant
+  // to block the client's own same-day High/Low selection from taking effect.)
+  const profile=clientProfile||{};
+  if(profile.tracking_method==='zigzag'){
+    dayData.target_macros = t==='high' ? (profile.macros_high||profile.macros) : (profile.macros_low||profile.macros);
+    dayData.target_day_type = t;
+    saveDay();
+  }
   const h=document.getElementById('zz-high'),l=document.getElementById('zz-low');
   if(t==='high'){
     h.style.cssText='flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:Anton,sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;';
