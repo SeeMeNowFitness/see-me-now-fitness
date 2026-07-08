@@ -1755,10 +1755,21 @@ async function lookupBarcode(barcode){const el=document.getElementById('food-sea
     cals=rawCals*factor; p=rawP*factor; c=rawC*factor; f=rawF*factor;
   }
   cals=Math.round(cals);p=Math.round(p*10)/10;c=Math.round(c*10)/10;f=Math.round(f*10)/10;
+  showNotifDebugPanel3(`SPOONACULAR RAW DATA:\nrawCals: ${rawCals}\nrawProtein: ${rawP}\nrawCarbs: ${rawC}\nrawFat: ${rawF}\nd.servingSize: ${d.servingSize}\nd.servingSizeUnit: ${d.servingSizeUnit}\nparsed servingG: ${servingG}\nservingUnit (lowercased): ${servingUnit}\nnormalization applied: ${servingG>0 && (servingUnit==='g'||servingUnit==='grams'||servingUnit==='gram')}\n\nFINAL cals/p/c/f sent to Add: ${cals} / ${p} / ${c} / ${f}`);
   // Only accept this match if it actually has usable macro data — Spoonacular sometimes
   // matches a product name but returns an empty nutrition profile, which used to show
   // as a real result with all-zero macros instead of falling back to OpenFoodFacts.
   if(cals>0||p>0||c>0||f>0){showBarcodeResult(d.title||'Scanned Product',cals,p,c,f,'/100g');return;}}}catch(e){}try{const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);const d=await r.json();if(d.status===1&&d.product){const p=d.product,n=p.nutriments||{};showBarcodeResult(p.product_name||'Scanned Product',Math.round(n['energy-kcal_100g']||0),Math.round(n['proteins_100g']||0),Math.round(n['carbohydrates_100g']||0),Math.round(n['fat_100g']||0),'/100g');}else{el.innerHTML=`<div class="empty-state"><div class="icon">🔍</div><h4>Product not found</h4><p>This barcode isn't in our database yet.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;}}catch(e){el.innerHTML=`<div class="empty-state"><div class="icon">📦</div><h4>Could not look up barcode</h4><p>Check your connection, or enter the macros manually.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;}}
+function showNotifDebugPanel3(text){
+  let panel = document.getElementById('barcode-debug-panel');
+  if(!panel){
+    panel = document.createElement('div');
+    panel.id = 'barcode-debug-panel';
+    panel.style.cssText = 'position:fixed;top:50%;left:16px;right:16px;transform:translateY(-50%);background:#181818;border:2px solid var(--gold);border-radius:12px;padding:18px;z-index:9999;font-size:11px;line-height:1.6;color:#fff;white-space:pre-wrap;box-shadow:0 8px 30px rgba(0,0,0,0.6);word-break:break-all;max-height:80vh;overflow-y:auto;';
+    document.body.appendChild(panel);
+  }
+  panel.innerHTML = text.replace(/\n/g,'<br>') + '<br><br><button style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:8px 16px;font-weight:800;cursor:pointer;" onclick="document.getElementById(\'barcode-debug-panel\').remove();">Close</button>';
+}
 function showBarcodeResult(name,cals,p,c,f,serving){const el=document.getElementById('food-search-results'),dn=name.length>40?name.slice(0,40)+'…':name;el.innerHTML=`<div style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">✓ Barcode scanned</div><div class="food-result"><div class="food-result-img">📦</div><div class="food-result-info"><div class="food-result-name">${dn}</div><div class="food-result-macros">${cals} kcal${serving?' · '+serving:'/100g'} &nbsp;·&nbsp; P:<span>${p}g</span> C:<span>${c}g</span> F:<span>${f}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${name.replace(/'/g,"\\'")}',${cals},${p},${c},${f})">Add</button></div>`;}
 
 // ── CUSTOM FOOD ENTRY (manual macros when food can't be found) ──
