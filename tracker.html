@@ -354,7 +354,8 @@ select option{background:var(--dark);}
 </div>
 <div class="balance-hero"><div class="balance-zone" id="balance-zone-label">Calculating…</div><div class="balance-number" id="balance-number">—</div><div class="balance-label">energy balance</div><div class="balance-sub" id="balance-sub"></div></div>
 <div class="card"><div class="card-title">Macros Today</div><div id="macro-bars"></div></div>
-<div class="card"><div class="card-title">Steps &amp; Hydration</div><div id="activity-bars"></div></div>
+<div class="card"><div class="row-between" style="margin-bottom:8px;"><div class="card-title" style="margin-bottom:0;">Steps &amp; Hydration</div><span id="edit-goals-link" style="display:none;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;" onclick="openGoalsModal()">✏️ Edit Goals</span></div><div id="activity-bars"></div></div>
+<div class="modal-overlay" id="modal-goals" onclick="closeModalOutside(event,'modal-goals')"><div class="modal"><div class="modal-handle"></div><h3>🎯 Your Daily Goals</h3><label>Step Goal</label><input type="number" id="goals-step-input" inputmode="numeric" placeholder="e.g. 10000"><label>Water Goal (oz)</label><input type="number" id="goals-water-input" inputmode="numeric" placeholder="e.g. 100"><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-goals')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveOwnGoals()">Save</button></div></div></div>
 <div class="stat-grid">
 <div class="stat-tile"><div class="lbl">Weight</div><div class="val" id="stat-weight">—</div><div class="unit">lbs today</div><div id="weight-trend" style="display:none;margin-top:6px;font-size:10px;line-height:1.6;"></div></div>
 <div class="stat-tile"><div class="lbl">Steps</div><div class="val" id="stat-steps">—</div><div class="unit">today</div></div>
@@ -1138,13 +1139,18 @@ function renderActivityBars(){
   const profile=clientProfile||{};
   const stepGoal=profile.step_goal||10000, waterGoal=profile.water_goal||100;
   const steps=dayData.steps||0, water=dayData.water||0;
+  // Self-serve tracker-tier and demo clients can set their own goals; coached clients
+  // have goals set by their coach in admin, kept locked here to preserve coach oversight.
+  const canSelfEdit = profile.tier==='tracker' || CLIENT_ID==='demo';
+  const editLink=document.getElementById('edit-goals-link');
+  if(editLink) editLink.style.display = canSelfEdit ? 'block' : 'none';
   const items=[
     {label:'Steps',logged:steps,goal:stepGoal,unit:'',key:'steps'},
     {label:'Water',logged:water,goal:waterGoal,unit:'oz',key:'water'},
   ];
   document.getElementById('activity-bars').innerHTML=items.map(i=>{
-    const pct=Math.min(100,Math.round(i.logged/i.goal*100)),over=i.logged>i.goal;
-    return `<div class="macro-row"><div class="macro-row-top"><span class="macro-name">${i.label}</span><span class="macro-nums"><span>${i.logged.toLocaleString()}${i.unit}</span> / ${i.goal.toLocaleString()}${i.unit}</span></div><div class="bar-track"><div class="bar-fill ${over?'bar-over':'bar-calories'}" style="width:${pct}%"></div></div></div>`;
+    const pct=Math.min(100,Math.round(i.logged/i.goal*100)),metGoal=i.logged>=i.goal;
+    return `<div class="macro-row"><div class="macro-row-top"><span class="macro-name">${i.label}</span><span class="macro-nums"><span>${i.logged.toLocaleString()}${i.unit}</span> / ${i.goal.toLocaleString()}${i.unit}</span></div><div class="bar-track"><div class="bar-fill ${metGoal?'bar-calories':'bar-over'}" style="width:${pct}%"></div></div></div>`;
   }).join('');
 }
 function renderMacroBars(){
@@ -2183,6 +2189,24 @@ function saveWorkout(){
 
 function saveWeight(){const v=parseFloat(document.getElementById('weight-input').value);if(!v||v<=0)return;dayData.weight=v;saveDay();closeModal('modal-weight');renderToday();showToast('Weight saved ✓');}
 function openWaterModal(){document.getElementById('water-current-total').textContent=`Today's total so far: ${dayData.water||0} oz`;openModal('modal-water');}
+function openGoalsModal(){
+  const profile=clientProfile||{};
+  document.getElementById('goals-step-input').value=profile.step_goal||10000;
+  document.getElementById('goals-water-input').value=profile.water_goal||100;
+  openModal('modal-goals');
+}
+async function saveOwnGoals(){
+  const stepGoal=parseInt(document.getElementById('goals-step-input').value)||10000;
+  const waterGoal=parseInt(document.getElementById('goals-water-input').value)||100;
+  clientProfile.step_goal=stepGoal;
+  clientProfile.water_goal=waterGoal;
+  if(CLIENT_ID && CLIENT_ID!=='demo'){
+    try{ await fsSet(`clients/${CLIENT_ID}`,{...clientProfile}); }catch(e){}
+  }
+  closeModal('modal-goals');
+  renderActivityBars();
+  showToast('Goals updated ✓');
+}
 function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=(dayData.water||0)+v;saveDay();closeModal('modal-water');renderToday();showToast(`Water logged — ${dayData.water}oz today ✓`);}
 
 // FIREBASE IO
