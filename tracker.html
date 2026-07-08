@@ -1682,7 +1682,7 @@ function prepareBlueprintFood(name, cals, protein, carbs, fat, serving, servingG
   } else if (serving.includes('cup')) {
     document.getElementById('add-food-amount').value = 1;
     document.getElementById('add-food-unit').value = 'cup';
-  } else if (serving.includes('scoop') || serving.includes('egg') || serving.includes('banana') || serving.includes('medium')) {
+  } else if (serving.includes('scoop') || serving.includes('egg') || serving.includes('banana') || serving.includes('medium') || serving.includes('slice') || serving.includes('bar') || serving.includes('packet') || serving.includes('piece')) {
     document.getElementById('add-food-amount').value = 1;
     document.getElementById('add-food-unit').value = 'piece';
     // Override piece gram weight to match this food's servingG
