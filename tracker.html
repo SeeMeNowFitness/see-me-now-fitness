@@ -3895,7 +3895,15 @@ function generateMealPlanPDF() {
     const displayName = getMealDisplayName(meal, mealIdx);
     const fmtAmount = f => {
       const u = f.unit || 'g';
-      const labels = { g:'g', oz:'oz', cup:'cup', tbsp:'tbsp', tsp:'tsp', piece:f._pieceLabel||'piece', scoop:'scoop', ml:'ml', fl_oz:'fl oz', l:'L' };
+      if (u === 'piece' && f.serving) {
+        // Extract the descriptive word from the food's saved serving text (e.g. "1 slice" → "slice"),
+        // so the PDF reads "2 slices" instead of a generic "2 piece".
+        const word = f.serving.replace(/^[\d.\s]+/, '').trim() || 'piece';
+        const amt = parseFloat(f.amount) || 1;
+        const plural = amt !== 1 && !word.endsWith('s') ? word + 's' : word;
+        return `${f.amount} ${plural}`;
+      }
+      const labels = { g:'g', oz:'oz', cup:'cup', tbsp:'tbsp', tsp:'tsp', piece:'piece', scoop:'scoop', ml:'ml', fl_oz:'fl oz', l:'L' };
       const label = labels[u] || u;
       return (u === 'g' || u === 'ml') ? `${f.amount}${label}` : `${f.amount} ${label}`;
     };
