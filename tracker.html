@@ -432,7 +432,7 @@ select option{background:var(--dark);}
   </div>
   <div id="workouts-log-list"></div>
 </div>
-<div id="weigh-food-note" style="display:none;"><div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--gold);">⚠️ <strong>Contest Prep:</strong> Weigh everything in grams. No estimates.</div></div>
+<div id="weigh-food-note" style="display:none;"><div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--gold);">⚠️ <strong>Contest Prep:</strong> Weigh everything.</div></div>
 </div>
 
 <!-- PROGRESS TAB -->
@@ -2711,6 +2711,17 @@ function setPlanDay(day) {
   // Sync with zigzag day type
   const dayType = day === 'nonleg' ? 'high' : 'low';
   currentDayType = dayType;
+  // This is the client's own choice for TODAY — always update the day's target immediately,
+  // same fix as setDayType(). Without this, once today's snapshot is frozen (which happens
+  // the moment anything is saved), this toggle changes the button color but never actually
+  // updates the macros shown, since it never touches the frozen dayData.target_macros.
+  const profile = clientProfile || {};
+  if (profile.tracking_method === 'zigzag') {
+    dayData.target_macros = dayType === 'high' ? (profile.macros_high || profile.macros) : (profile.macros_low || profile.macros);
+    dayData.target_day_type = dayType;
+    saveDay();
+  }
+  if (document.getElementById('plan-summary-pills')) { try { renderPlanSummary(); } catch(e) {} }
   // Update Today tab toggle buttons too
   const zzHigh = document.getElementById('zz-high');
   const zzLow = document.getElementById('zz-low');
