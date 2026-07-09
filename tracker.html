@@ -1532,8 +1532,10 @@ async function searchUSDA(q) {
     </div>`;
   }).join('');
 
-  // Blueprint Foods (⭐ SEE ME NOW) are a coaching-tier feature — self-serve tracker-only clients don't see them in search
-  const bpFoods = clientProfile?.tier === 'tracker' ? [] : await getBlueprintFoods();
+  // Blueprint Foods (⭐ SEE ME NOW) — available to all tiers, including self-serve tracker-only.
+  // This is a shared, coach-vetted list (not personalized coaching), so opening it up gives
+  // self-serve clients a better food search experience without requiring any per-client effort.
+  const bpFoods = await getBlueprintFoods();
   if (requestId !== searchRequestId) return; // a newer search started while this one was loading
   const bpMatches = bpFoods.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
 
