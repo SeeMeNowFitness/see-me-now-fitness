@@ -3893,6 +3893,12 @@ function generateMealPlanPDF() {
     const totalF = Math.round(meal.foods.reduce((s,f) => s+(f.fat||0), 0)*10)/10;
     const totalCal = Math.round(meal.foods.reduce((s,f) => s+(f.cals||0), 0));
     const displayName = getMealDisplayName(meal, mealIdx);
+    const fmtAmount = f => {
+      const u = f.unit || 'g';
+      const labels = { g:'g', oz:'oz', cup:'cup', tbsp:'tbsp', tsp:'tsp', piece:f._pieceLabel||'piece', scoop:'scoop', ml:'ml', fl_oz:'fl oz', l:'L' };
+      const label = labels[u] || u;
+      return (u === 'g' || u === 'ml') ? `${f.amount}${label}` : `${f.amount} ${label}`;
+    };
     return `
       <div class="pdf-meal-block">
         <div class="pdf-meal-header">
@@ -3903,7 +3909,7 @@ function generateMealPlanPDF() {
         </div>
         <table class="pdf-food-table">
           <tr><th>Food</th><th>Amount</th><th>Protein</th><th>Carbs</th><th>Fat</th><th>kcal</th></tr>
-          ${meal.foods.map(f => `<tr><td>${f.name}</td><td>${f.amount}</td><td>${f.protein}g</td><td>${f.carbs}g</td><td>${f.fat}g</td><td>${f.cals}</td></tr>`).join('')}
+          ${meal.foods.map(f => `<tr><td>${f.name}</td><td>${fmtAmount(f)}</td><td>${f.protein}g</td><td>${f.carbs}g</td><td>${f.fat}g</td><td>${f.cals}</td></tr>`).join('')}
           <tr class="pdf-food-total"><td colspan="2">Total</td><td>${totalP}g</td><td>${totalC}g</td><td>${totalF}g</td><td>${totalCal}</td></tr>
         </table>
         <div class="pdf-meal-macros">
