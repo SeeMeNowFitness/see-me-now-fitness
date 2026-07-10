@@ -417,6 +417,7 @@ select option{background:var(--dark);}
 <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;"><div style="width:240px;height:140px;border:2px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.55);position:relative;"><div style="position:absolute;top:-1px;left:-1px;width:20px;height:20px;border-top:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:4px 0 0 0;"></div><div style="position:absolute;top:-1px;right:-1px;width:20px;height:20px;border-top:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 4px 0 0;"></div><div style="position:absolute;bottom:-1px;left:-1px;width:20px;height:20px;border-bottom:3px solid var(--gold);border-left:3px solid var(--gold);border-radius:0 0 0 4px;"></div><div style="position:absolute;bottom:-1px;right:-1px;width:20px;height:20px;border-bottom:3px solid var(--gold);border-right:3px solid var(--gold);border-radius:0 0 4px 0;"></div></div></div>
 <div style="position:absolute;bottom:100px;left:0;right:0;text-align:center;"><div style="font-size:13px;color:var(--white);font-weight:700;margin-bottom:4px;" id="barcode-status">Point camera at a barcode</div><div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Works with food packaging barcodes</div><button onclick="promptManualBarcode()" style="background:none;border:none;color:var(--gold);font-size:12px;font-weight:700;text-decoration:underline;cursor:pointer;">Having trouble? Type the barcode instead</button></div>
 <button onclick="closeBarcodeScanner()" style="position:absolute;top:20px;right:20px;background:rgba(0,0,0,0.6);border:1px solid var(--border);color:var(--white);border-radius:99px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;">Cancel</button>
+<button id="barcode-torch-btn" onclick="toggleBarcodeTorch()" style="display:none;position:absolute;top:20px;left:20px;background:rgba(0,0,0,0.6);border:1px solid var(--border);color:var(--white);border-radius:99px;width:40px;height:40px;font-size:16px;cursor:pointer;">💡</button>
 </div>
 </div>
 <div style="display:flex;gap:8px;margin-bottom:8px;">
@@ -1713,13 +1714,33 @@ function demoFood(q){const ds=[{name:'Chicken Breast (cooked)',cals:165,p:31,c:0
 // BARCODE
 let zxingLoaded=false;
 function loadZXing(){return new Promise((res,rej)=>{if(zxingLoaded){res();return;}const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js';s.onload=()=>{zxingLoaded=true;res();};s.onerror=rej;document.head.appendChild(s);});}
-let barcodeReader=null,barcodeStream=null;
+let barcodeReader=null,barcodeStream=null,barcodeTorchTrack=null,barcodeTorchOn=false;
 async function startBarcodeScan(){const b=document.getElementById('barcode-btn');b.classList.add('loading');await openBarcodeScanner();b.classList.remove('loading');}
 async function openBarcodeScanner(){document.getElementById('barcode-overlay').style.display='flex';document.getElementById('barcode-status').textContent='Loading scanner…';try{await loadZXing();document.getElementById('barcode-status').textContent='Starting camera…';const hints=new Map();hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128,ZXing.BarcodeFormat.CODE_39]);hints.set(ZXing.DecodeHintType.TRY_HARDER,true);barcodeReader=new ZXing.BrowserMultiFormatReader(hints);
   // Higher resolution + continuous autofocus meaningfully improves how reliably ZXing
   // can lock onto a barcode, especially on smaller/blurrier or poorly-lit packaging.
   const constraints={video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080},advanced:[{focusMode:'continuous'}]}};
-  barcodeStream=await barcodeReader.decodeFromConstraints(constraints,document.getElementById('barcode-video'),(result)=>{if(result){closeBarcodeScanner();lookupBarcode(result.getText());}});document.getElementById('barcode-status').textContent='Point camera at a barcode';}catch(e){document.getElementById('barcode-status').textContent='Camera not available — try searching instead';}}
+  barcodeStream=await barcodeReader.decodeFromConstraints(constraints,document.getElementById('barcode-video'),(result)=>{if(result){closeBarcodeScanner();lookupBarcode(result.getText());}});document.getElementById('barcode-status').textContent='Point camera at a barcode';
+  // Show a flashlight toggle if this device's camera actually supports it — big real-world
+  // improvement for scanning in dim lighting (fridges, dark kitchens, low-light pantries).
+  try{
+    const video=document.getElementById('barcode-video');
+    const track=video.srcObject?.getVideoTracks?.()[0];
+    if(track && track.getCapabilities && track.getCapabilities().torch){
+      barcodeTorchTrack=track; barcodeTorchOn=false;
+      const btn=document.getElementById('barcode-torch-btn');
+      btn.style.display='flex'; btn.style.alignItems='center'; btn.style.justifyContent='center';
+      btn.style.background='rgba(0,0,0,0.6)';
+    }
+  }catch(e){}
+  }catch(e){document.getElementById('barcode-status').textContent='Camera not available — try searching instead';}}
+function toggleBarcodeTorch(){
+  if(!barcodeTorchTrack)return;
+  barcodeTorchOn=!barcodeTorchOn;
+  barcodeTorchTrack.applyConstraints({advanced:[{torch:barcodeTorchOn}]}).catch(()=>{});
+  const btn=document.getElementById('barcode-torch-btn');
+  if(btn){ btn.style.background=barcodeTorchOn?'var(--gold)':'rgba(0,0,0,0.6)'; }
+}
 function promptManualBarcode(){
   closeBarcodeScanner();
   const overlay=document.createElement('div');
@@ -1743,7 +1764,7 @@ function submitManualBarcode(){
   document.getElementById('manual-barcode-overlay')?.remove();
   if(code)lookupBarcode(code);
 }
-function closeBarcodeScanner(){document.getElementById('barcode-overlay').style.display='none';if(barcodeReader){try{barcodeReader.reset();}catch(e){}barcodeReader=null;}if(barcodeStream){try{barcodeStream.getTracks?.().forEach(t=>t.stop());}catch(e){}barcodeStream=null;}}
+function closeBarcodeScanner(){document.getElementById('barcode-overlay').style.display='none';if(barcodeReader){try{barcodeReader.reset();}catch(e){}barcodeReader=null;}if(barcodeStream){try{barcodeStream.getTracks?.().forEach(t=>t.stop());}catch(e){}barcodeStream=null;}barcodeTorchTrack=null;barcodeTorchOn=false;const torchBtn=document.getElementById('barcode-torch-btn');if(torchBtn)torchBtn.style.display='none';}
 async function lookupBarcode(barcode){const el=document.getElementById('food-search-results');el.innerHTML=`<div class="loading">Looking up barcode ${barcode}…</div>`;try{const r=await fetch(`https://api.spoonacular.com/food/products/upc/${barcode}?apiKey=${SPOONACULAR_API_KEY}`);if(r.ok){const d=await r.json();const n=d.nutrition?.nutrients||[];const g=nm=>n.find(x=>x.name===nm)?.amount||0;const rawCals=g('Calories'),rawP=g('Protein'),rawC=g('Carbohydrates'),rawF=g('Fat');
   // Spoonacular reports nutrition per the product's actual serving size (d.servingSize),
   // NOT per 100g — but the rest of the app always assumes per-100g for scaling. Normalize
@@ -2888,13 +2909,24 @@ const TRACKER_BT_FOODS = {
       {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
       {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
       {name:'Quinoa (cooked)',macro:'4g P / 21g C / 2g F per 100g'},
+    ],
+    vegetables:[
       {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
       {name:'Asparagus',macro:'2g P / 4g C / 0g F per 100g'},
+      {name:'Green Beans',macro:'2g P / 7g C / 0g F per 100g'},
+      {name:'Bell Peppers',macro:'1g P / 6g C / 0g F per 100g'},
+      {name:'Zucchini',macro:'1g P / 3g C / 0g F per 100g'},
+      {name:'Cucumber',macro:'1g P / 4g C / 0g F per 100g'},
+      {name:'Carrots',macro:'1g P / 10g C / 0g F per 100g'},
+    ],
+    fruits:[
       {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
       {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
       {name:'Apple',macro:'0g P / 14g C / 0g F per 100g'},
-      {name:'Green Beans',macro:'2g P / 7g C / 0g F per 100g'},
+      {name:'Strawberries',macro:'1g P / 8g C / 0g F per 100g'},
+      {name:'Orange',macro:'1g P / 12g C / 0g F per 100g'},
+      {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
     ],
     fats:[
       {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
@@ -2927,18 +2959,27 @@ const TRACKER_BT_FOODS = {
       {name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},
     ],
     carbs:[
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Quinoa (cooked)',macro:'4g P / 21g C / 2g F per 100g'},
+      {name:'Rice Cakes',macro:'8g P / 82g C / 3g F per 100g'},
+    ],
+    vegetables:[
       {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
       {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
-      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
       {name:'Collard Greens',macro:'3g P / 6g C / 0g F per 100g'},
       {name:'Romaine Lettuce',macro:'1g P / 3g C / 0g F per 100g'},
       {name:'Beets',macro:'2g P / 10g C / 0g F per 100g'},
+      {name:'Artichoke',macro:'3g P / 11g C / 0g F per 100g'},
+      {name:'Onions',macro:'1g P / 9g C / 0g F per 100g'},
+    ],
+    fruits:[
       {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
       {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
       {name:'Figs',macro:'1g P / 19g C / 0g F per 100g'},
       {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
-      {name:'Artichoke',macro:'3g P / 11g C / 0g F per 100g'},
+      {name:'Cherries',macro:'1g P / 16g C / 0g F per 100g'},
+      {name:'Pomegranate',macro:'2g P / 19g C / 1g F per 100g'},
     ],
     fats:[
       {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
@@ -2975,14 +3016,25 @@ const TRACKER_BT_FOODS = {
       {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
       {name:'Amaranth',macro:'14g P / 65g C / 7g F per 100g'},
       {name:'Buckwheat',macro:'13g P / 72g C / 3g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+    ],
+    vegetables:[
       {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
       {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
-      {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
-      {name:'Berries (mixed)',macro:'1g P / 14g C / 0g F per 100g'},
-      {name:'Apricots',macro:'1g P / 11g C / 0g F per 100g'},
-      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
       {name:'Artichoke',macro:'3g P / 11g C / 0g F per 100g'},
+      {name:'Carrots',macro:'1g P / 10g C / 0g F per 100g'},
+      {name:'Garlic',macro:'6g P / 33g C / 0.5g F per 100g'},
+      {name:'Onions',macro:'1g P / 9g C / 0g F per 100g'},
+      {name:'Beet Greens',macro:'2g P / 4g C / 0g F per 100g'},
+    ],
+    fruits:[
+      {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
+      {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
+      {name:'Apricots',macro:'1g P / 11g C / 0g F per 100g'},
+      {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
+      {name:'Figs',macro:'1g P / 19g C / 0g F per 100g'},
+      {name:'Lemon',macro:'1g P / 9g C / 0g F per 100g'},
     ],
     fats:[
       {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
@@ -3018,15 +3070,25 @@ const TRACKER_BT_FOODS = {
       {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
       {name:'Millet',macro:'11g P / 73g C / 4g F per 100g'},
       {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
-      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+    ],
+    vegetables:[
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Collard Greens',macro:'3g P / 6g C / 0g F per 100g'},
       {name:'Cabbage',macro:'1g P / 6g C / 0g F per 100g'},
+      {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+      {name:'Carrots',macro:'1g P / 10g C / 0g F per 100g'},
+      {name:'Beets',macro:'2g P / 10g C / 0g F per 100g'},
+      {name:'Bell Peppers',macro:'1g P / 6g C / 0g F per 100g'},
+      {name:'Parsley',macro:'3g P / 6g C / 0g F per 100g'},
+    ],
+    fruits:[
       {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
       {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
       {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
       {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
       {name:'Watermelon',macro:'1g P / 8g C / 0g F per 100g'},
+      {name:'Papaya',macro:'1g P / 11g C / 0g F per 100g'},
     ],
     fats:[
       {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
@@ -3062,15 +3124,25 @@ const TRACKER_BT_FOODS = {
       {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
       {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
       {name:'Millet',macro:'11g P / 73g C / 4g F per 100g'},
-      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+    ],
+    vegetables:[
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Cauliflower',macro:'2g P / 5g C / 0g F per 100g'},
       {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
       {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+      {name:'Garlic',macro:'6g P / 33g C / 0.5g F per 100g'},
+      {name:'Carrots',macro:'1g P / 10g C / 0g F per 100g'},
+      {name:'Cucumber',macro:'1g P / 4g C / 0g F per 100g'},
+      {name:'Celery',macro:'1g P / 3g C / 0g F per 100g'},
+    ],
+    fruits:[
       {name:'Cherries',macro:'1g P / 16g C / 0g F per 100g'},
       {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
       {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
       {name:'Cranberries',macro:'0g P / 12g C / 0g F per 100g'},
       {name:'Watermelon',macro:'1g P / 8g C / 0g F per 100g'},
+      {name:'Kiwi',macro:'1g P / 15g C / 1g F per 100g'},
     ],
     fats:[
       {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
@@ -3646,19 +3718,23 @@ function renderApprovedFoods() {
   const isAssigned = !!af;
 
   // Use assigned foods if available, otherwise use blood type defaults
-  let protein = [], carbs = [], fats = [];
+  let protein = [], carbs = [], vegetables = [], fruits = [], fats = [];
   if (af) {
     if (Array.isArray(af)) {
       protein = af; // old flat format fallback
     } else {
       protein = af.protein || [];
       carbs = af.carbs || [];
+      vegetables = af.vegetables || [];
+      fruits = af.fruits || [];
       fats = af.fats || [];
     }
   } else {
     const defaults = getDefaultApprovedFoods(bloodType);
     protein = defaults.protein || [];
     carbs = defaults.carbs || [];
+    vegetables = defaults.vegetables || [];
+    fruits = defaults.fruits || [];
     fats = defaults.fats || [];
   }
 
@@ -3691,6 +3767,8 @@ function renderApprovedFoods() {
     ${!isAssigned ? `<div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">📋 <strong style="color:var(--gold);">Blueprint Foods</strong> — ${btLabels[bloodType]} · Tap each category to expand.</div>` : ''}
     ${renderCategory(protein, 'protein', '💪 Protein Sources', 'var(--gold)')}
     ${renderCategory(carbs, 'carbs', '🌾 Carbohydrate Sources', 'var(--blue)')}
+    ${renderCategory(vegetables, 'vegetables', '🥦 Vegetables', 'var(--green)')}
+    ${renderCategory(fruits, 'fruits', '🍎 Fruits', '#e05c9c')}
     ${renderCategory(fats, 'fats', '🥑 Fat Sources', 'var(--orange)')}
   `;
 }
@@ -3868,12 +3946,12 @@ function generateMealPlanPDF() {
 
   // Approved foods
   const af = profile.approved_foods;
-  let protein = [], carbs = [], fats = [];
+  let protein = [], carbs = [], vegetables = [], fruits = [], fats = [];
   if (af) {
-    protein = af.protein || []; carbs = af.carbs || []; fats = af.fats || [];
+    protein = af.protein || []; carbs = af.carbs || []; vegetables = af.vegetables || []; fruits = af.fruits || []; fats = af.fats || [];
   } else {
     const defaults = getDefaultApprovedFoods(profile.blood_type || 'unknown');
-    protein = defaults.protein || []; carbs = defaults.carbs || []; fats = defaults.fats || [];
+    protein = defaults.protein || []; carbs = defaults.carbs || []; vegetables = defaults.vegetables || []; fruits = defaults.fruits || []; fats = defaults.fats || [];
   }
 
   // Flex meals
@@ -3955,11 +4033,13 @@ function generateMealPlanPDF() {
       </div>
     </div>`;
 
-  const approvedHTML = (protein.length || carbs.length || fats.length) ? `
+  const approvedHTML = (protein.length || carbs.length || vegetables.length || fruits.length || fats.length) ? `
     <div class="pdf-section">
       <div class="pdf-section-title">Blueprint Foods</div>
       ${protein.length ? `<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#C9A84C;margin-bottom:6px;">💪 Protein Sources</div><div class="pdf-approved-grid">${protein.map(f=>`<div class="pdf-approved-item"><div class="pdf-approved-name">${f.name}</div><div class="pdf-approved-macro">${f.macro}</div></div>`).join('')}</div></div>` : ''}
       ${carbs.length ? `<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#4c8fe0;margin-bottom:6px;">🌾 Carbohydrate Sources</div><div class="pdf-approved-grid">${carbs.map(f=>`<div class="pdf-approved-item"><div class="pdf-approved-name">${f.name}</div><div class="pdf-approved-macro">${f.macro}</div></div>`).join('')}</div></div>` : ''}
+      ${vegetables.length ? `<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#4caf76;margin-bottom:6px;">🥦 Vegetables</div><div class="pdf-approved-grid">${vegetables.map(f=>`<div class="pdf-approved-item"><div class="pdf-approved-name">${f.name}</div><div class="pdf-approved-macro">${f.macro}</div></div>`).join('')}</div></div>` : ''}
+      ${fruits.length ? `<div style="margin-bottom:12px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#e05c9c;margin-bottom:6px;">🍎 Fruits</div><div class="pdf-approved-grid">${fruits.map(f=>`<div class="pdf-approved-item"><div class="pdf-approved-name">${f.name}</div><div class="pdf-approved-macro">${f.macro}</div></div>`).join('')}</div></div>` : ''}
       ${fats.length ? `<div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:#e07c2a;margin-bottom:6px;">🥑 Fat Sources</div><div class="pdf-approved-grid">${fats.map(f=>`<div class="pdf-approved-item"><div class="pdf-approved-name">${f.name}</div><div class="pdf-approved-macro">${f.macro}</div></div>`).join('')}</div></div>` : ''}
     </div>` : '';
 
