@@ -1765,24 +1765,78 @@ function submitManualBarcode(){
   if(code)lookupBarcode(code);
 }
 function closeBarcodeScanner(){document.getElementById('barcode-overlay').style.display='none';if(barcodeReader){try{barcodeReader.reset();}catch(e){}barcodeReader=null;}if(barcodeStream){try{barcodeStream.getTracks?.().forEach(t=>t.stop());}catch(e){}barcodeStream=null;}barcodeTorchTrack=null;barcodeTorchOn=false;const torchBtn=document.getElementById('barcode-torch-btn');if(torchBtn)torchBtn.style.display='none';}
-async function lookupBarcode(barcode){const el=document.getElementById('food-search-results');el.innerHTML=`<div class="loading">Looking up barcode ${barcode}…</div>`;try{const r=await fetch(`https://api.spoonacular.com/food/products/upc/${barcode}?apiKey=${SPOONACULAR_API_KEY}`);if(r.ok){const d=await r.json();const n=d.nutrition?.nutrients||[];const g=nm=>n.find(x=>x.name===nm)?.amount||0;const rawCals=g('Calories'),rawP=g('Protein'),rawC=g('Carbohydrates'),rawF=g('Fat');
-  // Spoonacular reports nutrition per the product's actual serving size (d.servingSize),
-  // NOT per 100g — but the rest of the app always assumes per-100g for scaling. Normalize
-  // here using Spoonacular's own reported serving weight, or these numbers silently undercount
-  // (or overcount) for any serving size that isn't coincidentally exactly 100g.
-  const servingG = parseFloat(d.servingSize)||0;
-  const servingUnit = (d.servingSizeUnit||'g').toLowerCase();
-  let cals=rawCals,p=rawP,c=rawC,f=rawF;
-  if(servingG>0 && (servingUnit==='g'||servingUnit==='grams'||servingUnit==='gram')){
-    const factor=100/servingG;
-    cals=rawCals*factor; p=rawP*factor; c=rawC*factor; f=rawF*factor;
+function isPlausibleMacros(cals,p,c,f){
+  // Cross-checks reported calories against what the macros themselves imply (protein×4 + carbs×4 + fat×9).
+  // A wide mismatch is a strong signal the source data is wrong or mismatched to the wrong product —
+  // this is exactly the kind of error that silently under-reported the popcorn scan earlier.
+  if(cals<=0 && p<=0 && c<=0 && f<=0) return false;
+  const implied=p*4+c*4+f*9;
+  if(implied<=0) return cals>0;
+  const ratio=cals/implied;
+  return ratio>=0.7 && ratio<=1.4; // allows for fiber/rounding/alcohol without accepting wildly wrong data
+}
+async function lookupBarcode(barcode){
+  const el=document.getElementById('food-search-results');
+  el.innerHTML=`<div class="loading">Looking up barcode ${barcode}…</div>`;
+  let offResult=null, spoonResult=null;
+
+  // Try OpenFoodFacts FIRST — it's built specifically from real people scanning real packaged
+  // products and typing in the actual label data, generally more reliable for barcode lookups
+  // than Spoonacular's broader recipe/food database.
+  try{
+    const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+    const d=await r.json();
+    if(d.status===1 && d.product){
+      const p=d.product,n=p.nutriments||{};
+      const cals=Math.round(n['energy-kcal_100g']||0),pr=Math.round(n['proteins_100g']||0),c=Math.round(n['carbohydrates_100g']||0),f=Math.round(n['fat_100g']||0);
+      offResult={name:p.product_name||'Scanned Product',cals,p:pr,c,f,plausible:isPlausibleMacros(cals,pr,c,f)};
+    }
+  }catch(e){}
+
+  if(offResult && offResult.plausible){
+    showBarcodeResult(offResult.name,offResult.cals,offResult.p,offResult.c,offResult.f,'/100g');
+    return;
   }
-  cals=Math.round(cals);p=Math.round(p*10)/10;c=Math.round(c*10)/10;f=Math.round(f*10)/10;
-  // Only accept this match if it actually has usable macro data — Spoonacular sometimes
-  // matches a product name but returns an empty nutrition profile, which used to show
-  // as a real result with all-zero macros instead of falling back to OpenFoodFacts.
-  if(cals>0||p>0||c>0||f>0){showBarcodeResult(d.title||'Scanned Product',cals,p,c,f,'/100g');return;}}}catch(e){}try{const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);const d=await r.json();if(d.status===1&&d.product){const p=d.product,n=p.nutriments||{};showBarcodeResult(p.product_name||'Scanned Product',Math.round(n['energy-kcal_100g']||0),Math.round(n['proteins_100g']||0),Math.round(n['carbohydrates_100g']||0),Math.round(n['fat_100g']||0),'/100g');}else{el.innerHTML=`<div class="empty-state"><div class="icon">🔍</div><h4>Product not found</h4><p>This barcode isn't in our database yet.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;}}catch(e){el.innerHTML=`<div class="empty-state"><div class="icon">📦</div><h4>Could not look up barcode</h4><p>Check your connection, or enter the macros manually.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;}}
-function showBarcodeResult(name,cals,p,c,f,serving){const el=document.getElementById('food-search-results'),dn=name.length>40?name.slice(0,40)+'…':name;el.innerHTML=`<div style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">✓ Barcode scanned</div><div class="food-result"><div class="food-result-img">📦</div><div class="food-result-info"><div class="food-result-name">${dn}</div><div class="food-result-macros">${cals} kcal${serving?' · '+serving:'/100g'} &nbsp;·&nbsp; P:<span>${p}g</span> C:<span>${c}g</span> F:<span>${f}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${name.replace(/'/g,"\\'")}',${cals},${p},${c},${f})">Add</button></div>`;}
+
+  // Fall back to Spoonacular if OpenFoodFacts had nothing, or its numbers looked internally inconsistent
+  try{
+    const r=await fetch(`https://api.spoonacular.com/food/products/upc/${barcode}?apiKey=${SPOONACULAR_API_KEY}`);
+    if(r.ok){
+      const d=await r.json();
+      const n=d.nutrition?.nutrients||[];
+      const g=nm=>n.find(x=>x.name===nm)?.amount||0;
+      const rawCals=g('Calories'),rawP=g('Protein'),rawC=g('Carbohydrates'),rawF=g('Fat');
+      // Spoonacular reports nutrition per the product's actual serving size (d.servingSize),
+      // NOT per 100g — normalize using its own reported serving weight.
+      const servingG=parseFloat(d.servingSize)||0;
+      const servingUnit=(d.servingSizeUnit||'g').toLowerCase();
+      let cals=rawCals,p=rawP,c=rawC,f=rawF;
+      if(servingG>0 && (servingUnit==='g'||servingUnit==='grams'||servingUnit==='gram')){
+        const factor=100/servingG;
+        cals=rawCals*factor;p=rawP*factor;c=rawC*factor;f=rawF*factor;
+      }
+      cals=Math.round(cals);p=Math.round(p*10)/10;c=Math.round(c*10)/10;f=Math.round(f*10)/10;
+      spoonResult={name:d.title||'Scanned Product',cals,p,c,f,plausible:isPlausibleMacros(cals,p,c,f)};
+    }
+  }catch(e){}
+
+  if(spoonResult && spoonResult.plausible){
+    showBarcodeResult(spoonResult.name,spoonResult.cals,spoonResult.p,spoonResult.c,spoonResult.f,'/100g');
+    return;
+  }
+
+  // Neither source had fully plausible data — use whichever has real (non-zero) numbers,
+  // but flag it clearly so the client knows to double-check the label instead of trusting it blindly.
+  const best = (offResult && (offResult.cals||offResult.p||offResult.c||offResult.f)) ? offResult
+             : (spoonResult && (spoonResult.cals||spoonResult.p||spoonResult.c||spoonResult.f)) ? spoonResult
+             : null;
+  if(best){
+    showBarcodeResult(best.name,best.cals,best.p,best.c,best.f,'/100g',true);
+    return;
+  }
+  el.innerHTML=`<div class="empty-state"><div class="icon">🔍</div><h4>Product not found</h4><p>This barcode isn't in our database yet.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;
+}
+function showBarcodeResult(name,cals,p,c,f,serving,uncertain){const el=document.getElementById('food-search-results'),dn=name.length>40?name.slice(0,40)+'…':name;const warning=uncertain?`<div style="font-size:11px;color:var(--gold);background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:8px;padding:8px 10px;margin-bottom:8px;">⚠️ This product's nutrition data looks unusual — please double-check it against the package label before logging.</div>`:'';el.innerHTML=`<div style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">✓ Barcode scanned</div>${warning}<div class="food-result"><div class="food-result-img">📦</div><div class="food-result-info"><div class="food-result-name">${dn}</div><div class="food-result-macros">${cals} kcal${serving?' · '+serving:'/100g'} &nbsp;·&nbsp; P:<span>${p}g</span> C:<span>${c}g</span> F:<span>${f}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${name.replace(/'/g,"\\'")}',${cals},${p},${c},${f})">Add</button></div>`;}
 
 // ── CUSTOM FOOD ENTRY (manual macros when food can't be found) ──
 function openCustomFoodModal(prefillName) {
