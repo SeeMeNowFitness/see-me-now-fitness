@@ -1893,53 +1893,67 @@ function isPlausibleMacros(cals,p,c,f){
 async function lookupBarcode(barcode){
   const el=document.getElementById('food-search-results');
   el.innerHTML=`<div class="loading">Looking up barcode ${barcode}…</div>`;
-  let offResult=null, spoonResult=null;
 
-  // Try OpenFoodFacts FIRST — it's built specifically from real people scanning real packaged
-  // products and typing in the actual label data, generally more reliable for barcode lookups
-  // than Spoonacular's broader recipe/food database.
-  try{
-    const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
-    const d=await r.json();
-    if(d.status===1 && d.product){
-      const p=d.product,n=p.nutriments||{};
-      const cals=Math.round(n['energy-kcal_100g']||0),pr=Math.round(n['proteins_100g']||0),c=Math.round(n['carbohydrates_100g']||0),f=Math.round(n['fat_100g']||0);
-      const img=p.image_front_small_url||p.image_small_url||p.image_url||null;
-      offResult={name:p.product_name||'Scanned Product',cals,p:pr,c,f,img,plausible:isPlausibleMacros(cals,pr,c,f)};
-    }
-  }catch(e){}
-
-  if(offResult && offResult.plausible){
-    showBarcodeResult(offResult.name,offResult.cals,offResult.p,offResult.c,offResult.f,'/100g',false,offResult.img);
-    return;
-  }
-
-  // Fall back to Spoonacular if OpenFoodFacts had nothing, or its numbers looked internally inconsistent
-  try{
-    const r=await fetch(`https://api.spoonacular.com/food/products/upc/${barcode}?apiKey=${SPOONACULAR_API_KEY}`);
-    if(r.ok){
+  const fetchOFF=async()=>{
+    try{
+      const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
       const d=await r.json();
-      const n=d.nutrition?.nutrients||[];
-      const g=nm=>n.find(x=>x.name===nm)?.amount||0;
-      const rawCals=g('Calories'),rawP=g('Protein'),rawC=g('Carbohydrates'),rawF=g('Fat');
-      // Spoonacular reports nutrition per the product's actual serving size (d.servingSize),
-      // NOT per 100g — normalize using its own reported serving weight.
-      const servingG=parseFloat(d.servingSize)||0;
-      const servingUnit=(d.servingSizeUnit||'g').toLowerCase();
-      let cals=rawCals,p=rawP,c=rawC,f=rawF;
-      if(servingG>0 && (servingUnit==='g'||servingUnit==='grams'||servingUnit==='gram')){
-        const factor=100/servingG;
-        cals=rawCals*factor;p=rawP*factor;c=rawC*factor;f=rawF*factor;
+      if(d.status===1 && d.product){
+        const p=d.product,n=p.nutriments||{};
+        const cals=Math.round(n['energy-kcal_100g']||0),pr=Math.round(n['proteins_100g']||0),c=Math.round(n['carbohydrates_100g']||0),f=Math.round(n['fat_100g']||0);
+        const img=p.image_front_small_url||p.image_small_url||p.image_url||null;
+        return {source:'OpenFoodFacts',name:p.product_name||'Scanned Product',cals,p:pr,c,f,img,plausible:isPlausibleMacros(cals,pr,c,f)};
       }
-      cals=Math.round(cals);p=Math.round(p*10)/10;c=Math.round(c*10)/10;f=Math.round(f*10)/10;
-      spoonResult={name:d.title||'Scanned Product',cals,p,c,f,img:d.image||null,plausible:isPlausibleMacros(cals,p,c,f)};
-    }
-  }catch(e){}
+    }catch(e){}
+    return null;
+  };
+  const fetchSpoonacular=async()=>{
+    try{
+      const r=await fetch(`https://api.spoonacular.com/food/products/upc/${barcode}?apiKey=${SPOONACULAR_API_KEY}`);
+      if(r.ok){
+        const d=await r.json();
+        const n=d.nutrition?.nutrients||[];
+        const g=nm=>n.find(x=>x.name===nm)?.amount||0;
+        const rawCals=g('Calories'),rawP=g('Protein'),rawC=g('Carbohydrates'),rawF=g('Fat');
+        // Spoonacular reports nutrition per the product's actual serving size (d.servingSize),
+        // NOT per 100g — normalize using its own reported serving weight.
+        const servingG=parseFloat(d.servingSize)||0;
+        const servingUnit=(d.servingSizeUnit||'g').toLowerCase();
+        let cals=rawCals,p=rawP,c=rawC,f=rawF;
+        if(servingG>0 && (servingUnit==='g'||servingUnit==='grams'||servingUnit==='gram')){
+          const factor=100/servingG;
+          cals=rawCals*factor;p=rawP*factor;c=rawC*factor;f=rawF*factor;
+        }
+        cals=Math.round(cals);p=Math.round(p*10)/10;c=Math.round(c*10)/10;f=Math.round(f*10)/10;
+        return {source:'Spoonacular',name:d.title||'Scanned Product',cals,p,c,f,img:d.image||null,plausible:isPlausibleMacros(cals,p,c,f)};
+      }
+    }catch(e){}
+    return null;
+  };
 
-  if(spoonResult && spoonResult.plausible){
-    showBarcodeResult(spoonResult.name,spoonResult.cals,spoonResult.p,spoonResult.c,spoonResult.f,'/100g',false,spoonResult.img);
+  // Query both sources in parallel every time (not just as a fallback) so we can actually
+  // detect disagreement between them — that's a real signal neither source alone can give us.
+  const [offResult,spoonResult]=await Promise.all([fetchOFF(),fetchSpoonacular()]);
+
+  const offOk=offResult&&offResult.plausible;
+  const spoonOk=spoonResult&&spoonResult.plausible;
+
+  if(offOk&&spoonOk){
+    // Both sources have usable data — check if they actually agree before trusting either blindly
+    const calDiff=Math.abs(offResult.cals-spoonResult.cals)/Math.max(offResult.cals,spoonResult.cals,1);
+    if(calDiff<=0.20){
+      // Close enough to trust — use OpenFoodFacts (generally the better-suited source for packaged products)
+      showBarcodeResult(offResult.name,offResult.cals,offResult.p,offResult.c,offResult.f,'/100g',false,offResult.img);
+      return;
+    }
+    // Genuine disagreement between two otherwise-plausible sources — no algorithm can resolve
+    // this correctly. Let the person holding the actual product pick using the real label.
+    showBarcodeChoice(barcode,[offResult,spoonResult]);
     return;
   }
+
+  if(offOk){showBarcodeResult(offResult.name,offResult.cals,offResult.p,offResult.c,offResult.f,'/100g',false,offResult.img);return;}
+  if(spoonOk){showBarcodeResult(spoonResult.name,spoonResult.cals,spoonResult.p,spoonResult.c,spoonResult.f,'/100g',false,spoonResult.img);return;}
 
   // Neither source had fully plausible data — use whichever has real (non-zero) numbers,
   // but flag it clearly so the client knows to double-check the label instead of trusting it blindly.
@@ -1951,6 +1965,23 @@ async function lookupBarcode(barcode){
     return;
   }
   el.innerHTML=`<div class="empty-state"><div class="icon">🔍</div><h4>Product not found</h4><p>This barcode isn't in our database yet.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;
+}
+function showBarcodeChoice(barcode,candidates){
+  const el=document.getElementById('food-search-results');
+  el.innerHTML=`<div style="font-size:11px;color:var(--gold);background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:8px;padding:8px 10px;margin-bottom:8px;">⚠️ We found two different matches for this barcode — tap the one that matches your actual product.</div>
+    ${candidates.map((c,i)=>{
+      const imgHTML=c.img?`<img src="${c.img}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;" alt="">`:'📦';
+      const dn=c.name.length>36?c.name.slice(0,36)+'…':c.name;
+      return `<div class="food-result" onclick="prepareAddFood(null,'${c.name.replace(/'/g,"\\'")}',${c.cals},${c.p},${c.c},${c.f})" style="cursor:pointer;">
+        <div class="food-result-img">${imgHTML}</div>
+        <div class="food-result-info">
+          <div class="food-result-name">${dn} <span style="font-size:10px;color:var(--muted);font-weight:400;">(${c.source})</span></div>
+          <div class="food-result-macros">${c.cals} kcal/100g &nbsp;·&nbsp; P:<span>${c.p}g</span> C:<span>${c.c}g</span> F:<span>${c.f}g</span></div>
+        </div>
+        <button class="food-result-add">Use This</button>
+      </div>`;
+    }).join('')}
+    <div style="font-size:10px;color:var(--muted);margin-top:8px;text-align:center;">Neither look right? <a href="#" onclick="openCustomFoodModal('');return false;" style="color:var(--gold);">Enter it manually</a></div>`;
 }
 function showBarcodeResult(name,cals,p,c,f,serving,uncertain,img){const el=document.getElementById('food-search-results'),dn=name.length>40?name.slice(0,40)+'…':name;const warning=uncertain?`<div style="font-size:11px;color:var(--gold);background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:8px;padding:8px 10px;margin-bottom:8px;">⚠️ This product's nutrition data looks unusual — please double-check it against the package label before logging.</div>`:'';const imgHTML=img?`<img src="${img}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;" alt="">`:'📦';el.innerHTML=`<div style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">✓ Barcode scanned</div>${warning}<div class="food-result"><div class="food-result-img">${imgHTML}</div><div class="food-result-info"><div class="food-result-name">${dn}</div><div class="food-result-macros">${cals} kcal${serving?' · '+serving:'/100g'} &nbsp;·&nbsp; P:<span>${p}g</span> C:<span>${c}g</span> F:<span>${f}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${name.replace(/'/g,"\\'")}',${cals},${p},${c},${f})">Add</button></div>${img?'<div style="font-size:10px;color:var(--muted);margin-top:4px;">📸 Check the photo matches what you scanned</div>':''}`;}
 
