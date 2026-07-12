@@ -1137,10 +1137,9 @@ function renderGreetingCard() {
   document.getElementById('greeting-quote').textContent = quote.author ? `"${quote.text}" — ${quote.author}` : `"${quote.text}"`;
 }
 
-function getMacroAdherence(){
-  // Different categories get different tolerance — protein has the tightest floor (under-eating
-  // protein during a deficit is the real risk to muscle), carbs and fat get more natural
-  // day-to-day room, and calories overall get a moderate band.
+function getMacroAdherence(goal){
+  // Contest Prep gets a tighter tolerance band across the board — precision matters more
+  // close to a show than it does for general fat loss, muscle gain, or strength goals.
   const target=getMacros();
   const consumed={
     calories:dayData.meals.reduce((s,m)=>s+(m.calories||0),0),
@@ -1148,52 +1147,62 @@ function getMacroAdherence(){
     carbs:dayData.meals.reduce((s,m)=>s+(m.carbs||0),0),
     fat:dayData.meals.reduce((s,m)=>s+(m.fat||0),0),
   };
+  const bands = goal==='contest_prep'
+    ? { calories:[0.95,1.05], protein:0.95, carbs:[0.90,1.10], fat:[0.85,1.15] }
+    : { calories:[0.90,1.10], protein:0.90, carbs:[0.80,1.20], fat:[0.75,1.25] };
   const status={};
   ['calories','protein','carbs','fat'].forEach(k=>{
     const t=target[k];
     if(!t){status[k]=true;return;} // no target set for this category — don't flag it
     const pct=consumed[k]/t;
-    if(k==='protein') status[k]=pct>=0.90; // floor only — going over protein isn't a concern
-    else if(k==='carbs') status[k]=pct>=0.80&&pct<=1.20;
-    else if(k==='fat') status[k]=pct>=0.75&&pct<=1.25;
-    else status[k]=pct>=0.85&&pct<=1.15; // calories overall
+    if(k==='protein') status[k]=pct>=bands.protein; // floor only — going over protein isn't a concern
+    else{const[lo,hi]=bands[k];status[k]=pct>=lo&&pct<=hi;}
   });
   return status;
 }
-function macroStatusMessage(status){
+function macroStatusMessage(status,isToday){
   const names={calories:'calories',protein:'protein',carbs:'carbs',fat:'fat'};
   const keys=Object.keys(status);
   const off=keys.filter(k=>!status[k]);
   const on=keys.filter(k=>status[k]);
   if(!off.length) return null; // everything dialed in — caller uses the standard on-track message
-  if(off.length===keys.length) return "Your calories and macros were off target across the board today.";
+  const wasWere1=isToday?'were':'were'; // "were" reads naturally either way for a completed day's totals
+  if(off.length===keys.length) return isToday?"Your calories and macros are off target across the board today.":"Your calories and macros were off target across the board that day.";
   const offList=off.map(k=>names[k]).join(' and ');
-  if(!on.length) return `${offList.charAt(0).toUpperCase()+offList.slice(1)} came in outside your target range today.`;
+  const cameIn=isToday?'have come in':'came in';
+  if(!on.length) return `${offList.charAt(0).toUpperCase()+offList.slice(1)} ${cameIn} outside your target range ${isToday?'today':'that day'}.`;
   const onList=on.map((k,i)=>i===0?(names[k].charAt(0).toUpperCase()+names[k].slice(1)):names[k]).join(' and ');
-  return `${onList} ${on.length>1?'were':'was'} dialed in, but ${offList} came in outside your target range.`;
+  return `${onList} ${on.length>1?'were':'was'} dialed in, but ${offList} ${cameIn} outside your target range.`;
 }
 
-function getBlueprintInsight(zone,net,goal,macroStatus){
+function getBlueprintInsight(zone,net,goal,macroStatus,isToday){
   const g=goal||'fat_loss'; // legacy clients without a goal set keep the previous fat-loss-style behavior
-  const macroMsg=macroStatusMessage(macroStatus);
+  const macroMsg=macroStatusMessage(macroStatus,isToday);
   const macrosDialedIn=!macroMsg;
+  const dayRef=isToday?'Today':'That day';
+  const dayRefLower=isToday?'today':'that day';
+  const be=isToday?'is':'was';
+  const support=isToday?'supports':'supported';
+  const runVerb=isToday?'ran':'ran'; // "ran" already reads naturally for a completed day regardless
+  const exceedVerb=isToday?'exceeds':'exceeded';
+  const tomorrowSub=(presentText,pastText)=>isToday?presentText:pastText;
 
   if(g==='muscle_gain'){
     const target=(getMacros().calories)||2000, extreme=Math.abs(net)/target>0.30;
     if(zone==='surplus'){
-      if(macrosDialedIn) return {icon:'🟢',label:'On Track',color:'var(--green)',msg:"Today's nutrition supports your muscle-building phase.",sub:'Keep fueling your training.'};
-      return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:macroMsg,sub:'Protein especially is what actually builds muscle — a surplus alone won\'t get you there.'};
+      if(macrosDialedIn) return {icon:'🟢',label:'On Track',color:'var(--green)',msg:`${dayRef}'s nutrition ${support} your muscle-building phase.`,sub:tomorrowSub('Keep fueling your training.','You kept fueling your training.')};
+      return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:macroMsg,sub:'Protein especially is what actually builds muscle — a surplus alone won\'t get you there on its own.'};
     }
-    if(extreme) return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's surplus was larger than recommended.",sub:'A big surplus adds more fat gain than muscle — dial it back tomorrow.'};
-    if(zone==='maintenance') return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's intake was closer to maintenance than your muscle-building target.",sub:'Add a bit more to support growth.'};
-    return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's calorie intake was below target for a muscle-building phase.",sub:'Recovery and growth may benefit from additional nutrition.'};
+    if(extreme) return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s surplus ${be} larger than recommended.`,sub:tomorrowSub('A big surplus adds more fat gain than muscle — dial it back tomorrow.','A big surplus adds more fat gain than muscle than intended.')};
+    if(zone==='maintenance') return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s intake ${be} closer to maintenance than your muscle-building target.`,sub:'A bit more supports growth better.'};
+    return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s calorie intake ${be} below target for a muscle-building phase.`,sub:'Recovery and growth benefit from additional nutrition.'};
   }
 
   if(g==='maintenance'){
-    if(zone==='maintenance'&&macrosDialedIn) return {icon:'🟢',label:'On Track',color:'var(--green)',msg:"Today's intake is aligned with your maintenance goal.",sub:'Continue building consistency.'};
+    if(zone==='maintenance'&&macrosDialedIn) return {icon:'🟢',label:'On Track',color:'var(--green)',msg:`${dayRef}'s intake ${isToday?'is aligned':'was aligned'} with your maintenance goal.`,sub:tomorrowSub('Continue building consistency.','That kept building your consistency.')};
     if(!macrosDialedIn) return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:macroMsg,sub:'Consistency in macros matters even at maintenance.'};
-    if(zone==='deficit') return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's intake ran below your maintenance target.",sub:'Not a problem occasionally — just stay aware of the trend.'};
-    return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's intake ran above your maintenance target.",sub:'Return to your nutrition plan tomorrow.'};
+    if(zone==='deficit') return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s intake ${runVerb} below your maintenance target.`,sub:'Not a problem occasionally — just stay aware of the trend.'};
+    return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s intake ${runVerb} above your maintenance target.`,sub:tomorrowSub('Return to your nutrition plan tomorrow.','Getting back on plan afterward matters.')};
   }
 
   // Deficit-oriented goals (fat_loss, contest_prep, meet_prep) share the same core logic:
@@ -1202,18 +1211,18 @@ function getBlueprintInsight(zone,net,goal,macroStatus){
   // fine). What actually deserves attention is macro adherence, checked per-macro so the
   // message names specifically what was and wasn't on point, not a vague catch-all.
   const copy = {
-    fat_loss:   { onTrack:"Today's deficit supports your fat-loss goal, and your macros are on track.", onTrackSub:'Great work — keep this consistency going.',
+    fat_loss:   { onTrack:`${dayRef}'s deficit ${support} your fat-loss goal, and your macros ${isToday?'are':'were'} on track.`, onTrackSub:tomorrowSub('Great work — keep this consistency going.','Great work — that consistency adds up.'),
                   macroSub:'Staying close to your macro targets — protein especially — matters more than the exact size of the deficit.',
-                  maint:"Today's intake was closer to maintenance than a deficit.", maintSub:"That's fine occasionally — just be sure tomorrow gets you back toward your fat-loss target.",
-                  surplusIcon:'🟡', surplusLabel:'Needs Attention', surplusColor:'var(--gold)', surplus:"Today's calorie intake exceeded your target.", surplusSub:'Return to your nutrition plan tomorrow.' },
-    contest_prep:{ onTrack:"Today's deficit supports your contest prep, and your macros are dialed in.", onTrackSub:'Stay precise and trust the process.',
+                  maint:`${dayRef}'s intake ${be} closer to maintenance than a deficit.`, maintSub:tomorrowSub("That's fine occasionally — just be sure tomorrow gets you back toward your fat-loss target.","That's fine occasionally — just get back toward your fat-loss target afterward."),
+                  surplusIcon:'🟡', surplusLabel:'Needs Attention', surplusColor:'var(--gold)', surplus:`${dayRef}'s calorie intake ${exceedVerb} your target.`, surplusSub:tomorrowSub('Return to your nutrition plan tomorrow.','Getting back on plan afterward matters.') },
+    contest_prep:{ onTrack:`${dayRef}'s deficit ${support} your contest prep, and your macros ${isToday?'are':'were'} dialed in.`, onTrackSub:'Stay precise and trust the process.',
                   macroSub:'Macro precision matters more than the exact deficit size this close to stage.',
-                  maint:"Today's intake was closer to maintenance than your prep target.", maintSub:'Every day counts in prep — refocus immediately.',
-                  surplusIcon:'🔴', surplusLabel:'Off Plan', surplusColor:'var(--red)', surplus:"Today's calorie intake exceeded your prep target.", surplusSub:'Get back on plan right away — consistency is critical this close to stage.' },
-    meet_prep:  { onTrack:"Today's deficit supports making weight, and your macros are on track.", onTrackSub:'Stay disciplined and trust the cut.',
+                  maint:`${dayRef}'s intake ${be} closer to maintenance than your prep target.`, maintSub:tomorrowSub('Every day counts in prep — refocus immediately.','Every day counts in prep.'),
+                  surplusIcon:'🔴', surplusLabel:'Off Plan', surplusColor:'var(--red)', surplus:`${dayRef}'s calorie intake ${exceedVerb} your prep target.`, surplusSub:tomorrowSub('Get back on plan right away — consistency is critical this close to stage.','Consistency is critical this close to stage.') },
+    meet_prep:  { onTrack:`${dayRef}'s deficit ${support} making weight, and your macros ${isToday?'are':'were'} on track.`, onTrackSub:'Stay disciplined and trust the cut.',
                   macroSub:'Hitting your macros — protein especially — helps you hold onto strength during a cut.',
-                  maint:"Today's intake was closer to maintenance than your cut target.", maintSub:'Stay on plan to make weight on time.',
-                  surplusIcon:'🔴', surplusLabel:'Off Plan', surplusColor:'var(--red)', surplus:"Today's calorie intake exceeded your cut target.", surplusSub:"Get back on plan immediately — missing weight class isn't an option." }
+                  maint:`${dayRef}'s intake ${be} closer to maintenance than your cut target.`, maintSub:'Staying on plan gets you to weight on time.',
+                  surplusIcon:'🔴', surplusLabel:'Off Plan', surplusColor:'var(--red)', surplus:`${dayRef}'s calorie intake ${exceedVerb} your cut target.`, surplusSub:tomorrowSub("Get back on plan immediately — missing weight class isn't an option.","Missing weight class isn't an option — get back on plan right away.") }
   };
   const c = copy[g] || copy.fat_loss;
   if(zone==='deficit'){
@@ -1235,7 +1244,7 @@ else{ze.textContent='DAILY ENERGY BALANCE';ne.innerHTML=(e.net>=0?'+':'')+Math.r
 const pb=document.getElementById('blueprint-insight-badge');
 if(noM)pb.innerHTML=`<div style="text-align:left;"><div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;">👇 How to get started</div><div style="font-size:11px;color:var(--muted);line-height:1.45;">Tap Log → search a food → add it. Your Blueprint Insight appears once you start logging.</div></div>`;
 else{
-  const insight=getBlueprintInsight(zone,e.net,(clientProfile||{}).goal,getMacroAdherence());
+  const insight=getBlueprintInsight(zone,e.net,(clientProfile||{}).goal,getMacroAdherence((clientProfile||{}).goal),friendlyDate(currentDateKey)==='Today');
   // The number itself only ever turns color when things are genuinely dialed in — it never
   // turns yellow or red on its own, so it can reinforce without ever feeling like a scold.
   ne.style.color=insight.label==='On Track'?insight.color:'var(--white)';
