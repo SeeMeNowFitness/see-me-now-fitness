@@ -1138,35 +1138,38 @@ function renderGreetingCard() {
 }
 
 function getMacroAdherence(){
-  // Different macros get different tolerance — protein has the tightest floor (under-eating
+  // Different categories get different tolerance — protein has the tightest floor (under-eating
   // protein during a deficit is the real risk to muscle), carbs and fat get more natural
-  // day-to-day room since they fluctuate more and matter less for muscle retention.
+  // day-to-day room, and calories overall get a moderate band.
   const target=getMacros();
   const consumed={
+    calories:dayData.meals.reduce((s,m)=>s+(m.calories||0),0),
     protein:dayData.meals.reduce((s,m)=>s+(m.protein||0),0),
     carbs:dayData.meals.reduce((s,m)=>s+(m.carbs||0),0),
     fat:dayData.meals.reduce((s,m)=>s+(m.fat||0),0),
   };
   const status={};
-  ['protein','carbs','fat'].forEach(k=>{
+  ['calories','protein','carbs','fat'].forEach(k=>{
     const t=target[k];
-    if(!t){status[k]=true;return;} // no target set for this macro — don't flag it
+    if(!t){status[k]=true;return;} // no target set for this category — don't flag it
     const pct=consumed[k]/t;
     if(k==='protein') status[k]=pct>=0.90; // floor only — going over protein isn't a concern
     else if(k==='carbs') status[k]=pct>=0.80&&pct<=1.20;
-    else status[k]=pct>=0.75&&pct<=1.25; // fat
+    else if(k==='fat') status[k]=pct>=0.75&&pct<=1.25;
+    else status[k]=pct>=0.85&&pct<=1.15; // calories overall
   });
   return status;
 }
 function macroStatusMessage(status){
-  const names={protein:'Protein',carbs:'carbs',fat:'fat'};
-  const off=Object.keys(status).filter(k=>!status[k]);
-  const on=Object.keys(status).filter(k=>status[k]);
+  const names={calories:'calories',protein:'protein',carbs:'carbs',fat:'fat'};
+  const keys=Object.keys(status);
+  const off=keys.filter(k=>!status[k]);
+  const on=keys.filter(k=>status[k]);
   if(!off.length) return null; // everything dialed in — caller uses the standard on-track message
-  if(off.length===3) return "Your macros were off target across the board today.";
-  const offList=off.map(k=>names[k].toLowerCase()).join(' and ');
+  if(off.length===keys.length) return "Your calories and macros were off target across the board today.";
+  const offList=off.map(k=>names[k]).join(' and ');
   if(!on.length) return `${offList.charAt(0).toUpperCase()+offList.slice(1)} came in outside your target range today.`;
-  const onList=on.map((k,i)=>i===0?names[k]:names[k].toLowerCase()).join(' and ');
+  const onList=on.map((k,i)=>i===0?(names[k].charAt(0).toUpperCase()+names[k].slice(1)):names[k]).join(' and ');
   return `${onList} ${on.length>1?'were':'was'} dialed in, but ${offList} came in outside your target range.`;
 }
 
@@ -1228,7 +1231,7 @@ renderGreetingCard();
 const e=calcBal(),noM=dayData.meals.length===0,zone=getZone(e.net);
 const ze=document.getElementById('balance-zone-label'),ne=document.getElementById('balance-number');
 if(noM){ze.textContent="TODAY'S PROGRESS";ne.textContent='—';ne.style.color='var(--white)';document.getElementById('balance-sub').innerHTML='Log your first meal to start tracking your blueprint';}
-else{ze.textContent='DAILY ENERGY BALANCE';ne.textContent=(e.net>=0?'+':'')+Math.round(e.net);document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
+else{ze.textContent='DAILY ENERGY BALANCE';ne.innerHTML=(e.net>=0?'+':'')+Math.round(e.net)+'<span style="font-size:20px;font-weight:400;margin-left:4px;">kcal</span>';document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
 const pb=document.getElementById('blueprint-insight-badge');
 if(noM)pb.innerHTML=`<div style="text-align:left;"><div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;">👇 How to get started</div><div style="font-size:11px;color:var(--muted);line-height:1.45;">Tap Log → search a food → add it. Your Blueprint Insight appears once you start logging.</div></div>`;
 else{
