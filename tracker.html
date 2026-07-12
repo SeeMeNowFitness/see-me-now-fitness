@@ -75,12 +75,7 @@ select option{background:var(--dark);}
 .row-between{display:flex;justify-content:space-between;align-items:center;}
 .balance-hero{text-align:center;padding:24px 16px 20px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;}
 .balance-zone{font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.2em;text-transform:uppercase;margin-bottom:6px;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.balance-zone.deficit{background:linear-gradient(90deg,#4caf76,#2d8f55);-webkit-background-clip:text;background-clip:text;}
-.balance-zone.surplus{background:linear-gradient(90deg,#e05c5c,#c02020);-webkit-background-clip:text;background-clip:text;}
-.balance-number{font-family:'Anton',sans-serif;font-size:56px;line-height:1;letter-spacing:-2px;}
-.balance-number.deficit{color:var(--green);}
-.balance-number.maintenance{background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.balance-number.surplus{color:var(--red);}
+.balance-number{font-family:'Anton',sans-serif;font-size:56px;line-height:1;letter-spacing:-2px;color:var(--white);}
 .balance-label{font-size:12px;color:var(--muted);margin-top:4px;}
 .balance-sub{font-size:11px;color:var(--muted);margin-top:10px;}
 .balance-sub span{color:var(--white);font-weight:700;}
@@ -369,7 +364,7 @@ select option{background:var(--dark);}
 </div>
 <div id="zigzag-day-count" style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:0.04em;"></div>
 </div>
-<div class="balance-hero"><div class="balance-zone" id="balance-zone-label">Calculating…</div><div class="balance-number" id="balance-number">—</div><div class="balance-label">energy balance</div><div class="balance-sub" id="balance-sub"></div></div>
+<div class="balance-hero"><div class="balance-zone" id="balance-zone-label">DAILY ENERGY BALANCE</div><div class="balance-number" id="balance-number">—</div><div class="balance-label">energy balance</div><div class="balance-sub" id="balance-sub"></div></div>
 <div class="card"><div class="card-title">Macros Today</div><div id="macro-bars"></div></div>
 <div class="card"><div class="row-between" style="margin-bottom:8px;"><div class="card-title" style="margin-bottom:0;">Steps &amp; Hydration</div><span id="edit-goals-link" style="display:none;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;" onclick="openGoalsModal()">✏️ Edit Goals</span></div><div id="activity-bars"></div></div>
 <div class="modal-overlay" id="modal-goals" onclick="closeModalOutside(event,'modal-goals')"><div class="modal"><div class="modal-handle"></div><h3>🎯 Your Daily Goals</h3><label>Step Goal</label><input type="number" id="goals-step-input" inputmode="numeric" placeholder="e.g. 10000"><label>Water Goal (oz)</label><input type="number" id="goals-water-input" inputmode="numeric" placeholder="e.g. 100"><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-goals')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveOwnGoals()">Save</button></div></div></div>
@@ -1137,20 +1132,45 @@ function renderGreetingCard() {
   document.getElementById('greeting-quote').textContent = quote.author ? `"${quote.text}" — ${quote.author}` : `"${quote.text}"`;
 }
 
+function getBlueprintInsight(zone,net,goal){
+  const g=goal||'fat_loss'; // legacy clients without a goal set keep the previous fat-loss-style behavior
+  const target=(getMacros().calories)||2000;
+  const pct=Math.abs(net)/target;
+  const extreme=pct>0.30; // deficit/surplus larger than ~30% of target calories
+
+  if(g==='muscle_gain'){
+    if(zone==='surplus'&&!extreme) return {icon:'🟢',label:'On Track',color:'var(--green)',msg:"Today's nutrition supports your muscle-building phase.",sub:'Keep fueling your training.'};
+    if(zone==='surplus'&&extreme) return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's surplus was larger than recommended.",sub:'A big surplus adds more fat gain than muscle — dial it back tomorrow.'};
+    if(zone==='maintenance') return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's intake was closer to maintenance than your muscle-building target.",sub:'Add a bit more to support growth.'};
+    return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's calorie intake was below target for a muscle-building phase.",sub:'Recovery and growth may benefit from additional nutrition.'};
+  }
+  if(g==='maintenance'){
+    if(zone==='maintenance') return {icon:'🟢',label:'On Track',color:'var(--green)',msg:"Today's intake is aligned with your maintenance goal.",sub:'Continue building consistency.'};
+    if(zone==='deficit') return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's intake ran below your maintenance target.",sub:'Not a problem occasionally — just stay aware of the trend.'};
+    return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's intake ran above your maintenance target.",sub:'Return to your nutrition plan tomorrow.'};
+  }
+  // fat_loss and contest_prep share the same logic; contest_prep gets slightly stricter wording
+  const strict=g==='contest_prep';
+  if(zone==='deficit'&&!extreme) return {icon:'🟢',label:'On Track',color:'var(--green)',msg:strict?"Today's nutrition supports your contest prep.":"Today's nutrition supports your fat-loss goal.",sub:'Stay consistent and trust the process.'};
+  if(zone==='deficit'&&extreme) return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's deficit was larger than recommended.",sub:'Consistently large deficits can affect recovery and muscle retention.'};
+  if(zone==='maintenance') return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's intake was closer to maintenance than your goal.",sub:"One day won't derail progress — refocus tomorrow."};
+  return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:"Today's calorie intake exceeded your target.",sub:'Return to your nutrition plan tomorrow.'};
+}
+
 // RENDER TODAY
 function renderToday(){
 updateDateLabel();
 renderGreetingCard();
 const e=calcBal(),noM=dayData.meals.length===0,zone=getZone(e.net);
-const zl={deficit:'ESTIMATED DEFICIT',maintenance:'MAINTENANCE',surplus:'SURPLUS'};
 const ze=document.getElementById('balance-zone-label'),ne=document.getElementById('balance-number');
-if(noM){ze.textContent="TODAY'S PROGRESS";ze.className='balance-zone maintenance';ne.textContent='—';ne.className='balance-number maintenance';document.getElementById('balance-sub').innerHTML='Log your first meal to start tracking your blueprint';}
-else{ze.textContent=zl[zone];ze.className='balance-zone '+zone;ne.textContent=(e.net>=0?'+':'')+Math.round(e.net);ne.className='balance-number '+zone;document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
+if(noM){ze.textContent="TODAY'S PROGRESS";ne.textContent='—';document.getElementById('balance-sub').innerHTML='Log your first meal to start tracking your blueprint';}
+else{ze.textContent='DAILY ENERGY BALANCE';ne.textContent=(e.net>=0?'+':'')+Math.round(e.net);document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
 const pb=document.getElementById('projection-banner');
-if(noM)pb.innerHTML=`<div class="proj-label">👇 How to get started</div><div class="proj-val" style="font-size:15px;font-weight:700;">Tap Log → search a food → add it</div><div class="proj-sub">Your macros, deficit, and projections appear once you start logging.</div>`;
-else if(zone==='deficit')pb.innerHTML=`<div class="proj-label">🟢 Excellent Consistency</div><div class="proj-val" style="font-size:15px;font-weight:700;">Your nutrition and activity today support continued fat loss while helping preserve muscle.</div><div class="proj-sub">Stay consistent and trust the weekly trend — not any single day.</div>`;
-else if(zone==='surplus')pb.innerHTML=`<div class="proj-label">📈 Ahead of Your Blueprint</div><div class="proj-val">${Math.abs(e.net)} kcal over today's target</div><div class="proj-sub">Tighten up intake to get back into your deficit</div>`;
-else pb.innerHTML=`<div class="proj-label">⚖️ Holding Steady</div><div class="proj-val">±${Math.abs(e.net)} kcal from target</div><div class="proj-sub">Right where you want to be — well balanced</div>`;
+if(noM)pb.innerHTML=`<div class="proj-label">👇 How to get started</div><div class="proj-val" style="font-size:15px;font-weight:700;">Tap Log → search a food → add it</div><div class="proj-sub">Your macros, balance, and insight appear once you start logging.</div>`;
+else{
+  const insight=getBlueprintInsight(zone,e.net,(clientProfile||{}).goal);
+  pb.innerHTML=`<div class="proj-label" style="background:none;-webkit-text-fill-color:${insight.color};color:${insight.color};">${insight.icon} Blueprint Insight — ${insight.label}</div><div class="proj-val" style="font-size:15px;font-weight:700;">${insight.msg}</div><div class="proj-sub">${insight.sub}</div>`;
+}
 // Update weekly balance banner on Today tab
 updateWeeklyBalanceBanner();
 updateWeightTrend();
