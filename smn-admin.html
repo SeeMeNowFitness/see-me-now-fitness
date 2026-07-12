@@ -133,7 +133,7 @@ a{color:var(--gold);}
 </div>
 <div class="grid-2">
 <div class="field"><label>Tier</label><select id="e-tier" onchange="updateTierFields()"><option value="contest_prep">Contest Prep</option><option value="lifestyle">Online Lifestyle</option><option value="inperson">In-Person</option><option value="tracker">Standalone Tracker ($5)</option></select></div>
-<div class="field"><label>Goal</label><select id="e-goal"><option value="fat_loss">Fat Loss</option><option value="muscle_gain">Muscle Gain</option><option value="maintenance">Maintenance</option><option value="contest_prep">Contest Prep</option></select></div>
+<div class="field"><label>Goal</label><select id="e-goal"><option value="fat_loss">Fat Loss</option><option value="muscle_gain">Muscle Gain</option><option value="maintenance">Maintenance</option><option value="contest_prep">Contest Prep</option><option value="meet_prep">Strength / Meet Prep</option></select></div>
 </div>
 <div class="grid-2">
 <div class="field"><label>WhatsApp / Phone</label><input type="text" id="e-phone"></div>
@@ -535,6 +535,36 @@ async function loadProgressChart(clientId){
           <div style="border-bottom:1px solid var(--border);padding:8px 0;">
             <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:3px;">${d.key}</div>
             ${d.workouts.map(w => `<div style="font-size:12px;color:var(--white);margin-bottom:4px;">${w.type || 'Workout'} — ${w.duration || 0} min · ${w.calories || 0} kcal${w.notes ? `<div style="font-size:11px;color:var(--muted);white-space:pre-line;margin-top:2px;">${w.notes}</div>` : ''}</div>`).join('')}
+          </div>
+        `).join('');
+      })()}
+    </div>
+    <div class="form-section">
+      <h3>📝 Workout Notes — Last ${RANGE_DAYS} Days</h3>
+      ${(() => {
+        const notedDays = results
+          .filter(r => r.workout_plan_notes && r.workout_plan_notes.trim())
+          .reverse();
+        if (!notedDays.length) return `<div style="color:var(--muted);font-size:13px;">No notes left in this window.</div>`;
+        return notedDays.map(d => `
+          <div style="border-bottom:1px solid var(--border);padding:8px 0;">
+            <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:3px;">${d.key}</div>
+            <div style="font-size:12px;color:var(--white);white-space:pre-line;line-height:1.5;">${d.workout_plan_notes}</div>
+          </div>
+        `).join('');
+      })()}
+    </div>
+    <div class="form-section">
+      <h3>📝 Meal Notes — Last ${RANGE_DAYS} Days</h3>
+      ${(() => {
+        const notedDays = results
+          .filter(r => r.meal_plan_notes && r.meal_plan_notes.trim())
+          .reverse();
+        if (!notedDays.length) return `<div style="color:var(--muted);font-size:13px;">No notes left in this window.</div>`;
+        return notedDays.map(d => `
+          <div style="border-bottom:1px solid var(--border);padding:8px 0;">
+            <div style="font-size:12px;font-weight:700;color:var(--gold);margin-bottom:3px;">${d.key}</div>
+            <div style="font-size:12px;color:var(--white);white-space:pre-line;line-height:1.5;">${d.meal_plan_notes}</div>
           </div>
         `).join('');
       })()}

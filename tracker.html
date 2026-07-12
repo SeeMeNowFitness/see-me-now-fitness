@@ -2432,7 +2432,7 @@ async function saveOwnGoals(){
 function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=(dayData.water||0)+v;saveDay();closeModal('modal-water');renderToday();showToast(`Water logged — ${dayData.water}oz today ✓`);}
 
 // FIREBASE IO
-async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},workouts:d.workouts||[],weight:d.weight||null,water:d.water||0,target_macros:d.target_macros||null,target_day_type:d.target_day_type||null,target_step_goal:d.target_step_goal||null,target_water_goal:d.target_water_goal||null}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0};}renderToday();renderMealLog();}
+async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0,workout_plan_notes:'',meal_plan_notes:''};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},workouts:d.workouts||[],weight:d.weight||null,water:d.water||0,target_macros:d.target_macros||null,target_day_type:d.target_day_type||null,target_step_goal:d.target_step_goal||null,target_water_goal:d.target_water_goal||null,workout_plan_notes:d.workout_plan_notes||'',meal_plan_notes:d.meal_plan_notes||''}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0,workout_plan_notes:'',meal_plan_notes:''};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0,workout_plan_notes:'',meal_plan_notes:''};}renderToday();renderMealLog();}
 async function saveDay(){
   if(!CLIENT_ID||CLIENT_ID==='demo')return;
   // Freeze this day's target the first time it's saved — so later changes to the client's
@@ -3551,6 +3551,11 @@ function renderWorkoutDayDetail(idx, plan, startOpen = false) {
         <div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px;">${day.label}</div>
         <div style="font-size:13px;color:var(--muted);">${day.focus}</div>
         ${isToday ? '<div style="margin-top:10px;font-size:12px;color:var(--green);font-weight:700;">✓ Today — enjoy your recovery!</div>' : ''}
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);text-align:left;">
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">📝 Your Notes</div>
+          <textarea id="workout-plan-notes-input" rows="3" placeholder="How you're feeling, soreness, recovery — anything for yourself or your coach..." style="width:100%;resize:vertical;font-size:13px;" onblur="saveWorkoutPlanNotes()">${dayData.workout_plan_notes||''}</textarea>
+          <div id="workout-notes-saved-indicator" style="font-size:10px;color:var(--green);margin-top:4px;opacity:0;transition:opacity 0.3s;">✓ Saved</div>
+        </div>
       </div>`;
     return;
   }
@@ -3588,8 +3593,21 @@ function renderWorkoutDayDetail(idx, plan, startOpen = false) {
           <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">💪 Main Workout</div>
           ${renderClientExercises(day.exercises)}
         ` : ''}
+        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">📝 Your Notes</div>
+          <textarea id="workout-plan-notes-input" rows="3" placeholder="Weights used, how it felt, anything for yourself or your coach..." style="width:100%;resize:vertical;font-size:13px;" onblur="saveWorkoutPlanNotes()">${dayData.workout_plan_notes||''}</textarea>
+          <div id="workout-notes-saved-indicator" style="font-size:10px;color:var(--green);margin-top:4px;opacity:0;transition:opacity 0.3s;">✓ Saved</div>
+        </div>
       </div>
     </div>`;
+}
+function saveWorkoutPlanNotes(){
+  const input=document.getElementById('workout-plan-notes-input');
+  if(!input)return;
+  dayData.workout_plan_notes=input.value;
+  saveDay();
+  const indicator=document.getElementById('workout-notes-saved-indicator');
+  if(indicator){indicator.style.opacity='1';setTimeout(()=>{indicator.style.opacity='0';},1500);}
 }
 
 function renderClientExercises(exercises) {
@@ -3843,6 +3861,21 @@ function renderMealPlan() {
       </div>
     </div>`;
   }).join('');
+
+  el.innerHTML += `
+    <div class="card" style="margin-top:4px;">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">📝 Your Notes</div>
+      <textarea id="meal-plan-notes-input" rows="3" placeholder="Swaps you made, how meals sat with you, anything for yourself or your coach..." style="width:100%;resize:vertical;font-size:13px;" onblur="saveMealPlanNotes()">${dayData.meal_plan_notes||''}</textarea>
+      <div id="meal-notes-saved-indicator" style="font-size:10px;color:var(--green);margin-top:4px;opacity:0;transition:opacity 0.3s;">✓ Saved</div>
+    </div>`;
+}
+function saveMealPlanNotes(){
+  const input=document.getElementById('meal-plan-notes-input');
+  if(!input)return;
+  dayData.meal_plan_notes=input.value;
+  saveDay();
+  const indicator=document.getElementById('meal-notes-saved-indicator');
+  if(indicator){indicator.style.opacity='1';setTimeout(()=>{indicator.style.opacity='0';},1500);}
 }
 
 function renderSupplements() {
