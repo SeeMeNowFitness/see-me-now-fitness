@@ -1770,6 +1770,10 @@ function isPlausibleMacros(cals,p,c,f){
   // A wide mismatch is a strong signal the source data is wrong or mismatched to the wrong product —
   // this is exactly the kind of error that silently under-reported the popcorn scan earlier.
   if(cals<=0 && p<=0 && c<=0 && f<=0) return false;
+  // Physically impossible check: protein + carbs + fat can't exceed ~100g per 100g of actual food
+  // (the remainder is normally water, fiber, ash) — catches garbled data even if calories happen
+  // to look consistent with the (wrong) macros.
+  if((p+c+f) > 105) return false;
   const implied=p*4+c*4+f*9;
   if(implied<=0) return cals>0;
   const ratio=cals/implied;
@@ -1789,12 +1793,13 @@ async function lookupBarcode(barcode){
     if(d.status===1 && d.product){
       const p=d.product,n=p.nutriments||{};
       const cals=Math.round(n['energy-kcal_100g']||0),pr=Math.round(n['proteins_100g']||0),c=Math.round(n['carbohydrates_100g']||0),f=Math.round(n['fat_100g']||0);
-      offResult={name:p.product_name||'Scanned Product',cals,p:pr,c,f,plausible:isPlausibleMacros(cals,pr,c,f)};
+      const img=p.image_front_small_url||p.image_small_url||p.image_url||null;
+      offResult={name:p.product_name||'Scanned Product',cals,p:pr,c,f,img,plausible:isPlausibleMacros(cals,pr,c,f)};
     }
   }catch(e){}
 
   if(offResult && offResult.plausible){
-    showBarcodeResult(offResult.name,offResult.cals,offResult.p,offResult.c,offResult.f,'/100g');
+    showBarcodeResult(offResult.name,offResult.cals,offResult.p,offResult.c,offResult.f,'/100g',false,offResult.img);
     return;
   }
 
@@ -1816,12 +1821,12 @@ async function lookupBarcode(barcode){
         cals=rawCals*factor;p=rawP*factor;c=rawC*factor;f=rawF*factor;
       }
       cals=Math.round(cals);p=Math.round(p*10)/10;c=Math.round(c*10)/10;f=Math.round(f*10)/10;
-      spoonResult={name:d.title||'Scanned Product',cals,p,c,f,plausible:isPlausibleMacros(cals,p,c,f)};
+      spoonResult={name:d.title||'Scanned Product',cals,p,c,f,img:d.image||null,plausible:isPlausibleMacros(cals,p,c,f)};
     }
   }catch(e){}
 
   if(spoonResult && spoonResult.plausible){
-    showBarcodeResult(spoonResult.name,spoonResult.cals,spoonResult.p,spoonResult.c,spoonResult.f,'/100g');
+    showBarcodeResult(spoonResult.name,spoonResult.cals,spoonResult.p,spoonResult.c,spoonResult.f,'/100g',false,spoonResult.img);
     return;
   }
 
@@ -1831,12 +1836,12 @@ async function lookupBarcode(barcode){
              : (spoonResult && (spoonResult.cals||spoonResult.p||spoonResult.c||spoonResult.f)) ? spoonResult
              : null;
   if(best){
-    showBarcodeResult(best.name,best.cals,best.p,best.c,best.f,'/100g',true);
+    showBarcodeResult(best.name,best.cals,best.p,best.c,best.f,'/100g',true,best.img);
     return;
   }
   el.innerHTML=`<div class="empty-state"><div class="icon">🔍</div><h4>Product not found</h4><p>This barcode isn't in our database yet.</p></div><button class="btn btn-gold btn-full" onclick="openCustomFoodModal('')">✏️ Add Custom Food</button>`;
 }
-function showBarcodeResult(name,cals,p,c,f,serving,uncertain){const el=document.getElementById('food-search-results'),dn=name.length>40?name.slice(0,40)+'…':name;const warning=uncertain?`<div style="font-size:11px;color:var(--gold);background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:8px;padding:8px 10px;margin-bottom:8px;">⚠️ This product's nutrition data looks unusual — please double-check it against the package label before logging.</div>`:'';el.innerHTML=`<div style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">✓ Barcode scanned</div>${warning}<div class="food-result"><div class="food-result-img">📦</div><div class="food-result-info"><div class="food-result-name">${dn}</div><div class="food-result-macros">${cals} kcal${serving?' · '+serving:'/100g'} &nbsp;·&nbsp; P:<span>${p}g</span> C:<span>${c}g</span> F:<span>${f}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${name.replace(/'/g,"\\'")}',${cals},${p},${c},${f})">Add</button></div>`;}
+function showBarcodeResult(name,cals,p,c,f,serving,uncertain,img){const el=document.getElementById('food-search-results'),dn=name.length>40?name.slice(0,40)+'…':name;const warning=uncertain?`<div style="font-size:11px;color:var(--gold);background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:8px;padding:8px 10px;margin-bottom:8px;">⚠️ This product's nutrition data looks unusual — please double-check it against the package label before logging.</div>`:'';const imgHTML=img?`<img src="${img}" style="width:44px;height:44px;object-fit:cover;border-radius:8px;" alt="">`:'📦';el.innerHTML=`<div style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px;">✓ Barcode scanned</div>${warning}<div class="food-result"><div class="food-result-img">${imgHTML}</div><div class="food-result-info"><div class="food-result-name">${dn}</div><div class="food-result-macros">${cals} kcal${serving?' · '+serving:'/100g'} &nbsp;·&nbsp; P:<span>${p}g</span> C:<span>${c}g</span> F:<span>${f}g</span></div></div><button class="food-result-add" onclick="prepareAddFood(null,'${name.replace(/'/g,"\\'")}',${cals},${p},${c},${f})">Add</button></div>${img?'<div style="font-size:10px;color:var(--muted);margin-top:4px;">📸 Check the photo matches what you scanned</div>':''}`;}
 
 // ── CUSTOM FOOD ENTRY (manual macros when food can't be found) ──
 function openCustomFoodModal(prefillName) {
