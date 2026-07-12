@@ -22,7 +22,20 @@ const NUTRABIO_CODE = "SEEMENOW";
 const URL_CLIENT_ID=new URLSearchParams(window.location.search).get("client");
 const URL_EMAIL=new URLSearchParams(window.location.search).get("email");
 const STORED_CLIENT_ID=localStorage.getItem('smn_client_id');
-let CLIENT_ID=URL_CLIENT_ID||STORED_CLIENT_ID||null;
+// Macro Calculator handoff — someone calculated their macros on the marketing site and clicked
+// "Track These Macros". Treat this as a personalized demo session using their real numbers,
+// rather than either the generic demo defaults or a stale logged-in session on this device.
+const URL_CAL=new URLSearchParams(window.location.search).get("cal");
+const URL_PROTEIN=new URLSearchParams(window.location.search).get("protein");
+const URL_CARBS=new URLSearchParams(window.location.search).get("carbs");
+const URL_FATS=new URLSearchParams(window.location.search).get("fats");
+const CALC_MACROS=(URL_CAL&&URL_PROTEIN&&URL_CARBS&&URL_FATS)?{
+  calories:parseFloat(URL_CAL)||1795,
+  protein:parseFloat(URL_PROTEIN)||150,
+  carbs:parseFloat(URL_CARBS)||175,
+  fat:parseFloat(URL_FATS)||55
+}:null;
+let CLIENT_ID=URL_CLIENT_ID||(CALC_MACROS?null:STORED_CLIENT_ID)||null;
 let PENDING_EMAIL=(!CLIENT_ID&&URL_EMAIL)?URL_EMAIL.trim().toLowerCase():null;
 </script>
 <style>
@@ -304,6 +317,10 @@ select option{background:var(--dark);}
 </div>
 
 <!-- GREETING CARD -->
+<div id="calc-welcome-banner" style="display:none;background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(224,124,42,0.06));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:16px;margin-bottom:12px;">
+  <div style="font-family:'Anton',sans-serif;font-size:12px;letter-spacing:0.08em;color:var(--gold);margin-bottom:4px;">🎯 YOUR BLUEPRINT IS LOADED</div>
+  <div style="font-size:13px;color:var(--white);line-height:1.5;">These are the macros you just calculated — try logging a meal below and see how it feels. Nothing you log here saves permanently until you create a free account.</div>
+</div>
 <div id="greeting-card" style="background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.03));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:16px;margin-bottom:12px;display:none;">
   <div id="greeting-time" style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;"></div>
   <div id="greeting-name" style="font-family:'Anton',sans-serif;font-size:22px;letter-spacing:0.06em;color:var(--white);margin-bottom:10px;"></div>
@@ -877,7 +894,7 @@ function toFV(v){if(v===null||v===undefined)return{nullValue:null};if(typeof v==
 
 // PROFILE
 async function loadClientProfile(){
-if(!CLIENT_ID||CLIENT_ID==='demo'){clientProfile={name:'Demo',tier:'tracker',macros:{protein:180,carbs:200,fat:60,calories:2020},bmr_inputs:{weight_lbs:180,height_cm:178,age:28,gender:'male'}};}
+if(!CLIENT_ID||CLIENT_ID==='demo'){clientProfile={name:'Demo',tier:'tracker',macros:CALC_MACROS||{protein:180,carbs:200,fat:60,calories:2020},bmr_inputs:{weight_lbs:180,height_cm:178,age:28,gender:'male'}};}
 else{try{clientProfile=(await fsGet(`clients/${CLIENT_ID}`))||defProfile();}catch(e){clientProfile=defProfile();}}
 applyTierUI();
 renderGreetingCard();
@@ -906,7 +923,7 @@ if(CLIENT_ID && CLIENT_ID !== 'demo') {
   }
 }
 }
-function defProfile(){return{name:'Client',tier:'tracker',macros:{protein:150,carbs:175,fat:55,calories:1795},bmr_inputs:{weight_lbs:160,height_cm:170,age:30,gender:'male'}};}
+function defProfile(){return{name:'Client',tier:'tracker',macros:CALC_MACROS||{protein:150,carbs:175,fat:55,calories:1795},bmr_inputs:{weight_lbs:160,height_cm:170,age:30,gender:'male'}};}
 function applyTierUI(){
 const tier=clientProfile.tier;
 document.getElementById('weigh-food-note').style.display=tier==='contest_prep'?'block':'none';
@@ -4240,6 +4257,16 @@ async function init(){
 if(URL_CLIENT_ID){localStorage.setItem('smn_client_id',URL_CLIENT_ID);CLIENT_ID=URL_CLIENT_ID;}
 if(CLIENT_ID&&CLIENT_ID!=='demo'){await loadClientProfile();await loadDay(currentDateKey);return;}
 if(PENDING_EMAIL){const found=await lookupByEmail(PENDING_EMAIL);if(found){CLIENT_ID=found;localStorage.setItem('smn_client_id',found);await loadClientProfile();await loadDay(currentDateKey);return;}}
+// Macro Calculator handoff — skip the login screen entirely and go straight into a
+// personalized demo session using the macros they just calculated on the marketing site.
+if(CALC_MACROS){
+  CLIENT_ID='demo';
+  await loadClientProfile();
+  await loadDay(currentDateKey);
+  const banner=document.getElementById('calc-welcome-banner');
+  if(banner) banner.style.display='block';
+  return;
+}
 document.getElementById('email-login-screen').style.display='flex';
 }
 
