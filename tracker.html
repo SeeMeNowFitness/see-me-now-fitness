@@ -666,7 +666,7 @@ select option{background:var(--dark);}
 
 <div class="modal-overlay" id="modal-weight" onclick="closeModalOutside(event,'modal-weight')"><div class="modal"><div class="modal-handle"></div><h3>⚖️ Log Weight</h3><label>Weight (lbs)</label><input type="number" id="weight-input" placeholder="e.g. 185.4" inputmode="decimal" step="0.1"><div style="font-size:12px;color:var(--muted);margin-top:8px;">Weigh first thing in the morning, after using the bathroom.</div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-weight')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWeight()">Save</button></div></div></div>
 
-<div class="modal-overlay" id="modal-water" onclick="closeModalOutside(event,'modal-water')"><div class="modal"><div class="modal-handle"></div><h3>💧 Add Water</h3><div id="water-current-total" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div><label>Ounces to add</label><input type="number" id="water-input" placeholder="e.g. 16" inputmode="numeric"><div class="steps-quick"><button class="steps-chip" onclick="document.getElementById('water-input').value=8">+8 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=16">+16 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=24">+24 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=32">+32 oz</button></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-water')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWater()">Add</button></div></div></div>
+<div class="modal-overlay" id="modal-water" onclick="closeModalOutside(event,'modal-water')"><div class="modal"><div class="modal-handle"></div><h3>💧 Add Water</h3><div id="water-current-total" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div><label>Ounces to add</label><input type="number" id="water-input" placeholder="e.g. 16" inputmode="numeric"><div class="steps-quick"><button class="steps-chip" onclick="document.getElementById('water-input').value=16">+16 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=32">+32 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=64">+½ Gal</button><button class="steps-chip" onclick="document.getElementById('water-input').value=128">+1 Gal</button></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-water')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWater()">Add</button></div></div></div>
 
 <!-- EDIT FOOD MODAL -->
 <div class="modal-overlay" id="modal-edit-food" onclick="closeModalOutside(event,'modal-edit-food')"><div class="modal"><div class="modal-handle"></div>
@@ -2450,7 +2450,13 @@ function saveWorkout(){
 }
 
 function saveWeight(){const v=parseFloat(document.getElementById('weight-input').value);if(!v||v<=0)return;dayData.weight=v;saveDay();closeModal('modal-weight');renderToday();showToast('Weight saved ✓');}
-function openWaterModal(){document.getElementById('water-current-total').textContent=`Today's total so far: ${dayData.water||0} oz`;openModal('modal-water');}
+function openWaterModal(){
+  const oz=dayData.water||0;
+  const gal=oz/128;
+  const galText=oz>=32?` (${gal.toFixed(2).replace(/\.?0+$/,'')} gal)`:'';
+  document.getElementById('water-current-total').textContent=`Today's total so far: ${oz} oz${galText}`;
+  openModal('modal-water');
+}
 function openGoalsModal(){
   const profile=clientProfile||{};
   document.getElementById('goals-step-input').value=profile.step_goal||10000;
@@ -2469,7 +2475,7 @@ async function saveOwnGoals(){
   renderActivityBars();
   showToast('Goals updated ✓');
 }
-function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=(dayData.water||0)+v;saveDay();closeModal('modal-water');renderToday();showToast(`Water logged — ${dayData.water}oz today ✓`);}
+function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=(dayData.water||0)+v;saveDay();closeModal('modal-water');renderToday();const oz=dayData.water,gal=oz/128,galText=oz>=32?` (${gal.toFixed(2).replace(/\.?0+$/,'')} gal)`:'';showToast(`Water logged — ${oz}oz${galText} today ✓`);}
 
 // FIREBASE IO
 async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0,workout_plan_notes:'',meal_plan_notes:''};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},workouts:d.workouts||[],weight:d.weight||null,water:d.water||0,target_macros:d.target_macros||null,target_day_type:d.target_day_type||null,target_step_goal:d.target_step_goal||null,target_water_goal:d.target_water_goal||null,workout_plan_notes:d.workout_plan_notes||'',meal_plan_notes:d.meal_plan_notes||''}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0,workout_plan_notes:'',meal_plan_notes:''};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0,workout_plan_notes:'',meal_plan_notes:''};}renderToday();renderMealLog();}
