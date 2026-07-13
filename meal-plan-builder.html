@@ -206,9 +206,11 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <div style="font-size:12px;color:var(--muted);" id="blood-type-desc">Showing general Blueprint approved foods.</div>
 </div>
 </div>
-<div style="display:flex;gap:6px;margin-bottom:14px;">
+<div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
 <button id="af-tab-protein" class="tab-btn-active" onclick="setAFTab('protein')">💪 Protein</button>
 <button id="af-tab-carbs" class="tab-btn-inactive" onclick="setAFTab('carbs')">🌾 Carbs</button>
+<button id="af-tab-vegetables" class="tab-btn-inactive" onclick="setAFTab('vegetables')">🥦 Vegetables</button>
+<button id="af-tab-fruits" class="tab-btn-inactive" onclick="setAFTab('fruits')">🍎 Fruits</button>
 <button id="af-tab-fats" class="tab-btn-inactive" onclick="setAFTab('fats')">🥑 Fats</button>
 </div>
 <div id="approved-foods-container"></div>
@@ -333,7 +335,7 @@ Enable Flex Dieting for this client
 </div>
 
 <script>
-let db=null,allClients=[],selectedClient=null,meals=[],supplements=[],approvedFoods={protein:[],carbs:[],fats:[]},currentAFTab='protein',searchTimers={};
+let db=null,allClients=[],selectedClient=null,meals=[],supplements=[],approvedFoods={protein:[],carbs:[],vegetables:[],fruits:[],fats:[]},currentAFTab='protein',searchTimers={};
 
 // ── MEAL DEFAULTS ──
 const MEAL_NAMES={3:['Breakfast','Meal 2','Dinner'],4:['Breakfast','Meal 2','Meal 3','Dinner'],5:['Breakfast','Meal 2','Meal 3','Meal 4','Dinner'],6:['Breakfast','Meal 2','Meal 3','Meal 4','Meal 5','Dinner']};
@@ -393,13 +395,24 @@ const BT_FOODS={
       {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
       {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
       {name:'Quinoa (cooked)',macro:'4g P / 21g C / 2g F per 100g'},
+    ],
+    vegetables:[
       {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
       {name:'Asparagus',macro:'2g P / 4g C / 0g F per 100g'},
+      {name:'Green Beans',macro:'2g P / 7g C / 0g F per 100g'},
+      {name:'Bell Peppers',macro:'1g P / 6g C / 0g F per 100g'},
+      {name:'Zucchini',macro:'1g P / 3g C / 0g F per 100g'},
+      {name:'Cucumber',macro:'1g P / 4g C / 0g F per 100g'},
+      {name:'Carrots',macro:'1g P / 10g C / 0g F per 100g'},
+    ],
+    fruits:[
       {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
       {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
       {name:'Apple',macro:'0g P / 14g C / 0g F per 100g'},
-      {name:'Green Beans',macro:'2g P / 7g C / 0g F per 100g'},
+      {name:'Strawberries',macro:'1g P / 8g C / 0g F per 100g'},
+      {name:'Orange',macro:'1g P / 12g C / 0g F per 100g'},
+      {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
     ],
     fats:[
       {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
@@ -432,18 +445,27 @@ const BT_FOODS={
       {name:'Chicken Breast',macro:'31g P / 0g C / 4g F per 100g'},
     ],
     carbs:[
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+      {name:'Quinoa (cooked)',macro:'4g P / 21g C / 2g F per 100g'},
+      {name:'Rice Cakes',macro:'8g P / 82g C / 3g F per 100g'},
+    ],
+    vegetables:[
       {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
       {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
-      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
       {name:'Collard Greens',macro:'3g P / 6g C / 0g F per 100g'},
       {name:'Romaine Lettuce',macro:'1g P / 3g C / 0g F per 100g'},
       {name:'Beets',macro:'2g P / 10g C / 0g F per 100g'},
+      {name:'Artichoke',macro:'3g P / 11g C / 0g F per 100g'},
+      {name:'Onions',macro:'1g P / 9g C / 0g F per 100g'},
+    ],
+    fruits:[
       {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
       {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
       {name:'Figs',macro:'1g P / 19g C / 0g F per 100g'},
       {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
-      {name:'Artichoke',macro:'3g P / 11g C / 0g F per 100g'},
+      {name:'Cherries',macro:'1g P / 16g C / 0g F per 100g'},
+      {name:'Pomegranate',macro:'2g P / 19g C / 1g F per 100g'},
     ],
     fats:[
       {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
@@ -480,14 +502,25 @@ const BT_FOODS={
       {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
       {name:'Amaranth',macro:'14g P / 65g C / 7g F per 100g'},
       {name:'Buckwheat',macro:'13g P / 72g C / 3g F per 100g'},
+      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+    ],
+    vegetables:[
       {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
       {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
-      {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
-      {name:'Berries (mixed)',macro:'1g P / 14g C / 0g F per 100g'},
-      {name:'Apricots',macro:'1g P / 11g C / 0g F per 100g'},
-      {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
       {name:'Artichoke',macro:'3g P / 11g C / 0g F per 100g'},
+      {name:'Carrots',macro:'1g P / 10g C / 0g F per 100g'},
+      {name:'Garlic',macro:'6g P / 33g C / 0.5g F per 100g'},
+      {name:'Onions',macro:'1g P / 9g C / 0g F per 100g'},
+      {name:'Beet Greens',macro:'2g P / 4g C / 0g F per 100g'},
+    ],
+    fruits:[
+      {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
+      {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
+      {name:'Apricots',macro:'1g P / 11g C / 0g F per 100g'},
+      {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
+      {name:'Figs',macro:'1g P / 19g C / 0g F per 100g'},
+      {name:'Lemon',macro:'1g P / 9g C / 0g F per 100g'},
     ],
     fats:[
       {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
@@ -523,15 +556,25 @@ const BT_FOODS={
       {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
       {name:'Millet',macro:'11g P / 73g C / 4g F per 100g'},
       {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
-      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+    ],
+    vegetables:[
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Collard Greens',macro:'3g P / 6g C / 0g F per 100g'},
       {name:'Cabbage',macro:'1g P / 6g C / 0g F per 100g'},
+      {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+      {name:'Carrots',macro:'1g P / 10g C / 0g F per 100g'},
+      {name:'Beets',macro:'2g P / 10g C / 0g F per 100g'},
+      {name:'Bell Peppers',macro:'1g P / 6g C / 0g F per 100g'},
+      {name:'Parsley',macro:'3g P / 6g C / 0g F per 100g'},
+    ],
+    fruits:[
       {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
       {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
       {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
       {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
       {name:'Watermelon',macro:'1g P / 8g C / 0g F per 100g'},
+      {name:'Papaya',macro:'1g P / 11g C / 0g F per 100g'},
     ],
     fats:[
       {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
@@ -567,15 +610,25 @@ const BT_FOODS={
       {name:'Brown Rice',macro:'3g P / 23g C / 1g F per 100g'},
       {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
       {name:'Millet',macro:'11g P / 73g C / 4g F per 100g'},
-      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
       {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+    ],
+    vegetables:[
+      {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+      {name:'Cauliflower',macro:'2g P / 5g C / 0g F per 100g'},
       {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
       {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+      {name:'Garlic',macro:'6g P / 33g C / 0.5g F per 100g'},
+      {name:'Carrots',macro:'1g P / 10g C / 0g F per 100g'},
+      {name:'Cucumber',macro:'1g P / 4g C / 0g F per 100g'},
+      {name:'Celery',macro:'1g P / 3g C / 0g F per 100g'},
+    ],
+    fruits:[
       {name:'Cherries',macro:'1g P / 16g C / 0g F per 100g'},
       {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
       {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
       {name:'Cranberries',macro:'0g P / 12g C / 0g F per 100g'},
       {name:'Watermelon',macro:'1g P / 8g C / 0g F per 100g'},
+      {name:'Kiwi',macro:'1g P / 15g C / 1g F per 100g'},
     ],
     fats:[
       {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
@@ -659,7 +712,7 @@ function onClientSelect(){
   updateTargetCompare();
   if(selectedClient.blood_type){document.getElementById('blood-type-select').value=selectedClient.blood_type;onBloodTypeChange();}
   if(selectedClient.supplements?.length){supplements=selectedClient.supplements.map(s=>({...s}));renderSupplements();}
-  if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
+  if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),vegetables:(selectedClient.approved_foods.vegetables||[]).map(f=>({...f})),fruits:(selectedClient.approved_foods.fruits||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
   // Load flex meals
   if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;document.getElementById('flex-section').style.display='block';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));renderFlexMeals();}
   // Show zigzag focus fields if client uses zigzag or plan type is high/low
@@ -1176,11 +1229,11 @@ function renderSupplements(){
 }
 
 // ── APPROVED FOODS ──
-function initApprovedFoods(bt){approvedFoods={protein:BT_FOODS[bt].protein.map(f=>({...f})),carbs:BT_FOODS[bt].carbs.map(f=>({...f})),fats:BT_FOODS[bt].fats.map(f=>({...f}))};renderApprovedFoods();}
+function initApprovedFoods(bt){approvedFoods={protein:BT_FOODS[bt].protein.map(f=>({...f})),carbs:BT_FOODS[bt].carbs.map(f=>({...f})),vegetables:(BT_FOODS[bt].vegetables||[]).map(f=>({...f})),fruits:(BT_FOODS[bt].fruits||[]).map(f=>({...f})),fats:BT_FOODS[bt].fats.map(f=>({...f}))};renderApprovedFoods();}
 
 function setAFTab(tab){
   currentAFTab=tab;
-  ['protein','carbs','fats'].forEach(t=>{
+  ['protein','carbs','vegetables','fruits','fats'].forEach(t=>{
     document.getElementById(`af-tab-${t}`).className=t===tab?'tab-btn-active':'tab-btn-inactive';
   });
   renderApprovedFoods();
@@ -1198,8 +1251,8 @@ function removeApprovedFood(tab,i){approvedFoods[tab].splice(i,1);renderApproved
 function renderApprovedFoods(){
   const el=document.getElementById('approved-foods-container');
   const foods=approvedFoods[currentAFTab]||[];
-  const labels={protein:'💪 Protein Sources',carbs:'🌾 Carbohydrate Sources',fats:'🥑 Fat Sources'};
-  const colors={protein:'var(--gold)',carbs:'#4c8fe0',fats:'#e07c2a'};
+  const labels={protein:'💪 Protein Sources',carbs:'🌾 Carbohydrate Sources',vegetables:'🥦 Vegetables',fruits:'🍎 Fruits',fats:'🥑 Fat Sources'};
+  const colors={protein:'var(--gold)',carbs:'#4c8fe0',vegetables:'#4caf76',fruits:'#e05c9c',fats:'#e07c2a'};
   if(!foods.length){el.innerHTML=`<div style="font-size:13px;color:var(--muted);padding:8px 0;">No ${currentAFTab} foods. Add custom foods below.</div>`;return;}
 
   // Group into chunks of 4 for collapsible sections
