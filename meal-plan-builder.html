@@ -202,8 +202,9 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <option value="AB">Type AB</option>
 </select>
 </div>
-<div style="display:flex;align-items:flex-end;padding-bottom:2px;">
+<div style="display:flex;align-items:flex-end;padding-bottom:2px;gap:10px;">
 <div style="font-size:12px;color:var(--muted);" id="blood-type-desc">Showing general Blueprint approved foods.</div>
+<button class="btn btn-outline btn-sm" onclick="loadVeganPreset()" style="white-space:nowrap;">🌱 Load Vegan Preset</button>
 </div>
 </div>
 <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
@@ -1229,6 +1230,75 @@ function renderSupplements(){
 }
 
 // ── APPROVED FOODS ──
+const VEGAN_FOODS={
+  protein:[
+    {name:'Tofu (firm)',macro:'8g P / 2g C / 4g F per 100g'},
+    {name:'Tempeh',macro:'19g P / 9g C / 11g F per 100g'},
+    {name:'Seitan',macro:'25g P / 14g C / 2g F per 100g'},
+    {name:'Edamame',macro:'11g P / 9g C / 5g F per 100g'},
+    {name:'Lentils (cooked)',macro:'9g P / 20g C / 0g F per 100g'},
+    {name:'Chickpeas (cooked)',macro:'9g P / 27g C / 3g F per 100g'},
+    {name:'Black Beans (cooked)',macro:'9g P / 24g C / 0.5g F per 100g'},
+    {name:'Pea Protein Powder',macro:'80g P / 5g C / 3g F per 100g'},
+    {name:'Textured Vegetable Protein (dry)',macro:'52g P / 30g C / 1g F per 100g'},
+    {name:'Natto',macro:'18g P / 11g C / 10g F per 100g'},
+    {name:'Hemp Protein Powder',macro:'50g P / 15g C / 10g F per 100g'},
+    {name:'Soy Milk (unsweetened)',macro:'3g P / 1g C / 2g F per 100g'},
+  ],
+  carbs:[
+    {name:'Brown Rice (cooked)',macro:'3g P / 23g C / 1g F per 100g'},
+    {name:'Quinoa (cooked)',macro:'4g P / 21g C / 2g F per 100g'},
+    {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
+    {name:'Sweet Potato',macro:'2g P / 20g C / 0g F per 100g'},
+    {name:'Whole Wheat Pasta (cooked)',macro:'5g P / 25g C / 1g F per 100g'},
+    {name:'Farro (cooked)',macro:'5g P / 26g C / 1g F per 100g'},
+  ],
+  vegetables:[
+    {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+    {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
+    {name:'Kale',macro:'3g P / 10g C / 0g F per 100g'},
+    {name:'Bell Peppers',macro:'1g P / 6g C / 0g F per 100g'},
+    {name:'Zucchini',macro:'1g P / 3g C / 0g F per 100g'},
+    {name:'Cauliflower',macro:'2g P / 5g C / 0g F per 100g'},
+    {name:'Carrots',macro:'1g P / 10g C / 0g F per 100g'},
+    {name:'Brussels Sprouts',macro:'3g P / 9g C / 0g F per 100g'},
+    {name:'Asparagus',macro:'2g P / 4g C / 0g F per 100g'},
+    {name:'Mushrooms',macro:'3g P / 3g C / 0g F per 100g'},
+  ],
+  fruits:[
+    {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
+    {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
+    {name:'Apple',macro:'0g P / 14g C / 0g F per 100g'},
+    {name:'Orange',macro:'1g P / 12g C / 0g F per 100g'},
+    {name:'Strawberries',macro:'1g P / 8g C / 0g F per 100g'},
+    {name:'Grapes',macro:'1g P / 17g C / 0g F per 100g'},
+  ],
+  fats:[
+    {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+    {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+    {name:'Almonds',macro:'21g P / 22g C / 50g F per 100g'},
+    {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+    {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+    {name:'Flaxseed (ground)',macro:'18g P / 29g C / 42g F per 100g'},
+    {name:'Peanut Butter (natural)',macro:'25g P / 20g C / 50g F per 100g'},
+    {name:'Tahini (sesame paste)',macro:'17g P / 26g C / 54g F per 100g'},
+    {name:'Pumpkin Seeds',macro:'19g P / 18g C / 44g F per 100g'},
+    {name:'Coconut Oil',macro:'0g P / 0g C / 100g F per 100g'},
+    {name:'Hemp Seeds',macro:'31g P / 9g C / 49g F per 100g'},
+    {name:'Cashews',macro:'18g P / 30g C / 44g F per 100g'},
+  ]
+};
+function loadVeganPreset(){
+  approvedFoods={
+    protein:VEGAN_FOODS.protein.map(f=>({...f})),
+    carbs:VEGAN_FOODS.carbs.map(f=>({...f})),
+    vegetables:VEGAN_FOODS.vegetables.map(f=>({...f})),
+    fruits:VEGAN_FOODS.fruits.map(f=>({...f})),
+    fats:VEGAN_FOODS.fats.map(f=>({...f}))
+  };
+  document.getElementById('blood-type-desc').textContent='Showing 100% plant-based Blueprint approved foods.';
+  renderApprovedFoods();
+}
 function initApprovedFoods(bt){approvedFoods={protein:BT_FOODS[bt].protein.map(f=>({...f})),carbs:BT_FOODS[bt].carbs.map(f=>({...f})),vegetables:(BT_FOODS[bt].vegetables||[]).map(f=>({...f})),fruits:(BT_FOODS[bt].fruits||[]).map(f=>({...f})),fats:BT_FOODS[bt].fats.map(f=>({...f}))};renderApprovedFoods();}
 
 function setAFTab(tab){
