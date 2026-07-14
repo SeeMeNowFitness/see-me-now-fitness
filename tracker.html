@@ -408,6 +408,10 @@ select option{background:var(--dark);}
 <!-- LOG TAB -->
 <div class="panel" id="panel-log">
 <div id="weigh-food-note" style="display:none;"><div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--gold);">⚠️ <strong>Contest Prep:</strong> Weigh everything. No estimates.</div></div>
+<div id="todays-blueprint-card" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;">
+  <div style="font-family:'Anton',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">💡 Today's Blueprint</div>
+  <div id="todays-blueprint-text" style="font-size:12px;color:var(--white);line-height:1.5;"></div>
+</div>
 <div class="quick-log-grid">
 <div class="quick-btn" onclick="openModal('modal-steps')"><div class="icon">👟</div><div class="lbl">Log Steps</div></div>
 <div class="quick-btn" onclick="openModal('modal-workout')"><div class="icon">🏋️</div><div class="lbl">Log Workout</div></div>
@@ -1242,7 +1246,7 @@ const ze=document.getElementById('balance-zone-label'),ne=document.getElementByI
 if(noM){ze.textContent="TODAY'S PROGRESS";ne.textContent='—';ne.style.color='var(--white)';document.getElementById('balance-sub').innerHTML='Log your first meal to start tracking your blueprint';}
 else{ze.textContent='DAILY ENERGY BALANCE';ne.innerHTML=(e.net>=0?'+':'')+Math.round(e.net)+'<span style="font-size:20px;font-weight:400;margin-left:4px;">kcal</span>';document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
 const pb=document.getElementById('blueprint-insight-badge');
-if(noM)pb.innerHTML=`<div style="text-align:left;"><div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;">👇 How to get started</div><div style="font-size:11px;color:var(--muted);line-height:1.45;">Tap Log → search a food → add it. Your Blueprint Insight appears once you start logging.</div></div>`;
+if(noM)pb.innerHTML=`<div style="text-align:left;"><div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;">👇 Ready to Start Today?</div><div style="font-size:11px;color:var(--muted);line-height:1.45;">You don't have to catch up. Simply log your next meal — every meal helps Blueprint understand your progress.</div></div>`;
 else{
   const insight=getBlueprintInsight(zone,e.net,(clientProfile||{}).goal,getMacroAdherence((clientProfile||{}).goal),friendlyDate(currentDateKey)==='Today');
   // The number itself only ever turns color when things are genuinely dialed in — it never
@@ -3621,6 +3625,11 @@ function renderWorkoutDayDetail(idx, plan, startOpen = false) {
         </div>
       </div>
       <div id="workout-detail-body" style="display:${startOpen ? 'block' : 'none'};padding:14px 16px;">
+        <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">📝 Your Notes</div>
+          <textarea id="workout-plan-notes-input" rows="3" placeholder="Weights used, how it felt, anything for yourself or your coach..." style="width:100%;resize:vertical;font-size:13px;" onblur="saveWorkoutPlanNotes()">${dayData.workout_plan_notes||''}</textarea>
+          <div id="workout-notes-saved-indicator" style="font-size:10px;color:var(--green);margin-top:4px;opacity:0;transition:opacity 0.3s;">✓ Saved</div>
+        </div>
         ${warmup.length ? `
           <div style="margin-bottom:14px;">
             <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);margin-bottom:8px;">🔥 Warmup</div>
@@ -3639,11 +3648,6 @@ function renderWorkoutDayDetail(idx, plan, startOpen = false) {
           <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">💪 Main Workout</div>
           ${renderClientExercises(day.exercises)}
         ` : ''}
-        <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);">
-          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">📝 Your Notes</div>
-          <textarea id="workout-plan-notes-input" rows="3" placeholder="Weights used, how it felt, anything for yourself or your coach..." style="width:100%;resize:vertical;font-size:13px;" onblur="saveWorkoutPlanNotes()">${dayData.workout_plan_notes||''}</textarea>
-          <div id="workout-notes-saved-indicator" style="font-size:10px;color:var(--green);margin-top:4px;opacity:0;transition:opacity 0.3s;">✓ Saved</div>
-        </div>
       </div>
     </div>`;
 }
@@ -4426,7 +4430,23 @@ function togglePlanCard(id) {
 }
 
 // AUTH / LOGIN
+function renderTodaysBlueprint(){
+  const principles=[
+    "The goal isn't perfection. The goal is honest data. Every meal you log helps Blueprint make better decisions.",
+    "Track the truth. Not just the good days.",
+    "Progress comes from consistent decisions — not perfect days.",
+    "One meal doesn't define your progress. One decision at a time does.",
+    "The best coaching starts with honest data.",
+    "Consistency beats perfection. Every. Single. Time.",
+    "Small decisions repeated consistently create extraordinary results.",
+  ];
+  const start=new Date(new Date().getFullYear(),0,0);
+  const dayOfYear=Math.floor((new Date()-start)/86400000);
+  const el=document.getElementById('todays-blueprint-text');
+  if(el) el.textContent=principles[dayOfYear%principles.length];
+}
 async function init(){
+renderTodaysBlueprint();
 if(URL_CLIENT_ID){localStorage.setItem('smn_client_id',URL_CLIENT_ID);CLIENT_ID=URL_CLIENT_ID;}
 if(CLIENT_ID&&CLIENT_ID!=='demo'){await loadClientProfile();await loadDay(currentDateKey);return;}
 if(PENDING_EMAIL){const found=await lookupByEmail(PENDING_EMAIL);if(found){CLIENT_ID=found;localStorage.setItem('smn_client_id',found);await loadClientProfile();await loadDay(currentDateKey);return;}}
