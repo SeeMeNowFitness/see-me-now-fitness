@@ -371,9 +371,10 @@ select option{background:var(--dark);}
   <div class="balance-sub" id="balance-sub"></div>
   <div id="blueprint-insight-badge" style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px;"></div>
 </div>
-<div class="card"><div class="card-title">Macros Today</div><div id="macro-bars"></div></div>
+<div class="card"><div class="row-between" style="margin-bottom:8px;"><div class="card-title" style="margin-bottom:0;">Macros Today</div><span id="edit-macros-link" style="display:none;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;" onclick="openMacrosModal()">✏️ Edit Macros</span></div><div id="macro-bars"></div></div>
 <div class="card"><div class="row-between" style="margin-bottom:8px;"><div class="card-title" style="margin-bottom:0;">Steps &amp; Hydration</div><span id="edit-goals-link" style="display:none;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;" onclick="openGoalsModal()">✏️ Edit Goals</span></div><div id="activity-bars"></div></div>
 <div class="modal-overlay" id="modal-goals" onclick="closeModalOutside(event,'modal-goals')"><div class="modal"><div class="modal-handle"></div><h3>🎯 Your Daily Goals</h3><label>Step Goal</label><input type="number" id="goals-step-input" inputmode="numeric" placeholder="e.g. 10000"><label>Water Goal (oz)</label><input type="number" id="goals-water-input" inputmode="numeric" placeholder="e.g. 100" min="1"><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-goals')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveOwnGoals()">Save</button></div></div></div>
+<div class="modal-overlay" id="modal-macros" onclick="closeModalOutside(event,'modal-macros')"><div class="modal"><div class="modal-handle"></div><h3>🎯 Your Daily Macros</h3><label>Protein (g)</label><input type="number" id="macros-protein-input" inputmode="numeric" placeholder="e.g. 150" oninput="updateMacrosCaloriePreview()"><label>Carbs (g)</label><input type="number" id="macros-carbs-input" inputmode="numeric" placeholder="e.g. 175" oninput="updateMacrosCaloriePreview()"><label>Fat (g)</label><input type="number" id="macros-fat-input" inputmode="numeric" placeholder="e.g. 55" oninput="updateMacrosCaloriePreview()"><div style="font-size:12px;color:var(--muted);margin-top:8px;">Calories: <span id="macros-cal-preview" style="color:var(--gold);font-weight:700;">—</span> (calculated automatically)</div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-macros')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveOwnMacros()">Save</button></div></div></div>
 <div class="stat-grid">
 <div class="stat-tile"><div class="lbl">Weight</div><div class="val" id="stat-weight">—</div><div class="unit">lbs today</div><div id="weight-trend" style="display:none;margin-top:6px;font-size:10px;line-height:1.6;"></div></div>
 <div class="stat-tile"><div class="lbl">Steps</div><div class="val" id="stat-steps">—</div><div class="unit">today</div></div>
@@ -691,6 +692,8 @@ select option{background:var(--dark);}
     </select>
   </div>
   <div id="edit-food-preview" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:16px;font-size:14px;"></div>
+  <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);display:block;margin-bottom:6px;">Move to Meal</label>
+  <select id="edit-food-meal" style="width:100%;padding:12px;font-size:14px;background:var(--dark);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;margin-bottom:16px;"></select>
   <div style="display:flex;gap:10px;">
     <button class="btn btn-outline btn-full" onclick="closeModal('modal-edit-food')">Cancel</button>
     <button class="btn btn-gold btn-full" onclick="confirmEditMeal()">Update</button>
@@ -934,6 +937,11 @@ document.getElementById('weigh-food-note').style.display=tier==='contest_prep'?'
 document.getElementById('contest-countdown').style.display=tier==='contest_prep'?'block':'none';
 document.getElementById('session-countdown').style.display=tier==='inperson'?'block':'none';
 document.getElementById('checkin-streak').style.display='block';
+// Self-serve tracker-tier and demo clients can set their own macros; coached clients
+// have macros set by their coach in admin, kept locked here to preserve coach oversight.
+const canSelfEditMacros=tier==='tracker'||CLIENT_ID==='demo';
+const macrosLink=document.getElementById('edit-macros-link');
+if(macrosLink) macrosLink.style.display=canSelfEditMacros?'block':'none';
 // Old always-on upsell strip disabled in favor of the consistency-timed nudge (see checkConsistencyNudge) — re-enable only if a different, non-timed prompt is wanted here
 document.getElementById('upsell-block').style.display='none';
 const zzt=document.getElementById('zigzag-toggle');if(zzt)zzt.style.display=clientProfile.tracking_method==='zigzag'?'block':'none';
@@ -1436,12 +1444,12 @@ function getMealGroup(m) {
   if (!m.time) return 'Other';
   const d = new Date(m.time);
   const h = d.getHours();
-  if (h < 10) return '🌅 Breakfast';
-  if (h < 12) return '🥪 Mid Morning';
-  if (h < 14) return '☀️ Lunch';
-  if (h < 17) return '🍎 Afternoon';
-  if (h < 20) return '🌙 Dinner';
-  return '🌜 Evening';
+  if (h < 10) return 'Breakfast';
+  if (h < 12) return 'Meal 2';
+  if (h < 14) return 'Meal 3';
+  if (h < 17) return 'Meal 4';
+  if (h < 20) return 'Dinner';
+  return 'Meal 6';
 }
 
 function renderMealLog(){
@@ -1500,6 +1508,16 @@ function openEditMeal(idx) {
   document.getElementById('edit-food-amount').value = currentAmount;
   document.getElementById('edit-food-unit').value = 'g';
   updateEditPreview();
+  // Populate the meal-reassignment dropdown with real assigned meal names if a plan exists,
+  // otherwise the same generic Breakfast/Meal N/Dinner options used when logging.
+  const mealSel = document.getElementById('edit-food-meal');
+  const profile = clientProfile || {};
+  const isZ = profile.tracking_method === 'zigzag';
+  const assignedPlan = isZ ? (currentDayType==='high' ? profile.meal_plan_high : profile.meal_plan_low) : profile.meal_plan;
+  let mealNames = (assignedPlan && assignedPlan.length) ? assignedPlan.map(p=>p.name) : ['Breakfast','Meal 2','Meal 3','Meal 4','Dinner','Meal 6'];
+  const currentGroup = getMealGroup(m);
+  if (!mealNames.includes(currentGroup)) mealNames = [currentGroup, ...mealNames];
+  mealSel.innerHTML = mealNames.map(n => `<option value="${n.replace(/"/g,'&quot;')}" ${n===currentGroup?'selected':''}>${n}</option>`).join('');
   openModal('modal-edit-food');
 }
 
@@ -1543,6 +1561,7 @@ function confirmEditMeal() {
   const perGramC = (m.carbs || 0) / origGrams;
   const perGramF = (m.fat || 0) / origGrams;
   const unitLabels = {g:`${Math.round(grams)}g`,oz:`${amount} oz`,cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,piece:`${amount} piece${amount!==1?'s':''}`,scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`};
+  const newMealGroup = document.getElementById('edit-food-meal').value;
   dayData.meals[idx] = {
     ...m,
     grams: Math.round(grams),
@@ -1551,6 +1570,7 @@ function confirmEditMeal() {
     protein: Math.round(perGramP * grams * 10) / 10,
     carbs: Math.round(perGramC * grams * 10) / 10,
     fat: Math.round(perGramF * grams * 10) / 10,
+    mealGroup: newMealGroup || m.mealGroup,
   };
   saveDay();
   closeModal('modal-edit-food');
@@ -1760,8 +1780,8 @@ function populateMealSelector() {
   } else {
     // No meal plan — show generic options
     const hour = new Date().getHours();
-    const defaultMeal = hour < 10 ? 'Breakfast' : hour < 12 ? 'Mid Morning' : hour < 14 ? 'Lunch' : hour < 17 ? 'Afternoon Snack' : hour < 20 ? 'Dinner' : 'Evening Snack';
-    sel.innerHTML = ['Breakfast','Mid Morning','Lunch','Afternoon Snack','Dinner','Evening Snack']
+    const defaultMeal = hour < 10 ? 'Breakfast' : hour < 12 ? 'Meal 2' : hour < 14 ? 'Meal 3' : hour < 17 ? 'Meal 4' : hour < 20 ? 'Dinner' : 'Meal 6';
+    sel.innerHTML = ['Breakfast','Meal 2','Meal 3','Meal 4','Dinner','Meal 6']
       .map(m => `<option value="${m}" ${m===defaultMeal?'selected':''}>${m}</option>`).join('');
   }
 }
@@ -2478,6 +2498,40 @@ async function saveOwnGoals(){
   closeModal('modal-goals');
   renderActivityBars();
   showToast('Goals updated ✓');
+}
+function openMacrosModal(){
+  const m=(clientProfile||{}).macros||{};
+  document.getElementById('macros-protein-input').value=m.protein||150;
+  document.getElementById('macros-carbs-input').value=m.carbs||175;
+  document.getElementById('macros-fat-input').value=m.fat||55;
+  updateMacrosCaloriePreview();
+  openModal('modal-macros');
+}
+function updateMacrosCaloriePreview(){
+  const p=parseFloat(document.getElementById('macros-protein-input').value)||0;
+  const c=parseFloat(document.getElementById('macros-carbs-input').value)||0;
+  const f=parseFloat(document.getElementById('macros-fat-input').value)||0;
+  const cals=Math.round(p*4+c*4+f*9);
+  const el=document.getElementById('macros-cal-preview');
+  if(el) el.textContent=cals+' kcal';
+}
+async function saveOwnMacros(){
+  const protein=parseFloat(document.getElementById('macros-protein-input').value)||150;
+  const carbs=parseFloat(document.getElementById('macros-carbs-input').value)||175;
+  const fat=parseFloat(document.getElementById('macros-fat-input').value)||55;
+  const calories=Math.round(protein*4+carbs*4+fat*9);
+  clientProfile.macros={protein,carbs,fat,calories};
+  // If today's target was already frozen (client logged something earlier today), re-freeze it
+  // with the new numbers — this is the client's own choice, not a retroactive coach change,
+  // so it should take effect immediately rather than waiting until tomorrow.
+  if(dayData && dayData.target_macros){ dayData.target_macros=clientProfile.macros; saveDay(); }
+  if(CLIENT_ID && CLIENT_ID!=='demo'){
+    try{ await fsSet(`clients/${CLIENT_ID}`,{...clientProfile}); }catch(e){}
+  }
+  closeModal('modal-macros');
+  renderToday();
+  renderMealLog();
+  showToast('Macros updated ✓');
 }
 function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=(dayData.water||0)+v;saveDay();closeModal('modal-water');renderToday();const oz=dayData.water,gal=oz/128,galText=oz>=32?` (${gal.toFixed(2).replace(/\.?0+$/,'')} gal)`:'';showToast(`Water logged — ${oz}oz${galText} today ✓`);}
 
