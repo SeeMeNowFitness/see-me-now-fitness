@@ -1210,6 +1210,16 @@ function getBlueprintInsight(zone,net,goal,macroStatus,isToday){
     return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s calorie intake ${be} below target for a muscle-building phase.`,sub:'Recovery and growth benefit from additional nutrition.'};
   }
 
+  if(g==='performance'){
+    // Performance-focused athletes need to be properly fueled, not in a deficit — under-eating
+    // directly hurts training output and recovery, which is a different concern than the
+    // muscle-retention framing used for fat-loss-style goals.
+    if(zone==='maintenance'&&macrosDialedIn) return {icon:'🟢',label:'On Track',color:'var(--green)',msg:`${dayRef}'s nutrition supports your performance goals.`,sub:'Properly fueled and ready to perform.'};
+    if(!macrosDialedIn) return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:macroMsg,sub:'Carbs fuel your training, protein supports recovery — both matter for performance.'};
+    if(zone==='deficit') return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s intake ${runVerb} below your performance target.`,sub:'Under-fueling can hurt training output and recovery — aim to hit your target consistently.'};
+    return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s intake ${runVerb} above your performance target.`,sub:'Not a problem occasionally — just stay aware of the trend relative to your training load.'};
+  }
+
   if(g==='maintenance'){
     if(zone==='maintenance'&&macrosDialedIn) return {icon:'🟢',label:'On Track',color:'var(--green)',msg:`${dayRef}'s intake ${isToday?'is aligned':'was aligned'} with your maintenance goal.`,sub:tomorrowSub('Continue building consistency.','That kept building your consistency.')};
     if(!macrosDialedIn) return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:macroMsg,sub:'Consistency in macros matters even at maintenance.'};
