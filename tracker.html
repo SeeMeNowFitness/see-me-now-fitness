@@ -1172,19 +1172,29 @@ function getMacroAdherence(goal){
   });
   return status;
 }
+function joinList(arr){
+  if(arr.length===0) return '';
+  if(arr.length===1) return arr[0];
+  if(arr.length===2) return arr[0]+' and '+arr[1];
+  return arr.slice(0,-1).join(', ')+', and '+arr[arr.length-1];
+}
 function macroStatusMessage(status,isToday){
   const names={calories:'calories',protein:'protein',carbs:'carbs',fat:'fat'};
   const keys=Object.keys(status);
   const off=keys.filter(k=>!status[k]);
   const on=keys.filter(k=>status[k]);
   if(!off.length) return null; // everything dialed in — caller uses the standard on-track message
-  const wasWere1=isToday?'were':'were'; // "were" reads naturally either way for a completed day's totals
   if(off.length===keys.length) return isToday?"Your calories and macros are off target across the board today.":"Your calories and macros were off target across the board that day.";
-  const offList=off.map(k=>names[k]).join(' and ');
-  const cameIn=isToday?'have come in':'came in';
-  if(!on.length) return `${offList.charAt(0).toUpperCase()+offList.slice(1)} ${cameIn} outside your target range ${isToday?'today':'that day'}.`;
-  const onList=on.map((k,i)=>i===0?(names[k].charAt(0).toUpperCase()+names[k].slice(1)):names[k]).join(' and ');
-  return `${onList} ${on.length>1?'were':'was'} dialed in, but ${offList} ${cameIn} outside your target range.`;
+  // Multiple items combined are always grammatically plural regardless of the individual words —
+  // a single item uses that word's own natural agreement (protein/fat are singular mass nouns,
+  // calories/carbs read as plural).
+  const singular={calories:'are',protein:'is',carbs:'are',fat:'is'};
+  const dialedVerb=on.length>1?(isToday?'are':'were'):(isToday?singular[on[0]]:(singular[on[0]]==='is'?'was':'were'));
+  const comeVerb=off.length>1?(isToday?'have come in':'came in'):(isToday?(singular[off[0]]==='is'?'has come in':'have come in'):'came in');
+  const offList=joinList(off.map(k=>names[k]));
+  if(!on.length) return `${offList.charAt(0).toUpperCase()+offList.slice(1)} ${comeVerb} outside your target range ${isToday?'today':'that day'}.`;
+  const onList=joinList(on.map((k,i)=>i===0?(names[k].charAt(0).toUpperCase()+names[k].slice(1)):names[k]));
+  return `${onList} ${dialedVerb} dialed in, but ${offList} ${comeVerb} outside your target range.`;
 }
 
 function getBlueprintInsight(zone,net,goal,macroStatus,isToday){
@@ -1256,19 +1266,29 @@ function getBlueprintInsight(zone,net,goal,macroStatus,isToday){
 }
 
 // RENDER TODAY
-function applyRecoverabilityFraming(insight,isToday){
+function buildNextMoveAdvice(offList,stillRecoverable){
+  const mealRef=stillRecoverable?'your next meal':'your final meal';
+  const closer=stillRecoverable?'':', then get back on track tomorrow';
+  // Protein first — it's the most universally important thing to prioritize regardless of
+  // what else is off. Otherwise, call out whichever specific macro actually needs attention.
+  if(offList.includes('protein')) return `Prioritize protein at ${mealRef}${closer}.`;
+  if(offList.includes('fat')) return `Add a source of healthy fat at ${mealRef}${closer}.`;
+  if(offList.includes('carbs')) return `Add some quality carbs at ${mealRef}${closer}.`;
+  if(offList.includes('calories')) return `Focus on hitting your calorie target at ${mealRef}${closer}.`;
+  return stillRecoverable?'Stay consistent through the rest of the day.':'Get back on track tomorrow.';
+}
+function applyRecoverabilityFraming(insight,isToday,macroStatus){
   // Only Needs Attention / Off Plan states get reframed — On Track stays exactly as-is,
   // since the document's philosophy only calls for softer handling when something's off,
   // not when everything's already going well. The specific diagnostic (insight.msg) is never
   // touched here — it stays accurate to whatever was actually off. Only the "next move"
-  // framing changes based on whether there's realistic time left to act on it today.
+  // framing changes based on whether there's realistic time left to act on it today, and it's
+  // tailored to name the specific macro worth prioritizing, not a generic catch-all.
   if(insight.label==='On Track') return insight;
   const hour=new Date().getHours();
   const stillRecoverable=isToday && hour<19; // before ~7pm — realistic time left to adjust today
-  if(stillRecoverable){
-    return {...insight, sub:`Best next move: ${insight.sub}` };
-  }
-  return {...insight, sub:"Best next move: get back on track tomorrow." };
+  const offList=macroStatus?Object.keys(macroStatus).filter(k=>!macroStatus[k]):[];
+  return {...insight, sub:`Best next move: ${buildNextMoveAdvice(offList,stillRecoverable)}` };
 }
 function renderToday(){
 updateDateLabel();
@@ -1280,7 +1300,9 @@ else{ze.textContent='DAILY ENERGY BALANCE';ne.innerHTML=(e.net>=0?'+':'')+Math.r
 const pb=document.getElementById('blueprint-insight-badge');
 if(noM)pb.innerHTML=`<div style="text-align:left;"><div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;">👇 Ready to Start Today?</div><div style="font-size:11px;color:var(--muted);line-height:1.45;">You don't have to catch up. Simply log your next meal — every meal helps Blueprint understand your progress.</div></div>`;
 else{
-  const insight=applyRecoverabilityFraming(getBlueprintInsight(zone,e.net,(clientProfile||{}).goal,getMacroAdherence((clientProfile||{}).goal),friendlyDate(currentDateKey)==='Today'),friendlyDate(currentDateKey)==='Today');
+  const isTodayFlag=friendlyDate(currentDateKey)==='Today';
+  const macroStatus=getMacroAdherence((clientProfile||{}).goal);
+  const insight=applyRecoverabilityFraming(getBlueprintInsight(zone,e.net,(clientProfile||{}).goal,macroStatus,isTodayFlag),isTodayFlag,macroStatus);
   // The number itself only ever turns color when things are genuinely dialed in — it never
   // turns yellow or red on its own, so it can reinforce without ever feeling like a scold.
   ne.style.color=insight.label==='On Track'?insight.color:'var(--white)';
