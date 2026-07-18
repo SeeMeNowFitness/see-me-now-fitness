@@ -1256,6 +1256,25 @@ function getBlueprintInsight(zone,net,goal,macroStatus,isToday){
 }
 
 // RENDER TODAY
+function applyRecoverabilityFraming(insight,isToday){
+  // Only Needs Attention / Off Plan states get reframed — On Track stays exactly as-is,
+  // since the document's philosophy only calls for softer handling when something's off,
+  // not when everything's already going well.
+  if(insight.label==='On Track') return insight;
+  const hour=new Date().getHours();
+  const stillRecoverable=isToday && hour<19; // before ~7pm — realistic time left to adjust today
+  if(stillRecoverable){
+    return {...insight,
+      msg:"You're still in a great position today.",
+      sub:`Best next move: ${insight.sub} If you're hungry later, choose a lean protein meal to finish the day strong.`
+    };
+  }
+  const dayRef=isToday?'Today':'That day';
+  return {...insight,
+    msg:`${dayRef} came in off target.`,
+    sub:"Best next move: prioritize protein for your final meal and get back on track tomorrow."
+  };
+}
 function renderToday(){
 updateDateLabel();
 renderGreetingCard();
@@ -1266,7 +1285,7 @@ else{ze.textContent='DAILY ENERGY BALANCE';ne.innerHTML=(e.net>=0?'+':'')+Math.r
 const pb=document.getElementById('blueprint-insight-badge');
 if(noM)pb.innerHTML=`<div style="text-align:left;"><div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;">👇 Ready to Start Today?</div><div style="font-size:11px;color:var(--muted);line-height:1.45;">You don't have to catch up. Simply log your next meal — every meal helps Blueprint understand your progress.</div></div>`;
 else{
-  const insight=getBlueprintInsight(zone,e.net,(clientProfile||{}).goal,getMacroAdherence((clientProfile||{}).goal),friendlyDate(currentDateKey)==='Today');
+  const insight=applyRecoverabilityFraming(getBlueprintInsight(zone,e.net,(clientProfile||{}).goal,getMacroAdherence((clientProfile||{}).goal),friendlyDate(currentDateKey)==='Today'),friendlyDate(currentDateKey)==='Today');
   // The number itself only ever turns color when things are genuinely dialed in — it never
   // turns yellow or red on its own, so it can reinforce without ever feeling like a scold.
   ne.style.color=insight.label==='On Track'?insight.color:'var(--white)';
