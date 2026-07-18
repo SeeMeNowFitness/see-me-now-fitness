@@ -1973,6 +1973,18 @@ async function lookupBarcode(barcode){
   const el=document.getElementById('food-search-results');
   el.innerHTML=`<div class="loading">Looking up barcode ${barcode}…</div>`;
 
+  // Check for a coach-verified Blueprint Foods override first — if this exact barcode has been
+  // manually corrected once, trust it completely and skip external databases entirely. This is
+  // the permanent fix for a specific product that keeps coming back wrong from third-party data.
+  try{
+    const bpFoods=await getBlueprintFoods();
+    const override=bpFoods.find(f=>f.barcode && f.barcode===barcode);
+    if(override){
+      showBarcodeResult(`⭐ ${override.name}`,Math.round(override.cals),override.protein,override.carbs,override.fat,override.serving||'',false,null);
+      return;
+    }
+  }catch(e){}
+
   const fetchOFF=async()=>{
     try{
       const r=await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);

@@ -2259,7 +2259,7 @@ function loadDefaultBlueprintFoods() {
 }
 
 function addBlueprintFoodRow() {
-  blueprintFoods.push({ name:'', serving:'1 oz', servingG:28.35, cals:0, protein:0, carbs:0, fat:0, category:'protein' });
+  blueprintFoods.push({ name:'', serving:'1 oz', servingG:28.35, cals:0, protein:0, carbs:0, fat:0, category:'protein', barcode:'' });
   renderBlueprintFoods();
 }
 
@@ -2315,6 +2315,10 @@ function renderBlueprintFoods() {
             </select>
             <button onclick="removeBlueprintFood(${f._idx})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0;">✕</button>
           </div>
+          <div style="margin:-2px 0 8px 0;display:flex;align-items:center;gap:6px;">
+            <span style="font-size:10px;color:var(--muted);white-space:nowrap;">📷 Barcode override:</span>
+            <input type="text" value="${f.barcode||''}" placeholder="Scan and paste the UPC here to lock in verified data for this exact product" inputmode="numeric" oninput="blueprintFoods[${f._idx}].barcode=this.value.replace(/[^0-9]/g,'')" style="padding:5px 8px;font-size:11px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--muted);outline:none;flex:1;max-width:320px;">
+          </div>
         `).join('')}
       </div>`;
   }).join('');
@@ -2340,6 +2344,7 @@ async function loadBlueprintFoodsFromFirestore() {
           carbs: parseFloat(data.carbs) || 0,
           fat: parseFloat(data.fat) || 0,
           category: data.category || 'protein',
+          barcode: data.barcode || '',
         };
       });
       builderBPCache = blueprintFoods; // update search cache too
@@ -2380,6 +2385,7 @@ async function saveBlueprintFoods() {
         carbs: parseFloat(f.carbs) || 0,
         fat: parseFloat(f.fat) || 0,
         category: f.category || 'protein',
+        barcode: f.barcode || '',
         blueprint: true,
       });
     }
