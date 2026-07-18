@@ -1259,21 +1259,16 @@ function getBlueprintInsight(zone,net,goal,macroStatus,isToday){
 function applyRecoverabilityFraming(insight,isToday){
   // Only Needs Attention / Off Plan states get reframed — On Track stays exactly as-is,
   // since the document's philosophy only calls for softer handling when something's off,
-  // not when everything's already going well.
+  // not when everything's already going well. The specific diagnostic (insight.msg) is never
+  // touched here — it stays accurate to whatever was actually off. Only the "next move"
+  // framing changes based on whether there's realistic time left to act on it today.
   if(insight.label==='On Track') return insight;
   const hour=new Date().getHours();
   const stillRecoverable=isToday && hour<19; // before ~7pm — realistic time left to adjust today
   if(stillRecoverable){
-    return {...insight,
-      msg:"You're still in a great position today.",
-      sub:`Best next move: ${insight.sub} If you're hungry later, choose a lean protein meal to finish the day strong.`
-    };
+    return {...insight, sub:`Best next move: ${insight.sub}` };
   }
-  const dayRef=isToday?'Today':'That day';
-  return {...insight,
-    msg:`${dayRef} came in off target.`,
-    sub:"Best next move: prioritize protein for your final meal and get back on track tomorrow."
-  };
+  return {...insight, sub:"Best next move: get back on track tomorrow." };
 }
 function renderToday(){
 updateDateLabel();
