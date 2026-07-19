@@ -144,6 +144,9 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
   <button class="btn btn-outline btn-sm" onclick="loadPlanByType('standard')">Load Standard Plan</button>
   <button class="btn btn-sm" style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid var(--gold-d);" onclick="copyCurrentToOtherDay()">📋 Copy Current to Other Day</button>
 </div>
+<div id="peak-copy-btn-wrap" style="display:none;margin-top:10px;">
+  <button class="btn btn-sm" style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid var(--gold-d);" onclick="copyCurrentToPeakDay()">🏆 Copy Current Meals to Peak Week Day</button>
+</div>
 <div id="zigzag-focus-fields" style="display:none;">
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">Zig Zag Day Focus Labels <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(optional — shows on client's Today tab)</span></div>
 <div class="grid-2">
@@ -763,6 +766,7 @@ function onClientSelect(){
   if(selectedClient.peak_week?.enabled){
     document.getElementById('peak-enabled').checked=true;
     document.getElementById('peak-section').style.display='block';
+    document.getElementById('peak-copy-btn-wrap').style.display='block';
     peakWeek={enabled:true,days:JSON.parse(JSON.stringify(selectedClient.peak_week.days||[])),showDate:selectedClient.peak_week.showDate||'',checklist:[...(selectedClient.peak_week.checklist||[])]};
     document.getElementById('peak-day-count').value=String(peakWeek.days.length||7);
     document.getElementById('peak-show-date').value=peakWeek.showDate||'';
@@ -771,6 +775,7 @@ function onClientSelect(){
   } else {
     document.getElementById('peak-enabled').checked=false;
     document.getElementById('peak-section').style.display='none';
+    document.getElementById('peak-copy-btn-wrap').style.display='none';
     peakWeek={enabled:false,days:[],showDate:'',checklist:[]};
   }
   // Show zigzag focus fields if client uses zigzag or plan type is high/low
@@ -2463,8 +2468,26 @@ function togglePeakSection() {
   const enabled = document.getElementById('peak-enabled').checked;
   peakWeek.enabled = enabled;
   document.getElementById('peak-section').style.display = enabled ? 'block' : 'none';
+  document.getElementById('peak-copy-btn-wrap').style.display = enabled ? 'block' : 'none';
   if (enabled && !peakWeek.days.length) initPeakDays(parseInt(document.getElementById('peak-day-count').value) || 7);
   if (enabled && !peakWeek.checklist.length) loadDefaultPeakChecklist();
+}
+
+function copyCurrentToPeakDay() {
+  if (!peakWeek.enabled || !peakWeek.days.length) { alert('Enable Peak Week Protocol first (Section 8) before copying meals into it.'); return; }
+  if (!meals.some(m => m.foods.length)) { alert('Build out some meals in Section 3 first, then copy them here.'); return; }
+  const options = peakWeek.days.map((d, i) => `${i + 1}. ${d.label}`).join('\n');
+  const choice = prompt(`Copy the current meals to which Peak Week day?\n\n${options}\n\nEnter a number:`);
+  if (choice === null) return;
+  const idx = parseInt(choice) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= peakWeek.days.length) { alert('Not a valid option.'); return; }
+  const target = peakWeek.days[idx];
+  if (target.meals?.some(m => m.foods.length) && !confirm(`"${target.label}" already has meals — overwrite them with the current plan?`)) return;
+  peakWeek.days[idx].meals = JSON.parse(JSON.stringify(meals));
+  renderPeakDays();
+  togglePeakDay(idx);
+  document.getElementById('peak-section').scrollIntoView({ behavior: 'smooth' });
+  showToast(`✓ Copied to "${target.label}" — adjust for peak week as needed`);
 }
 
 function onPeakDayCountChange() {
