@@ -277,6 +277,44 @@ Enable Flex Dieting for this client
 </div>
 </div>
 
+<!-- 8. Peak Week Protocol (Contest Prep only) -->
+<div class="section">
+<h3>8. Peak Week Protocol <span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(Contest Prep clients)</span></h3>
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:700;color:var(--white);">
+<input type="checkbox" id="peak-enabled" onchange="togglePeakSection()" style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;">
+Enable Peak Week Protocol for this client
+</label>
+</div>
+<div id="peak-section" style="display:none;">
+<div class="grid-2" style="margin-bottom:16px;">
+  <div class="field" style="margin-bottom:0;">
+    <label>Number of Days</label>
+    <select id="peak-day-count" onchange="onPeakDayCountChange()">
+      <option value="5">5 Days Out</option>
+      <option value="6">6 Days Out</option>
+      <option value="7" selected>7 Days Out</option>
+    </select>
+  </div>
+  <div class="field" style="margin-bottom:0;">
+    <label>Show Date (optional)</label>
+    <input type="date" id="peak-show-date">
+  </div>
+</div>
+<div id="peak-days-container"></div>
+
+<div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border);">
+  <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:10px;">🎒 Things to Bring</div>
+  <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Show-day checklist — posing suit, tanning products, snacks, safety pins, etc. Shows in the client's My Plan tab.</div>
+  <div id="peak-checklist-container"></div>
+  <div style="margin-top:10px;display:flex;gap:8px;">
+    <button class="btn btn-outline btn-sm" onclick="addPeakChecklistRow()">+ Add Item</button>
+    <button class="btn btn-outline btn-sm" onclick="loadDefaultPeakChecklist()">Load Common Items</button>
+  </div>
+</div>
+</div>
+</div>
+
 <!-- Save -->
 <div class="btn-row">
 <button class="btn btn-gold" onclick="savePlan()">💾 Save Plan to Client</button>
@@ -721,6 +759,20 @@ function onClientSelect(){
   if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),vegetables:(selectedClient.approved_foods.vegetables||[]).map(f=>({...f})),fruits:(selectedClient.approved_foods.fruits||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
   // Load flex meals
   if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;document.getElementById('flex-section').style.display='block';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));renderFlexMeals();}
+  // Load peak week
+  if(selectedClient.peak_week?.enabled){
+    document.getElementById('peak-enabled').checked=true;
+    document.getElementById('peak-section').style.display='block';
+    peakWeek={enabled:true,days:(selectedClient.peak_week.days||[]).map(d=>({...d})),showDate:selectedClient.peak_week.showDate||'',checklist:[...(selectedClient.peak_week.checklist||[])]};
+    document.getElementById('peak-day-count').value=String(peakWeek.days.length||7);
+    document.getElementById('peak-show-date').value=peakWeek.showDate||'';
+    renderPeakDays();
+    renderPeakChecklist();
+  } else {
+    document.getElementById('peak-enabled').checked=false;
+    document.getElementById('peak-section').style.display='none';
+    peakWeek={enabled:false,days:[],showDate:'',checklist:[]};
+  }
   // Show zigzag focus fields if client uses zigzag or plan type is high/low
   document.getElementById('high-day-focus').value = selectedClient.high_day_focus || '';
   document.getElementById('low-day-focus').value = selectedClient.low_day_focus || '';
@@ -2398,6 +2450,137 @@ async function saveBlueprintFoods() {
   }
 }
 
+// ── PEAK WEEK PROTOCOL ──
+let peakWeek = { enabled:false, days:[], showDate:'', checklist:[] };
+
+const DEFAULT_PEAK_CHECKLIST = [
+  'Posing suit (and backup)', 'Tanning product + applicator', 'Posing oil',
+  'Safety pins', 'Extra makeup / touch-up kit', 'Snacks & water for backstage',
+  'Show shoes', 'Robe', 'Comparison round number/card', 'Charged phone + charger',
+];
+
+function togglePeakSection() {
+  const enabled = document.getElementById('peak-enabled').checked;
+  peakWeek.enabled = enabled;
+  document.getElementById('peak-section').style.display = enabled ? 'block' : 'none';
+  if (enabled && !peakWeek.days.length) initPeakDays(parseInt(document.getElementById('peak-day-count').value) || 7);
+  if (enabled && !peakWeek.checklist.length) loadDefaultPeakChecklist();
+}
+
+function onPeakDayCountChange() {
+  initPeakDays(parseInt(document.getElementById('peak-day-count').value) || 7);
+}
+
+function initPeakDays(count) {
+  const existing = peakWeek.days || [];
+  peakWeek.days = Array.from({ length: count }, (_, i) => {
+    const daysOut = count - i;
+    return existing[i] || {
+      label: daysOut === 0 ? 'Show Day' : `${daysOut} Day${daysOut !== 1 ? 's' : ''} Out`,
+      nutrition: '',
+      workout: '',
+      notes: '',
+    };
+  });
+  renderPeakDays();
+}
+
+function renderPeakDays() {
+  const el = document.getElementById('peak-days-container');
+  el.innerHTML = peakWeek.days.map((d, i) => `
+    <div style="background:var(--black);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;">
+      <div onclick="togglePeakDay(${i})" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;background:var(--dark);">
+        <div style="font-size:13px;font-weight:800;color:var(--white);">🏆 ${d.label}</div>
+        <span style="color:var(--muted);font-size:12px;" id="peak-chev-${i}">${i===0?'▲':'▼'}</span>
+      </div>
+      <div id="peak-body-${i}" style="display:${i===0?'block':'none'};padding:14px 16px;">
+        ${i < peakWeek.days.length - 1 ? `
+          <div style="margin-bottom:14px;">
+            <button class="btn btn-outline btn-sm" onclick="copyPeakDayToNext(${i})">📋 Copy This Day to "${peakWeek.days[i+1].label}"</button>
+          </div>
+        ` : ''}
+        <div class="field">
+          <label>Day Label (shown to client)</label>
+          <input type="text" value="${d.label}" oninput="peakWeek.days[${i}].label=this.value" onblur="renderPeakDays()">
+        </div>
+        <div class="field">
+          <label>Nutrition Protocol</label>
+          <textarea rows="4" placeholder="e.g. High carb day — 400g carbs, 120g protein, 30g fat. No added sodium. 1 gallon water." oninput="peakWeek.days[${i}].nutrition=this.value"></textarea>
+        </div>
+        <div class="field">
+          <label>Workout / Activity</label>
+          <textarea rows="2" placeholder="e.g. Light full-body pump work, 30 min. No cardio." oninput="peakWeek.days[${i}].workout=this.value"></textarea>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Additional Notes</label>
+          <textarea rows="2" placeholder="e.g. Begin water manipulation. Check in with coach by 6pm." oninput="peakWeek.days[${i}].notes=this.value"></textarea>
+        </div>
+      </div>
+    </div>
+  `).join('');
+  // Preserve textarea values on re-render (label edits trigger a full re-render)
+  peakWeek.days.forEach((d, i) => {
+    const body = document.getElementById(`peak-body-${i}`);
+    if (!body) return;
+    const tAreas = body.querySelectorAll('textarea');
+    if (tAreas[0]) tAreas[0].value = d.nutrition || '';
+    if (tAreas[1]) tAreas[1].value = d.workout || '';
+    if (tAreas[2]) tAreas[2].value = d.notes || '';
+  });
+}
+
+function copyPeakDayToNext(i) {
+  if (i >= peakWeek.days.length - 1) return;
+  const target = peakWeek.days[i + 1];
+  if ((target.nutrition || target.workout || target.notes) && !confirm(`"${target.label}" already has content — overwrite it with "${peakWeek.days[i].label}"'s plan?`)) return;
+  peakWeek.days[i + 1] = {
+    ...target,
+    nutrition: peakWeek.days[i].nutrition,
+    workout: peakWeek.days[i].workout,
+    notes: peakWeek.days[i].notes,
+  };
+  renderPeakDays();
+  togglePeakDay(i + 1);
+  showToast(`✓ Copied to "${target.label}" — adjust as needed`);
+}
+
+function togglePeakDay(i) {
+  const body = document.getElementById(`peak-body-${i}`);
+  const chev = document.getElementById(`peak-chev-${i}`);
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  chev.textContent = open ? '▼' : '▲';
+}
+
+function addPeakChecklistRow() {
+  peakWeek.checklist.push('');
+  renderPeakChecklist();
+}
+
+function removePeakChecklistItem(i) {
+  peakWeek.checklist.splice(i, 1);
+  renderPeakChecklist();
+}
+
+function loadDefaultPeakChecklist() {
+  peakWeek.checklist = [...DEFAULT_PEAK_CHECKLIST];
+  renderPeakChecklist();
+}
+
+function renderPeakChecklist() {
+  const el = document.getElementById('peak-checklist-container');
+  if (!peakWeek.checklist.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;">No items yet. Add items or load common ones.</div>';
+    return;
+  }
+  el.innerHTML = peakWeek.checklist.map((item, i) => `
+    <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center;">
+      <input type="text" value="${item}" placeholder="e.g. Posing suit" oninput="peakWeek.checklist[${i}]=this.value" style="flex:1;padding:8px 10px;font-size:12px;background:var(--dark);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;">
+      <button class="del-btn" onclick="removePeakChecklistItem(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
 // ── FLEX MEALS ──
 let flexMeals = [];
 let flexEnabled = false;
@@ -2506,6 +2689,12 @@ async function savePlan() {
         blood_type: document.getElementById('blood-type-select').value,
         flex_enabled: flexEnabled,
         flex_meals: flexEnabled ? flexMeals.filter(m => m.restaurant || m.meal) : [],
+        peak_week: peakWeek.enabled ? {
+          enabled: true,
+          days: peakWeek.days,
+          showDate: document.getElementById('peak-show-date').value || '',
+          checklist: peakWeek.checklist.filter(c => c && c.trim()),
+        } : { enabled: false },
         high_day_focus: document.getElementById('high-day-focus').value.trim() || null,
         low_day_focus: document.getElementById('low-day-focus').value.trim() || null,
         workout_plan: workoutPlan ? {

@@ -621,6 +621,19 @@ select option{background:var(--dark);}
 </div>
 </div>
 
+<!-- PEAK WEEK SECTION -->
+<div id="plan-peak-section" style="display:none;">
+<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
+<div onclick="togglePlanSection('peakweek')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">🏆 Peak Week Protocol</div>
+<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-peakweek">▼</span>
+</div>
+<div id="plan-section-body-peakweek" style="display:none;padding:0 16px 16px;">
+<div id="plan-peak-content"></div>
+</div>
+</div>
+</div>
+
 </div>
 </div><!-- /content -->
 
@@ -3547,6 +3560,7 @@ function renderPlanTab() {
   renderSupplements();
   renderApprovedFoods();
   renderFlexMeals();
+  renderPeakWeek();
 }
 
 function renderCoachNotes() {
@@ -4191,6 +4205,62 @@ function renderFlexMeals() {
       ⚠️ <strong style="color:var(--gold);">Reminder:</strong> This is a weekly treat, not a daily option. Stay disciplined the rest of the week and results will follow. 💪
     </div>
   `;
+}
+
+function renderPeakWeek() {
+  const profile = clientProfile || {};
+  const section = document.getElementById('plan-peak-section');
+  const el = document.getElementById('plan-peak-content');
+  const pw = profile.peak_week;
+  if (!pw?.enabled || !pw.days?.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  const showDateStr = pw.showDate ? new Date(pw.showDate + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }) : '';
+  el.innerHTML = `
+    <div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-dim);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--white);line-height:1.6;">
+      ⚠️ <strong style="color:var(--gold);">This is our starting plan going into peak week</strong> — not a fixed script. Your coach will make real-time adjustments day to day based on your check-ins, how your body is responding, and how you're looking. Stay in close contact and follow any updates your coach gives you over what's written here.
+    </div>
+    ${showDateStr ? `<div style="text-align:center;font-size:12px;color:var(--gold);font-weight:700;margin-bottom:12px;">🏆 Show Day: ${showDateStr}</div>` : ''}
+    ${pw.days.map((d, i) => `
+      <div style="background:var(--black);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;">
+        <div onclick="togglePeakDayClient(${i})" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;background:rgba(201,168,76,0.05);">
+          <div style="font-size:13px;font-weight:800;color:var(--white);">🏆 ${d.label}</div>
+          <span style="color:var(--muted);font-size:12px;" id="peak-client-chev-${i}">▼</span>
+        </div>
+        <div id="peak-client-body-${i}" style="display:none;padding:12px 14px;">
+          ${d.nutrition ? `<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:4px;">🍽 Nutrition</div><div style="font-size:13px;color:var(--white);line-height:1.6;white-space:pre-line;">${d.nutrition}</div></div>` : ''}
+          ${d.workout ? `<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:4px;">💪 Workout</div><div style="font-size:13px;color:var(--white);line-height:1.6;white-space:pre-line;">${d.workout}</div></div>` : ''}
+          ${d.notes ? `<div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:4px;">📝 Notes</div><div style="font-size:13px;color:var(--muted);line-height:1.6;white-space:pre-line;">${d.notes}</div></div>` : ''}
+          ${!d.nutrition && !d.workout && !d.notes ? '<div style="font-size:12px;color:var(--muted);">No details added for this day yet.</div>' : ''}
+        </div>
+      </div>
+    `).join('')}
+    ${pw.checklist?.length ? `
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:10px;">🎒 Things to Bring</div>
+        ${pw.checklist.map((item, i) => `
+          <label style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;color:var(--white);">
+            <input type="checkbox" onchange="togglePeakChecklistItem(${i})" ${profile.peak_checklist_checked?.[i]?'checked':''} style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;flex-shrink:0;">
+            <span style="${profile.peak_checklist_checked?.[i]?'text-decoration:line-through;color:var(--muted);':''}">${item}</span>
+          </label>
+        `).join('')}
+      </div>
+    ` : ''}
+  `;
+}
+function togglePeakDayClient(i) {
+  const body = document.getElementById(`peak-client-body-${i}`);
+  const chev = document.getElementById(`peak-client-chev-${i}`);
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  chev.textContent = open ? '▲' : '▼';
+}
+async function togglePeakChecklistItem(i) {
+  if (!clientProfile.peak_checklist_checked) clientProfile.peak_checklist_checked = {};
+  clientProfile.peak_checklist_checked[i] = !clientProfile.peak_checklist_checked[i];
+  if (CLIENT_ID && CLIENT_ID !== 'demo') {
+    try { await fsSet(`clients/${CLIENT_ID}`, {...clientProfile}); } catch(e) {}
+  }
+  renderPeakWeek();
 }
 
 // ── PDF GENERATION ──
