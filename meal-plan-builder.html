@@ -800,21 +800,21 @@ function onClientSelect(){
     const hasHigh = !!selectedClient.meal_plan_high;
     const hasLow = !!selectedClient.meal_plan_low;
     const hasStandard = !!selectedClient.meal_plan;
-    const plans = [];
-    if(hasStandard) plans.push('Standard');
-    if(hasHigh) plans.push('🔥 High Day');
-    if(hasLow) plans.push('❄️ Low Day');
-    if(plans.length > 0) {
-      const choice = confirm(`This client has existing plans (${plans.join(', ')}). Load one for editing?\n\nClick OK to load, then choose which type from the Plan Type dropdown.`);
-      if(choice) {
-        // Default load standard, or high if no standard
-        const planToLoad = selectedClient.meal_plan || selectedClient.meal_plan_high || selectedClient.meal_plan_low;
-        if(planToLoad) loadExistingPlan(planToLoad);
-        // Set plan type accordingly
-        if(!selectedClient.meal_plan && selectedClient.meal_plan_high) document.getElementById('plan-type').value = 'high_day';
-        else if(!selectedClient.meal_plan && !selectedClient.meal_plan_high && selectedClient.meal_plan_low) document.getElementById('plan-type').value = 'low_day';
-        toggleZigzagFocusFields();
-      }
+    const isZ = selectedClient.tracking_method === 'zigzag';
+    // Automatically load the most sensible plan for this client — no confirm popup that can be
+    // silently missed or mis-clicked, leaving Section 3 empty with no indication anything went wrong.
+    let planToLoad, loadedType;
+    if (isZ && hasHigh) { planToLoad = selectedClient.meal_plan_high; loadedType = 'high_day'; }
+    else if (isZ && hasLow) { planToLoad = selectedClient.meal_plan_low; loadedType = 'low_day'; }
+    else if (hasStandard) { planToLoad = selectedClient.meal_plan; loadedType = 'standard'; }
+    else if (hasHigh) { planToLoad = selectedClient.meal_plan_high; loadedType = 'high_day'; }
+    else if (hasLow) { planToLoad = selectedClient.meal_plan_low; loadedType = 'low_day'; }
+    if (planToLoad) {
+      loadExistingPlan(planToLoad);
+      document.getElementById('plan-type').value = loadedType;
+      toggleZigzagFocusFields();
+      const typeLabel = loadedType === 'high_day' ? '🔥 High Day' : loadedType === 'low_day' ? '❄️ Low Day' : 'Standard';
+      showToast(`✓ Loaded ${typeLabel} plan — switch Plan Type above to see other saved plans`);
     }
   }
 }
@@ -2880,8 +2880,11 @@ async function savePlan() {
       }, { merge: true });
     }
     status.className = 'save-status success';
-    const typeLabel = planType === 'high_day' ? '🔥 High Day' : planType === 'low_day' ? '❄️ Low Day' : '';
-    status.textContent = `✓ ${typeLabel} plan saved to ${selectedClient.name} — live in tracker!`;
+    const typeLabel = planType === 'high_day' ? '🔥 High Day' : planType === 'low_day' ? '❄️ Low Day' : 'Standard';
+    const savedParts = [`${typeLabel} plan`];
+    if (peakWeek.enabled) savedParts.push('🏆 Peak Week Protocol');
+    if (flexEnabled) savedParts.push('⭐ Flex Meals');
+    status.textContent = `✓ ${savedParts.join(' + ')} saved to ${selectedClient.name} — live in tracker!`;
     // Refresh selectedClient in memory so load buttons work immediately
     if (db) {
       const snap = await db.collection('clients').doc(selectedClient.id).get();
