@@ -2534,14 +2534,18 @@ function initPeakDays(count) {
   const existing = peakWeek.days || [];
   const mealCount = parseInt(document.getElementById('peak-meal-count')?.value) || 5;
   const mealNames = MEAL_NAMES[mealCount] || MEAL_NAMES[5];
+  const isDefaultLabel = (label, daysOut) => {
+    // Matches the standard auto-generated pattern (e.g. "7 Days Out", "Show Day") — used to
+    // detect whether a label was ever customized, so a count change doesn't silently overwrite
+    // an intentional rename like "Carb Load Day".
+    return /^\d+ Days? Out$/.test(label) || label === 'Show Day';
+  };
   peakWeek.days = Array.from({ length: count }, (_, i) => {
     const daysOut = count - i;
-    const day = existing[i] || {
-      label: daysOut === 0 ? 'Show Day' : `${daysOut} Day${daysOut !== 1 ? 's' : ''} Out`,
-      nutrition: '',
-      workout: '',
-      notes: '',
-    };
+    const defaultLabel = daysOut === 0 ? 'Show Day' : `${daysOut} Day${daysOut !== 1 ? 's' : ''} Out`;
+    const day = existing[i] || { label: defaultLabel, nutrition: '', workout: '', notes: '' };
+    // Recalculate the label to match the new countdown, unless it's been customized
+    if (isDefaultLabel(day.label, daysOut)) day.label = defaultLabel;
     if (!day.meals) day.meals = mealNames.map(n => ({ name: n, foods: [] }));
     return day;
   });
