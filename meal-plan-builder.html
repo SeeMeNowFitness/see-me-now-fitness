@@ -138,14 +138,18 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <input type="text" id="plan-notes" placeholder="e.g. Follow this on training days">
 </div>
 </div>
-<div id="zigzag-load-btns" style="display:none;margin-top:10px;gap:8px;flex-wrap:wrap;">
-  <button class="btn btn-outline btn-sm" onclick="loadPlanByType('high_day')">Load 🔥 High Day Plan</button>
-  <button class="btn btn-outline btn-sm" onclick="loadPlanByType('low_day')">Load ❄️ Low Day Plan</button>
-  <button class="btn btn-outline btn-sm" onclick="loadPlanByType('standard')">Load Standard Plan</button>
-  <button class="btn btn-sm" style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid var(--gold-d);" onclick="copyCurrentToOtherDay()">📋 Copy Current to Other Day</button>
-</div>
-<div id="peak-copy-btn-wrap" style="display:none;margin-top:10px;">
-  <button class="btn btn-sm" style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid var(--gold-d);" onclick="copyCurrentToPeakDay()">🏆 Copy Current Meals to Peak Week Day</button>
+<div id="zigzag-load-btns" style="display:none;margin-top:14px;">
+  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin-bottom:6px;">Load a Saved Plan</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-outline btn-sm" onclick="loadPlanByType('high_day')">🔥 High Day</button>
+    <button class="btn btn-outline btn-sm" onclick="loadPlanByType('low_day')">❄️ Low Day</button>
+    <button class="btn btn-outline btn-sm" onclick="loadPlanByType('standard')">Standard</button>
+  </div>
+  <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);margin:14px 0 6px;">Copy Current Plan</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;">
+    <button class="btn btn-sm" style="background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid var(--gold-d);" onclick="copyCurrentToOtherDay()">📋 To High/Low Day</button>
+    <button class="btn btn-sm" id="peak-copy-btn" style="display:none;background:rgba(201,168,76,0.15);color:var(--gold);border:1px solid var(--gold-d);" onclick="copyCurrentToPeakDay()">🏆 To Peak Week Day</button>
+  </div>
 </div>
 <div id="zigzag-focus-fields" style="display:none;">
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">Zig Zag Day Focus Labels <span style="font-size:10px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(optional — shows on client's Today tab)</span></div>
@@ -766,7 +770,7 @@ function onClientSelect(){
   if(selectedClient.peak_week?.enabled){
     document.getElementById('peak-enabled').checked=true;
     document.getElementById('peak-section').style.display='block';
-    document.getElementById('peak-copy-btn-wrap').style.display='block';
+    document.getElementById('peak-copy-btn').style.display='block';
     peakWeek={enabled:true,days:JSON.parse(JSON.stringify(selectedClient.peak_week.days||[])),showDate:selectedClient.peak_week.showDate||'',checklist:[...(selectedClient.peak_week.checklist||[])]};
     document.getElementById('peak-day-count').value=String(peakWeek.days.length||7);
     document.getElementById('peak-show-date').value=peakWeek.showDate||'';
@@ -775,7 +779,7 @@ function onClientSelect(){
   } else {
     document.getElementById('peak-enabled').checked=false;
     document.getElementById('peak-section').style.display='none';
-    document.getElementById('peak-copy-btn-wrap').style.display='none';
+    document.getElementById('peak-copy-btn').style.display='none';
     peakWeek={enabled:false,days:[],showDate:'',checklist:[]};
   }
   // Show zigzag focus fields if client uses zigzag or plan type is high/low
@@ -2468,7 +2472,7 @@ function togglePeakSection() {
   const enabled = document.getElementById('peak-enabled').checked;
   peakWeek.enabled = enabled;
   document.getElementById('peak-section').style.display = enabled ? 'block' : 'none';
-  document.getElementById('peak-copy-btn-wrap').style.display = enabled ? 'block' : 'none';
+  document.getElementById('peak-copy-btn').style.display = enabled ? 'block' : 'none';
   if (enabled && !peakWeek.days.length) initPeakDays(parseInt(document.getElementById('peak-day-count').value) || 7);
   if (enabled && !peakWeek.checklist.length) loadDefaultPeakChecklist();
 }
@@ -2568,6 +2572,44 @@ function addPeakBlueprintFood(di,mi,name,cals,protein,carbs,fat,serving,servingG
   renderPeakDays();togglePeakDay(di);
 }
 
+function updatePeakFoodCalc(di, mi, fi) {
+  const amtEl = document.getElementById(`peak-amt-${di}-${mi}-${fi}`);
+  const unitEl = document.getElementById(`peak-unit-${di}-${mi}-${fi}`);
+  if (!amtEl || !unitEl) return;
+  const amt = parseFloat(amtEl.value) || 1;
+  const unit = unitEl.value;
+  const food = peakWeek.days[di].meals[mi].foods[fi];
+  food.amount = String(amt);
+  food.unit = unit;
+  if (food.blueprint) {
+    const servingG = parseFloat(food.servingG) || 1;
+    const unitG = unit === 'piece' ? servingG : (BUILDER_UNITS[unit] || 1);
+    const grams = amt * unitG;
+    const baseCals = parseFloat(food.baseCals) || 0, baseP = parseFloat(food.baseProtein) || 0, baseC = parseFloat(food.baseCarbs) || 0, baseF = parseFloat(food.baseFat) || 0;
+    food.cals = Math.round((baseCals / servingG) * grams * 10) / 10;
+    food.protein = Math.round((baseP / servingG) * grams * 10) / 10;
+    food.carbs = Math.round((baseC / servingG) * grams * 10) / 10;
+    food.fat = Math.round((baseF / servingG) * grams * 10) / 10;
+  } else {
+    const grams = amt * (BUILDER_UNITS[unit] || 1);
+    const mult = grams / 100;
+    food.protein = Math.round((food._baseProtein || 0) * mult * 10) / 10;
+    food.carbs = Math.round((food._baseCarbs || 0) * mult * 10) / 10;
+    food.fat = Math.round((food._baseFat || 0) * mult * 10) / 10;
+    food.cals = Math.round((food._baseCals || 0) * mult);
+  }
+  // Update everything in place rather than re-rendering, so the amount input keeps focus
+  const macroEl = document.getElementById(`peak-food-macros-${di}-${mi}-${fi}`);
+  if (macroEl) macroEl.textContent = `${Math.round(food.cals)} kcal · P:${food.protein}g C:${food.carbs}g F:${food.fat}g`;
+  const mealCalsEl = document.getElementById(`peak-meal-cals-${di}-${mi}`);
+  if (mealCalsEl) mealCalsEl.textContent = `${getPeakMealCals(di, mi)} kcal`;
+  const dayCalsEl = document.getElementById(`peak-day-cals-${di}`);
+  if (dayCalsEl) dayCalsEl.textContent = getPeakDayCals(di);
+  const dayP = document.getElementById(`peak-day-p-${di}`); if (dayP) dayP.textContent = getPeakDayMacro(di, 'protein');
+  const dayC = document.getElementById(`peak-day-c-${di}`); if (dayC) dayC.textContent = getPeakDayMacro(di, 'carbs');
+  const dayF = document.getElementById(`peak-day-f-${di}`); if (dayF) dayF.textContent = getPeakDayMacro(di, 'fat');
+}
+
 function renderPeakDays() {
   const el = document.getElementById('peak-days-container');
   el.innerHTML = peakWeek.days.map((d, i) => `
@@ -2587,12 +2629,12 @@ function renderPeakDays() {
           <input type="text" value="${d.label}" oninput="peakWeek.days[${i}].label=this.value" onblur="renderPeakDays()">
         </div>
         <div style="margin-bottom:14px;">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:8px;">🍽 Meals — ${getPeakDayCals(i)} kcal total</div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:8px;">🍽 Meals — <span id="peak-day-cals-${i}">${getPeakDayCals(i)}</span> kcal total</div>
           ${d.meals.map((m, mi) => `
             <div style="background:var(--dark);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:12px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                 <input type="text" value="${m.name}" oninput="peakWeek.days[${i}].meals[${mi}].name=this.value" style="font-size:12px;font-weight:700;background:transparent;border:none;color:var(--white);outline:none;padding:0;width:auto;">
-                <span style="font-size:11px;color:var(--gold);font-weight:700;">${getPeakMealCals(i,mi)} kcal</span>
+                <span id="peak-meal-cals-${i}-${mi}" style="font-size:11px;color:var(--gold);font-weight:700;">${getPeakMealCals(i,mi)} kcal</span>
               </div>
               <div class="food-search-wrap" style="margin-bottom:8px;">
                 <input type="text" id="peak-fsearch-${i}-${mi}" placeholder="Search foods…" oninput="debouncePeakSearch(${i},${mi})">
@@ -2600,18 +2642,29 @@ function renderPeakDays() {
               </div>
               <div id="peak-fresults-${i}-${mi}" class="food-results"></div>
               ${m.foods.length ? m.foods.map((f, fi) => `
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
-                  <div style="color:var(--white);flex:1;">${f.name} <span style="color:var(--muted);">— ${f.amount}${f.unit==='g'?'g':' '+f.unit}</span></div>
-                  <div style="color:var(--muted);white-space:nowrap;margin:0 8px;">${f.cals} kcal · P:${f.protein}g C:${f.carbs}g F:${f.fat}g</div>
+                <div id="peak-food-row-${i}-${mi}-${fi}" style="display:grid;grid-template-columns:1fr 90px 40px;gap:6px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+                  <div style="color:var(--white);">${f.name}<div id="peak-food-macros-${i}-${mi}-${fi}" style="color:var(--muted);font-size:11px;">${f.cals} kcal · P:${f.protein}g C:${f.carbs}g F:${f.fat}g</div></div>
+                  <div style="display:flex;gap:3px;">
+                    <input type="number" value="${parseFloat(f.amount)||1}" id="peak-amt-${i}-${mi}-${fi}" oninput="updatePeakFoodCalc(${i},${mi},${fi})" style="padding:5px;font-size:11px;background:var(--dark);border:1px solid var(--border);border-radius:5px;color:var(--white);outline:none;width:44px;text-align:center;">
+                    <select id="peak-unit-${i}-${mi}-${fi}" onchange="updatePeakFoodCalc(${i},${mi},${fi})" style="padding:5px 2px;font-size:10px;background:var(--dark);border:1px solid var(--border);border-radius:5px;color:var(--white);outline:none;flex:1;">
+                      <option value="g" ${(f.unit||'g')==='g'?'selected':''}>g</option>
+                      <option value="oz" ${f.unit==='oz'?'selected':''}>oz</option>
+                      <option value="cup" ${f.unit==='cup'?'selected':''}>cup</option>
+                      <option value="tbsp" ${f.unit==='tbsp'?'selected':''}>tbsp</option>
+                      <option value="tsp" ${f.unit==='tsp'?'selected':''}>tsp</option>
+                      <option value="ml" ${f.unit==='ml'?'selected':''}>ml</option>
+                      ${f.blueprint?`<option value="piece" ${f.unit==='piece'?'selected':''}>piece</option>`:''}
+                    </select>
+                  </div>
                   <button onclick="removePeakFood(${i},${mi},${fi})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:14px;">✕</button>
                 </div>
               `).join('') : `<div style="font-size:11px;color:var(--muted);">No foods added yet.</div>`}
             </div>
           `).join('')}
           <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px;">
-            <span>P: <strong style="color:var(--white);">${getPeakDayMacro(i,'protein')}g</strong></span>
-            <span>C: <strong style="color:var(--white);">${getPeakDayMacro(i,'carbs')}g</strong></span>
-            <span>F: <strong style="color:var(--white);">${getPeakDayMacro(i,'fat')}g</strong></span>
+            <span>P: <strong id="peak-day-p-${i}" style="color:var(--white);">${getPeakDayMacro(i,'protein')}</strong>g</span>
+            <span>C: <strong id="peak-day-c-${i}" style="color:var(--white);">${getPeakDayMacro(i,'carbs')}</strong>g</span>
+            <span>F: <strong id="peak-day-f-${i}" style="color:var(--white);">${getPeakDayMacro(i,'fat')}</strong>g</span>
           </div>
         </div>
         <div class="field">
