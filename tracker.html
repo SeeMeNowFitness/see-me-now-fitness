@@ -1193,7 +1193,9 @@ function renderGreetingCard() {
   // Time-based greeting
   const hour = new Date().getHours();
   const timeLabel = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
-  const firstName = (clientProfile.nickname || clientProfile.name || 'Champion').split(' ')[0];
+  // A nickname is already the intended display name — show it in full. Only fall back to
+  // splitting on the first word when using a full legal name (e.g. "John Smith" → "John").
+  const firstName = clientProfile.nickname || (clientProfile.name || 'Champion').split(' ')[0];
   document.getElementById('greeting-time').textContent = timeLabel;
   document.getElementById('greeting-name').textContent = firstName + ' 👊';
 
