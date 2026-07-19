@@ -22,6 +22,10 @@ const NUTRABIO_CODE = "SEEMENOW";
 const URL_CLIENT_ID=new URLSearchParams(window.location.search).get("client");
 const URL_EMAIL=new URLSearchParams(window.location.search).get("email");
 const STORED_CLIENT_ID=localStorage.getItem('smn_client_id');
+// Coach override — add &lang=en to any client link (e.g. ?client=X&lang=en) to view it in English
+// regardless of what language is saved on that client's profile. Doesn't change their actual
+// setting — it's just for this one viewing session, so a coach can check/preview freely.
+const URL_LANG_OVERRIDE=new URLSearchParams(window.location.search).get("lang");
 // Macro Calculator handoff — someone calculated their macros on the marketing site and clicked
 // "Track These Macros". Treat this as a personalized demo session using their real numbers,
 // rather than either the generic demo defaults or a stale logged-in session on this device.
@@ -359,27 +363,27 @@ select option{background:var(--dark);}
 
 <div id="zigzag-toggle" style="display:none;margin-bottom:12px;">
 <div style="display:flex;gap:8px;">
-<button id="zz-high" onclick="setDayType('high')" style="flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;">🔥 HIGH DAY</button>
-<button id="zz-low" onclick="setDayType('low')" style="flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;">❄️ LOW DAY</button>
+<button id="zz-high" data-i18n="high-day" onclick="setDayType('high')" style="flex:1;padding:12px;border-radius:10px;background:var(--gold);color:var(--black);border:none;font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;">🔥 HIGH DAY</button>
+<button id="zz-low" data-i18n="low-day" onclick="setDayType('low')" style="flex:1;padding:12px;border-radius:10px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-family:'Anton',sans-serif;font-size:13px;letter-spacing:0.1em;cursor:pointer;">❄️ LOW DAY</button>
 </div>
 <div id="zigzag-day-count" style="text-align:center;font-size:11px;color:var(--muted);margin-top:6px;letter-spacing:0.04em;"></div>
 </div>
 <div class="balance-hero">
   <div class="balance-zone" id="balance-zone-label">DAILY ENERGY BALANCE</div>
   <div class="balance-number" id="balance-number">—</div>
-  <div style="font-size:9.5px;color:var(--muted);margin-top:2px;letter-spacing:0.04em;">ESTIMATED — BASED ON LOGGED DATA</div>
+  <div data-i18n="estimated-logged" style="font-size:9.5px;color:var(--muted);margin-top:2px;letter-spacing:0.04em;">ESTIMATED — BASED ON LOGGED DATA</div>
   <div class="balance-sub" id="balance-sub"></div>
   <div id="blueprint-insight-badge" style="border-top:1px solid var(--border);margin-top:14px;padding-top:12px;"></div>
 </div>
-<div class="card"><div class="row-between" style="margin-bottom:8px;"><div class="card-title" style="margin-bottom:0;">Macros Today</div><span id="edit-macros-link" style="display:none;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;" onclick="openMacrosModal()">✏️ Edit Macros</span></div><div id="macro-bars"></div></div>
-<div class="card"><div class="row-between" style="margin-bottom:8px;"><div class="card-title" style="margin-bottom:0;">Steps &amp; Hydration</div><span id="edit-goals-link" style="display:none;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;" onclick="openGoalsModal()">✏️ Edit Goals</span></div><div id="activity-bars"></div></div>
+<div class="card"><div class="row-between" style="margin-bottom:8px;"><div class="card-title" data-i18n="macros-today" style="margin-bottom:0;">Macros Today</div><span id="edit-macros-link" data-i18n="edit-macros" style="display:none;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;" onclick="openMacrosModal()">✏️ Edit Macros</span></div><div id="macro-bars"></div></div>
+<div class="card"><div class="row-between" style="margin-bottom:8px;"><div class="card-title" data-i18n="steps-hydration" style="margin-bottom:0;">Steps &amp; Hydration</div><span id="edit-goals-link" data-i18n="edit-goals" style="display:none;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;" onclick="openGoalsModal()">✏️ Edit Goals</span></div><div id="activity-bars"></div></div>
 <div class="modal-overlay" id="modal-goals" onclick="closeModalOutside(event,'modal-goals')"><div class="modal"><div class="modal-handle"></div><h3>🎯 Your Daily Goals</h3><label>Step Goal</label><input type="number" id="goals-step-input" inputmode="numeric" placeholder="e.g. 10000"><label>Water Goal (oz)</label><input type="number" id="goals-water-input" inputmode="numeric" placeholder="e.g. 100" min="1"><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-goals')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveOwnGoals()">Save</button></div></div></div>
 <div class="modal-overlay" id="modal-macros" onclick="closeModalOutside(event,'modal-macros')"><div class="modal"><div class="modal-handle"></div><h3>🎯 Your Daily Macros</h3><label>Goal</label><select id="macros-goal-input"><option value="fat_loss">Fat Loss</option><option value="muscle_gain">Muscle Gain</option><option value="maintenance">Maintenance</option><option value="performance">Performance</option></select><label>Protein (g)</label><input type="number" id="macros-protein-input" inputmode="numeric" placeholder="e.g. 150" oninput="updateMacrosCaloriePreview()"><label>Carbs (g)</label><input type="number" id="macros-carbs-input" inputmode="numeric" placeholder="e.g. 175" oninput="updateMacrosCaloriePreview()"><label>Fat (g)</label><input type="number" id="macros-fat-input" inputmode="numeric" placeholder="e.g. 55" oninput="updateMacrosCaloriePreview()"><div style="font-size:12px;color:var(--muted);margin-top:8px;">Calories: <span id="macros-cal-preview" style="color:var(--gold);font-weight:700;">—</span> (calculated automatically)</div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-macros')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveOwnMacros()">Save</button></div></div></div>
 <div class="stat-grid">
-<div class="stat-tile"><div class="lbl">Weight</div><div class="val" id="stat-weight">—</div><div class="unit">lbs today</div><div id="weight-trend" style="display:none;margin-top:6px;font-size:10px;line-height:1.6;"></div></div>
-<div class="stat-tile"><div class="lbl">Steps</div><div class="val" id="stat-steps">—</div><div class="unit">today</div></div>
-<div class="stat-tile"><div class="lbl">Calories Eaten</div><div class="val" id="stat-consumed">—</div><div class="unit">kcal eaten</div></div>
-<div class="stat-tile"><div class="lbl">Calories Burned</div><div class="val" id="stat-burned">—</div><div class="unit">total kcal</div></div>
+<div class="stat-tile"><div class="lbl" data-i18n="weight">Weight</div><div class="val" id="stat-weight">—</div><div class="unit">lbs today</div><div id="weight-trend" style="display:none;margin-top:6px;font-size:10px;line-height:1.6;"></div></div>
+<div class="stat-tile"><div class="lbl" data-i18n="steps">Steps</div><div class="val" id="stat-steps">—</div><div class="unit">today</div></div>
+<div class="stat-tile"><div class="lbl" data-i18n="calories-eaten">Calories Eaten</div><div class="val" id="stat-consumed">—</div><div class="unit">kcal eaten</div></div>
+<div class="stat-tile"><div class="lbl" data-i18n="calories-burned">Calories Burned</div><div class="val" id="stat-burned">—</div><div class="unit">total kcal</div></div>
 </div>
 <div id="weekly-balance-banner" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
 <div style="font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:10px;">📊 This Week's Balance</div>
@@ -408,9 +412,9 @@ select option{background:var(--dark);}
 
 <!-- LOG TAB -->
 <div class="panel" id="panel-log">
-<div id="weigh-food-note" style="display:none;"><div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--gold);">⚠️ <strong>Contest Prep:</strong> Weigh everything. No estimates.</div></div>
+<div id="weigh-food-note" style="display:none;"><div id="weigh-food-note-inner" style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;font-size:12px;color:var(--gold);">⚠️ <strong>Contest Prep:</strong> Weigh everything. No estimates.</div></div>
 <div id="todays-blueprint-card" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:12px;">
-  <div style="font-family:'Anton',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">💡 Today's Blueprint</div>
+  <div data-i18n="todays-blueprint" style="font-family:'Anton',sans-serif;font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">💡 Today's Blueprint</div>
   <div id="todays-blueprint-text" style="font-size:12px;color:var(--white);line-height:1.5;"></div>
 </div>
 <div class="quick-log-grid">
@@ -427,7 +431,7 @@ select option{background:var(--dark);}
 </div>
 <div class="search-wrap">
 <span class="search-icon">🔍</span>
-<input type="text" id="food-search-input" placeholder="Search foods…" oninput="debounceSearch()" />
+<input type="text" id="food-search-input" data-i18n-placeholder="search-foods" placeholder="Search foods…" oninput="debounceSearch()" />
 <button class="barcode-btn" id="barcode-btn" onclick="startBarcodeScan()" title="Scan barcode">
 <svg viewBox="0 0 24 24" fill="none" width="20" height="20"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="7" y1="8" x2="7" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="10" y1="8" x2="10" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="13" y1="8" x2="13" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="16" y1="8" x2="16" y2="16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
 </button>
@@ -921,6 +925,7 @@ function toFV(v){if(v===null||v===undefined)return{nullValue:null};if(typeof v==
 async function loadClientProfile(){
 if(!CLIENT_ID||CLIENT_ID==='demo'){clientProfile={name:'Demo',tier:'tracker',macros:CALC_MACROS||{protein:180,carbs:200,fat:60,calories:2020},bmr_inputs:{weight_lbs:180,height_cm:178,age:28,gender:'male'}};}
 else{try{clientProfile=(await fsGet(`clients/${CLIENT_ID}`))||defProfile();}catch(e){clientProfile=defProfile();}}
+if(URL_LANG_OVERRIDE==='en'||URL_LANG_OVERRIDE==='es'){clientProfile.language=URL_LANG_OVERRIDE;}
 applyTierUI();
 renderGreetingCard();
 // OneSignal — check permission status. Actual requestPermission() must fire from a real tap
@@ -949,9 +954,71 @@ if(CLIENT_ID && CLIENT_ID !== 'demo') {
 }
 }
 function defProfile(){return{name:'Client',tier:'tracker',macros:CALC_MACROS||{protein:150,carbs:175,fat:55,calories:1795},bmr_inputs:{weight_lbs:160,height_cm:170,age:30,gender:'male'}};}
+// ── TRANSLATIONS (Today tab + Log tab) ──
+const I18N = {
+  es: {
+    // Today tab — static labels
+    'daily-energy-balance':'BALANCE ENERGÉTICO DIARIO', 'todays-progress':'PROGRESO DE HOY',
+    'estimated-logged':'ESTIMADO — SEGÚN LO REGISTRADO', 'burned':'quemadas', 'consumed':'consumidas',
+    'macros-today':'Macros de Hoy', 'edit-macros':'✏️ Editar Macros', 'edit-goals':'✏️ Editar Metas',
+    'steps-hydration':'Pasos e Hidratación', 'weight':'Peso', 'steps':'Pasos', 'calories-eaten':'Calorías Comidas',
+    'calories-burned':'Calorías Quemadas', 'kcal-eaten':'kcal comidas', 'kcal-total':'kcal totales', 'today-label':'hoy',
+    'high-day':'🔥 DÍA ALTO', 'low-day':'❄️ DÍA BAJO', 'check-in':'📋 Registro', 'check-in-btn':'Registrarse →',
+    'check-in-sub':'Envía tu actualización de progreso a tu Coach', 'coach-notes':'NOTAS DEL COACH',
+    'weekly-target':'META SEMANAL', 'weekly-average':'PROMEDIO SEMANAL', 'what-logged':'Lo que realmente has registrado',
+    'protein':'Proteína', 'carbs':'Carbos', 'fat':'Grasa', 'calories':'Calorías',
+    // Log tab
+    'todays-blueprint':"💡 El Blueprint de Hoy", 'search-foods':'Buscar alimentos…', 'search':'Buscar',
+    'add':'Añadir', 'weigh-everything':'⚠️ Preparación de Competencia: Pesa todo. Sin estimaciones.',
+    'how-to-start':'👇 ¿Listo para Empezar Hoy?', 'how-to-start-sub':'No tienes que ponerte al día. Simplemente registra tu próxima comida — cada comida ayuda a Blueprint a entender tu progreso.',
+    'log-workout':'Registrar Entrenamiento', 'log-weight':'Registrar Peso', 'log-water':'Registrar Agua', 'scan-barcode':'Escanear Código',
+  },
+};
+function t(key){
+  const lang=clientProfile?.language;
+  if(lang==='es' && I18N.es[key]) return I18N.es[key];
+  return null; // caller should fall back to its own English default
+}
+function applyStaticTranslations(){
+  const lang=clientProfile?.language;
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key=el.getAttribute('data-i18n');
+    if(lang==='es' && I18N.es[key]) el.textContent=I18N.es[key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    const key=el.getAttribute('data-i18n-placeholder');
+    if(lang==='es' && I18N.es[key]) el.setAttribute('placeholder',I18N.es[key]);
+  });
+}
+// Spanish versions of the Blueprint Insight message templates — mirrors the English logic in
+// getBlueprintInsight/macroStatusMessage exactly, so behavior stays identical, only the language changes.
+const BI_ES={
+  onTrackLabel:'En Camino', attentionLabel:'Necesita Atención', offPlanLabel:'Fuera del Plan',
+  fatLoss:{onTrack:(day)=>`El déficit de ${day==='Hoy'?'hoy':'ese día'} apoya tu meta de pérdida de grasa, y tus macros están en orden.`,onTrackSub:'Excelente trabajo — sigue con esta consistencia.',
+    macroSub:'Mantenerte cerca de tus metas de macros — la proteína especialmente — importa más que el tamaño exacto del déficit.',
+    maint:(day)=>`La ingesta de ${day==='Hoy'?'hoy':'ese día'} estuvo más cerca del mantenimiento que un déficit.`, maintSub:'Está bien de vez en cuando — solo asegúrate de volver hacia tu meta de pérdida de grasa.',
+    surplus:(day)=>`La ingesta calórica de ${day==='Hoy'?'hoy':'ese día'} superó tu meta.`, surplusSub:'Vuelve a tu plan de nutrición mañana.'},
+  muscleGain:{onTrack:(day)=>`La nutrición de ${day==='Hoy'?'hoy':'ese día'} apoya tu fase de construcción muscular.`,onTrackSub:'Sigue alimentando tu entrenamiento.',
+    lowProt:'Tu proteína estuvo por debajo de la meta.',lowProtSub:'La proteína es lo que realmente construye músculo — un superávit por sí solo no es suficiente.',
+    extreme:(day)=>`El superávit de ${day==='Hoy'?'hoy':'ese día'} fue mayor de lo recomendado.`,extremeSub:'Un superávit grande añade más grasa que músculo — ajústalo mañana.',
+    maint:(day)=>`La ingesta de ${day==='Hoy'?'hoy':'ese día'} estuvo más cerca del mantenimiento que tu meta de construcción muscular.`,maintSub:'Un poco más apoya mejor el crecimiento.',
+    deficit:(day)=>`La ingesta calórica de ${day==='Hoy'?'hoy':'ese día'} estuvo por debajo de la meta para una fase de construcción muscular.`,deficitSub:'La recuperación y el crecimiento se benefician de nutrición adicional.'},
+  maintenance:{onTrack:(day)=>`La ingesta de ${day==='Hoy'?'hoy':'ese día'} está alineada con tu meta de mantenimiento.`,onTrackSub:'Continúa construyendo consistencia.',
+    macroSub:'La consistencia en los macros importa incluso en mantenimiento.',
+    below:(day)=>`La ingesta de ${day==='Hoy'?'hoy':'ese día'} estuvo por debajo de tu meta de mantenimiento.`,belowSub:'No es un problema ocasionalmente — solo mantente al tanto de la tendencia.',
+    above:(day)=>`La ingesta de ${day==='Hoy'?'hoy':'ese día'} estuvo por encima de tu meta de mantenimiento.`,aboveSub:'Vuelve a tu plan de nutrición mañana.'},
+  performance:{onTrack:(day)=>`La nutrición de ${day==='Hoy'?'hoy':'ese día'} apoya tus metas de rendimiento.`,onTrackSub:'Bien alimentado y listo para rendir.',
+    macroSub:'Los carbohidratos alimentan tu entrenamiento, la proteína apoya la recuperación — ambos importan para el rendimiento.',
+    below:(day)=>`La ingesta de ${day==='Hoy'?'hoy':'ese día'} estuvo por debajo de tu meta de rendimiento.`,belowSub:'Comer de menos puede afectar el rendimiento y la recuperación — apunta a alcanzar tu meta consistentemente.',
+    above:(day)=>`La ingesta de ${day==='Hoy'?'hoy':'ese día'} estuvo por encima de tu meta de rendimiento.`,aboveSub:'No es un problema ocasionalmente — mantente al tanto según tu carga de entrenamiento.'},
+};
+
 function applyTierUI(){
 const tier=clientProfile.tier;
+applyStaticTranslations();
 document.getElementById('weigh-food-note').style.display=tier==='contest_prep'?'block':'none';
+const wfn=document.getElementById('weigh-food-note-inner');
+if(wfn) wfn.innerHTML=clientProfile?.language==='es'?'⚠️ <strong>Preparación de Competencia:</strong> Pesa todo. Sin estimaciones.':'⚠️ <strong>Contest Prep:</strong> Weigh everything. No estimates.';
 document.getElementById('contest-countdown').style.display=tier==='contest_prep'?'block':'none';
 document.getElementById('session-countdown').style.display=tier==='inperson'?'block':'none';
 document.getElementById('checkin-streak').style.display='block';
@@ -1215,7 +1282,69 @@ function macroStatusMessage(status,isToday){
   return `${onList} ${dialedVerb} dialed in, but ${offList} ${comeVerb} outside your target range.`;
 }
 
+const I18N_MACRO_NAMES_ES={calories:'las calorías',protein:'la proteína',carbs:'los carbos',fat:'la grasa'};
+function joinListES(arr){
+  if(arr.length===1) return arr[0];
+  if(arr.length===2) return arr[0]+' y '+arr[1];
+  return arr.slice(0,-1).join(', ')+' y '+arr[arr.length-1];
+}
+function macroStatusMessageES(status,isToday){
+  const keys=Object.keys(status);
+  const off=keys.filter(k=>!status[k]);
+  const on=keys.filter(k=>status[k]);
+  if(!off.length) return null;
+  if(off.length===keys.length) return isToday?'Tus calorías y macros están fuera de rango en todos los aspectos hoy.':'Tus calorías y macros estuvieron fuera de rango en todos los aspectos ese día.';
+  const offList=joinListES(off.map(k=>I18N_MACRO_NAMES_ES[k]));
+  const estarOff=off.length>1?(isToday?'están':'estuvieron'):(isToday?'está':'estuvo');
+  if(!on.length) return `${offList.charAt(0).toUpperCase()+offList.slice(1)} ${estarOff} fuera de tu rango objetivo ${isToday?'hoy':'ese día'}.`;
+  const onList=joinListES(on.map(k=>I18N_MACRO_NAMES_ES[k]));
+  const estarOn=on.length>1?(isToday?'están':'estuvieron'):(isToday?'está':'estuvo');
+  return `${onList.charAt(0).toUpperCase()+onList.slice(1)} ${estarOn} en orden, pero ${offList} ${estarOff} fuera de tu rango objetivo.`;
+}
+function getBlueprintInsightES(zone,net,goal,macroStatus,isToday){
+  const g=goal||'fat_loss';
+  const macroMsg=macroStatusMessageES(macroStatus,isToday);
+  const macrosDialedIn=!macroMsg;
+  const dayWord=isToday?'Hoy':'Ese día';
+
+  if(g==='muscle_gain'){
+    const target=(getMacros().calories)||2000, extreme=Math.abs(net)/target>0.30;
+    const c=BI_ES.muscleGain;
+    if(zone==='surplus'){
+      if(macrosDialedIn) return {icon:'🟢',label:BI_ES.onTrackLabel,color:'var(--green)',msg:c.onTrack(dayWord),sub:c.onTrackSub};
+      return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:macroMsg,sub:c.lowProtSub};
+    }
+    if(extreme) return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.extreme(dayWord),sub:c.extremeSub};
+    if(zone==='maintenance') return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.maint(dayWord),sub:c.maintSub};
+    return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.deficit(dayWord),sub:c.deficitSub};
+  }
+  if(g==='maintenance'){
+    const c=BI_ES.maintenance;
+    if(zone==='maintenance'&&macrosDialedIn) return {icon:'🟢',label:BI_ES.onTrackLabel,color:'var(--green)',msg:c.onTrack(dayWord),sub:c.onTrackSub};
+    if(!macrosDialedIn) return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:macroMsg,sub:c.macroSub};
+    if(zone==='deficit') return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.below(dayWord),sub:c.belowSub};
+    return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.above(dayWord),sub:c.aboveSub};
+  }
+  if(g==='performance'){
+    const c=BI_ES.performance;
+    if(zone==='maintenance'&&macrosDialedIn) return {icon:'🟢',label:BI_ES.onTrackLabel,color:'var(--green)',msg:c.onTrack(dayWord),sub:c.onTrackSub};
+    if(!macrosDialedIn) return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:macroMsg,sub:c.macroSub};
+    if(zone==='deficit') return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.below(dayWord),sub:c.belowSub};
+    return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.above(dayWord),sub:c.aboveSub};
+  }
+  // fat_loss — also the fallback for contest_prep/meet_prep, which don't yet have dedicated
+  // Spanish copy; they still get correct zone-based logic, just fat-loss-style wording for now.
+  const c=BI_ES.fatLoss;
+  if(zone==='deficit'){
+    if(macrosDialedIn) return {icon:'🟢',label:BI_ES.onTrackLabel,color:'var(--green)',msg:c.onTrack(dayWord),sub:c.onTrackSub};
+    return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:macroMsg,sub:c.macroSub};
+  }
+  if(zone==='maintenance') return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.maint(dayWord),sub:c.maintSub};
+  return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.surplus(dayWord),sub:c.surplusSub};
+}
+
 function getBlueprintInsight(zone,net,goal,macroStatus,isToday){
+  if(clientProfile?.language==='es') return getBlueprintInsightES(zone,net,goal,macroStatus,isToday);
   const g=goal||'fat_loss'; // legacy clients without a goal set keep the previous fat-loss-style behavior
   const macroMsg=macroStatusMessage(macroStatus,isToday);
   const macrosDialedIn=!macroMsg;
@@ -1295,6 +1424,15 @@ function buildNextMoveAdvice(offList,stillRecoverable){
   if(offList.includes('calories')) return `Focus on hitting your calorie target at ${mealRef}${closer}.`;
   return stillRecoverable?'Stay consistent through the rest of the day.':'Get back on track tomorrow.';
 }
+function buildNextMoveAdviceES(offList,stillRecoverable){
+  const mealRef=stillRecoverable?'tu próxima comida':'tu última comida';
+  const closer=stillRecoverable?'':', y vuelve a tu plan mañana';
+  if(offList.includes('protein')) return `Prioriza la proteína en ${mealRef}${closer}.`;
+  if(offList.includes('fat')) return `Añade una fuente de grasa saludable en ${mealRef}${closer}.`;
+  if(offList.includes('carbs')) return `Añade carbohidratos de calidad en ${mealRef}${closer}.`;
+  if(offList.includes('calories')) return `Enfócate en alcanzar tu meta de calorías en ${mealRef}${closer}.`;
+  return stillRecoverable?'Mantente consistente el resto del día.':'Vuelve a tu plan mañana.';
+}
 function applyRecoverabilityFraming(insight,isToday,macroStatus){
   // Only Needs Attention / Off Plan states get reframed — On Track stays exactly as-is,
   // since the document's philosophy only calls for softer handling when something's off,
@@ -1302,21 +1440,25 @@ function applyRecoverabilityFraming(insight,isToday,macroStatus){
   // touched here — it stays accurate to whatever was actually off. Only the "next move"
   // framing changes based on whether there's realistic time left to act on it today, and it's
   // tailored to name the specific macro worth prioritizing, not a generic catch-all.
-  if(insight.label==='On Track') return insight;
+  if(insight.label==='On Track'||insight.label===BI_ES.onTrackLabel) return insight;
   const hour=new Date().getHours();
   const stillRecoverable=isToday && hour<19; // before ~7pm — realistic time left to adjust today
   const offList=macroStatus?Object.keys(macroStatus).filter(k=>!macroStatus[k]):[];
-  return {...insight, sub:`Best next move: ${buildNextMoveAdvice(offList,stillRecoverable)}` };
+  const isSpanish=clientProfile?.language==='es';
+  const advice=isSpanish?buildNextMoveAdviceES(offList,stillRecoverable):buildNextMoveAdvice(offList,stillRecoverable);
+  const prefix=isSpanish?'Mejor próximo paso':'Best next move';
+  return {...insight, sub:`${prefix}: ${advice}` };
 }
 function renderToday(){
 updateDateLabel();
 renderGreetingCard();
 const e=calcBal(),noM=dayData.meals.length===0,zone=getZone(e.net);
 const ze=document.getElementById('balance-zone-label'),ne=document.getElementById('balance-number');
-if(noM){ze.textContent="TODAY'S PROGRESS";ne.textContent='—';ne.style.color='var(--white)';document.getElementById('balance-sub').innerHTML='Log your first meal to start tracking your blueprint';}
-else{ze.textContent='DAILY ENERGY BALANCE';ne.innerHTML=(e.net>=0?'+':'')+Math.round(e.net)+'<span style="font-size:20px;font-weight:400;margin-left:4px;">kcal</span>';document.getElementById('balance-sub').innerHTML=`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
+const isES=clientProfile?.language==='es';
+if(noM){ze.textContent=isES?I18N.es['todays-progress']:"TODAY'S PROGRESS";ne.textContent='—';ne.style.color='var(--white)';document.getElementById('balance-sub').innerHTML=isES?'Registra tu primera comida para empezar a rastrear tu blueprint':'Log your first meal to start tracking your blueprint';}
+else{ze.textContent=isES?'BALANCE ENERGÉTICO DIARIO':'DAILY ENERGY BALANCE';ne.innerHTML=(e.net>=0?'+':'')+Math.round(e.net)+'<span style="font-size:20px;font-weight:400;margin-left:4px;">kcal</span>';document.getElementById('balance-sub').innerHTML=isES?`<span>${e.totalBurned}</span> quemadas &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumidas`:`<span>${e.totalBurned}</span> burned &nbsp;·&nbsp; <span>${e.totalConsumed}</span> consumed`;}
 const pb=document.getElementById('blueprint-insight-badge');
-if(noM)pb.innerHTML=`<div style="text-align:left;"><div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;">👇 Ready to Start Today?</div><div style="font-size:11px;color:var(--muted);line-height:1.45;">You don't have to catch up. Simply log your next meal — every meal helps Blueprint understand your progress.</div></div>`;
+if(noM)pb.innerHTML=isES?`<div style="text-align:left;"><div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;">👇 ¿Listo para Empezar Hoy?</div><div style="font-size:11px;color:var(--muted);line-height:1.45;">No tienes que ponerte al día. Simplemente registra tu próxima comida — cada comida ayuda a Blueprint a entender tu progreso.</div></div>`:`<div style="text-align:left;"><div style="font-size:13px;font-weight:700;color:var(--white);margin-bottom:3px;">👇 Ready to Start Today?</div><div style="font-size:11px;color:var(--muted);line-height:1.45;">You don't have to catch up. Simply log your next meal — every meal helps Blueprint understand your progress.</div></div>`;
 else{
   const isTodayFlag=friendlyDate(currentDateKey)==='Today';
   const macroStatus=getMacroAdherence((clientProfile||{}).goal);
@@ -1325,7 +1467,7 @@ else{
   // turns yellow or red on its own, so it can reinforce without ever feeling like a scold.
   ne.style.color=insight.label==='On Track'?insight.color:'var(--white)';
   pb.innerHTML=`<div style="text-align:left;">
-    <div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:${insight.color};margin-bottom:4px;">${insight.icon} Blueprint Insight — ${insight.label}</div>
+    <div style="font-size:10px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:${insight.color};margin-bottom:4px;">${insight.icon} ${isES?'El Blueprint':'Blueprint Insight'} — ${insight.label}</div>
     <div style="font-size:13.5px;font-weight:700;color:var(--white);line-height:1.35;margin-bottom:3px;">${insight.msg}</div>
     <div style="font-size:11px;color:var(--muted);line-height:1.45;">${insight.sub}</div>
   </div>`;
@@ -3546,13 +3688,14 @@ function renderCheckinBlock() {
   } else {
     // Coached client — show check-in button
     const checkinDay = clientProfile?.checkin_schedule === 'weekly' ? 'Weekly' : 'Bi-Weekly';
+    const isES=clientProfile?.language==='es';
     el.innerHTML = `
       <a href="https://www.seemenowfitness.com/blank-4" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(76,175,118,0.1),rgba(76,175,118,0.04));border:1px solid rgba(76,175,118,0.3);border-radius:var(--radius);padding:14px 16px;text-decoration:none;">
         <div>
-          <div style="font-size:13px;font-weight:800;color:var(--green);margin-bottom:3px;">📋 Check-In</div>
-          <div style="font-size:12px;color:var(--muted);">Submit your progress update to Coach Charles</div>
+          <div style="font-size:13px;font-weight:800;color:var(--green);margin-bottom:3px;">📋 ${isES?'Registro':'Check-In'}</div>
+          <div style="font-size:12px;color:var(--muted);">${isES?'Envía tu actualización de progreso a tu Coach':'Submit your progress update to Coach Charles'}</div>
         </div>
-        <div style="background:var(--green);color:var(--black);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;white-space:nowrap;">Check In →</div>
+        <div style="background:var(--green);color:var(--black);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;white-space:nowrap;">${isES?'Registrarse →':'Check In →'}</div>
       </a>`;
   }
 }
@@ -3577,7 +3720,7 @@ function renderCoachNotes() {
     el.style.display = 'block';
     el.innerHTML = `
       <div style="background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;">
-        <div style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">📝 Coach Notes</div>
+        <div style="font-size:10px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">📝 ${clientProfile?.language==='es'?'Notas del Coach':'Coach Notes'}</div>
         <div style="font-size:13px;color:var(--white);line-height:1.7;">${notes}</div>
       </div>`;
   } else {
