@@ -4245,7 +4245,10 @@ function renderPeakWeek() {
               <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">🍽 Meals</div>
               ${d.meals.filter(m=>m.foods.length).map(m => `
                 <div style="margin-bottom:10px;">
-                  <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:4px;">${m.name}</div>
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;">
+                    <div style="font-size:12px;font-weight:700;color:var(--white);">${m.name}</div>
+                    <div style="font-size:11px;color:var(--gold);font-weight:700;">${m.foods.reduce((s,f)=>s+(f.cals||0),0)} kcal · P:${Math.round(m.foods.reduce((s,f)=>s+(f.protein||0),0)*10)/10}g C:${Math.round(m.foods.reduce((s,f)=>s+(f.carbs||0),0)*10)/10}g F:${Math.round(m.foods.reduce((s,f)=>s+(f.fat||0),0)*10)/10}g</div>
+                  </div>
                   ${m.foods.map(f => `
                     <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
                       <span style="color:var(--white);">${f.name} <span style="color:var(--muted);">— ${f.amount}${f.unit==='g'?'g':' '+f.unit}</span></span>
