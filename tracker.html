@@ -562,6 +562,23 @@ select option{background:var(--dark);}
 <div style="display:flex;gap:10px;flex-wrap:wrap;" id="plan-summary-pills"></div>
 </div>
 
+
+
+<!-- PEAK WEEK SECTION -->
+<div id="plan-peak-section" style="display:none;">
+<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
+<div onclick="togglePlanSection('peakweek')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">🏆 Peak Week Protocol</div>
+<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-peakweek">▼</span>
+</div>
+<div id="plan-section-body-peakweek" style="display:none;padding:0 16px 16px;">
+<div id="plan-peak-content"></div>
+</div>
+</div>
+</div>
+
+<!-- WORKOUT & MEAL PLAN (hidden while Peak Week Protocol is active) -->
+<div id="plan-normal-sections">
 <!-- WORKOUT PLAN -->
 <!-- WORKOUT SECTION -->
 <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
@@ -583,6 +600,7 @@ select option{background:var(--dark);}
 </div>
 <div id="plan-section-body-meals" style="display:none;padding:0 8px 12px;">
 <div id="plan-meal-content"><div class="loading">Loading your meal plan…</div></div>
+</div>
 </div>
 </div>
 
@@ -617,19 +635,6 @@ select option{background:var(--dark);}
 </div>
 <div id="plan-section-body-flexmeal" style="display:none;padding:0 16px 16px;">
 <div id="plan-flex-content"></div>
-</div>
-</div>
-</div>
-
-<!-- PEAK WEEK SECTION -->
-<div id="plan-peak-section" style="display:none;">
-<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
-<div onclick="togglePlanSection('peakweek')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
-<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;background:var(--brand-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">🏆 Peak Week Protocol</div>
-<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-peakweek">▼</span>
-</div>
-<div id="plan-section-body-peakweek" style="display:none;padding:0 16px 16px;">
-<div id="plan-peak-content"></div>
 </div>
 </div>
 </div>
@@ -4210,10 +4215,18 @@ function renderFlexMeals() {
 function renderPeakWeek() {
   const profile = clientProfile || {};
   const section = document.getElementById('plan-peak-section');
+  const normalSections = document.getElementById('plan-normal-sections');
   const el = document.getElementById('plan-peak-content');
   const pw = profile.peak_week;
-  if (!pw?.enabled || !pw.days?.length) { section.style.display = 'none'; return; }
+  if (!pw?.enabled || !pw.days?.length) {
+    section.style.display = 'none';
+    if (normalSections) normalSections.style.display = 'block';
+    return;
+  }
   section.style.display = 'block';
+  // During an active Peak Week protocol, hide the regular recurring meal/workout plan so
+  // there's only ever one plan a client is looking at — not two competing sets of instructions.
+  if (normalSections) normalSections.style.display = 'none';
   const showDateStr = pw.showDate ? new Date(pw.showDate + 'T12:00:00').toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' }) : '';
   el.innerHTML = `
     <div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-dim);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--white);line-height:1.6;">
@@ -4227,10 +4240,31 @@ function renderPeakWeek() {
           <span style="color:var(--muted);font-size:12px;" id="peak-client-chev-${i}">▼</span>
         </div>
         <div id="peak-client-body-${i}" style="display:none;padding:12px 14px;">
-          ${d.nutrition ? `<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:4px;">🍽 Nutrition</div><div style="font-size:13px;color:var(--white);line-height:1.6;white-space:pre-line;">${d.nutrition}</div></div>` : ''}
+          ${d.meals?.some(m=>m.foods.length) ? `
+            <div style="margin-bottom:10px;">
+              <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">🍽 Meals</div>
+              ${d.meals.filter(m=>m.foods.length).map(m => `
+                <div style="margin-bottom:10px;">
+                  <div style="font-size:12px;font-weight:700;color:var(--white);margin-bottom:4px;">${m.name}</div>
+                  ${m.foods.map(f => `
+                    <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
+                      <span style="color:var(--white);">${f.name} <span style="color:var(--muted);">— ${f.amount}${f.unit==='g'?'g':' '+f.unit}</span></span>
+                      <span style="color:var(--muted);white-space:nowrap;margin-left:8px;">${f.cals} kcal · P:${f.protein}g C:${f.carbs}g F:${f.fat}g</span>
+                    </div>
+                  `).join('')}
+                </div>
+              `).join('')}
+              <div style="display:flex;gap:16px;font-size:12px;color:var(--gold);font-weight:700;margin-top:8px;padding-top:8px;border-top:1px solid var(--gold-dim);">
+                <span>${d.meals.reduce((s,m)=>s+m.foods.reduce((s2,f)=>s2+(f.cals||0),0),0)} kcal</span>
+                <span>P: ${Math.round(d.meals.reduce((s,m)=>s+m.foods.reduce((s2,f)=>s2+(f.protein||0),0),0)*10)/10}g</span>
+                <span>C: ${Math.round(d.meals.reduce((s,m)=>s+m.foods.reduce((s2,f)=>s2+(f.carbs||0),0),0)*10)/10}g</span>
+                <span>F: ${Math.round(d.meals.reduce((s,m)=>s+m.foods.reduce((s2,f)=>s2+(f.fat||0),0),0)*10)/10}g</span>
+              </div>
+            </div>
+          ` : ''}
           ${d.workout ? `<div style="margin-bottom:10px;"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:4px;">💪 Workout</div><div style="font-size:13px;color:var(--white);line-height:1.6;white-space:pre-line;">${d.workout}</div></div>` : ''}
           ${d.notes ? `<div><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:4px;">📝 Notes</div><div style="font-size:13px;color:var(--muted);line-height:1.6;white-space:pre-line;">${d.notes}</div></div>` : ''}
-          ${!d.nutrition && !d.workout && !d.notes ? '<div style="font-size:12px;color:var(--muted);">No details added for this day yet.</div>' : ''}
+          ${!d.meals?.some(m=>m.foods.length) && !d.workout && !d.notes ? '<div style="font-size:12px;color:var(--muted);">No details added for this day yet.</div>' : ''}
         </div>
       </div>
     `).join('')}
