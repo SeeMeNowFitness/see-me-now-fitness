@@ -2644,7 +2644,16 @@ function renderPeakDays() {
           <input type="text" value="${d.label}" oninput="peakWeek.days[${i}].label=this.value" onblur="renderPeakDays()">
         </div>
         <div style="margin-bottom:14px;">
-          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:8px;">🍽 Meals — <span id="peak-day-cals-${i}">${getPeakDayCals(i)}</span> kcal total</div>
+          <div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-d);border-radius:8px;padding:10px 12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);">🍽 Day Total</span>
+            <div style="display:flex;gap:14px;font-size:12px;">
+              <span><strong id="peak-day-cals-${i}" style="color:var(--white);">${getPeakDayCals(i)}</strong> <span style="color:var(--muted);">kcal</span></span>
+              <span>P: <strong id="peak-day-p-${i}" style="color:var(--white);">${getPeakDayMacro(i,'protein')}</strong><span style="color:var(--muted);">g</span></span>
+              <span>C: <strong id="peak-day-c-${i}" style="color:var(--white);">${getPeakDayMacro(i,'carbs')}</strong><span style="color:var(--muted);">g</span></span>
+              <span>F: <strong id="peak-day-f-${i}" style="color:var(--white);">${getPeakDayMacro(i,'fat')}</strong><span style="color:var(--muted);">g</span></span>
+            </div>
+          </div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:8px;">🍽 Meals</div>
           ${d.meals.map((m, mi) => `
             <div style="background:var(--dark);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;padding:12px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
@@ -2680,11 +2689,6 @@ function renderPeakDays() {
               `).join('') : `<div style="font-size:11px;color:var(--muted);">No foods added yet.</div>`}
             </div>
           `).join('')}
-          <div style="display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px;">
-            <span>P: <strong id="peak-day-p-${i}" style="color:var(--white);">${getPeakDayMacro(i,'protein')}</strong>g</span>
-            <span>C: <strong id="peak-day-c-${i}" style="color:var(--white);">${getPeakDayMacro(i,'carbs')}</strong>g</span>
-            <span>F: <strong id="peak-day-f-${i}" style="color:var(--white);">${getPeakDayMacro(i,'fat')}</strong>g</span>
-          </div>
         </div>
         <div class="field">
           <label>Workout / Activity</label>
