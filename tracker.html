@@ -3745,17 +3745,13 @@ function renderPlanSummary() {
   let focusLabel = '';
   let focusIcon = '💪';
   if (peakEnabled) {
-    // If a Show Date was set, automatically match today's real date to the corresponding
-    // Peak Week day so the countdown updates on its own, day by day, with no manual step.
+    // Match today's real date against each day's stored date field — set automatically in the
+    // builder from the Show Date. This is robust to reordering or relabeling, unlike matching
+    // by position in the array, which breaks the moment a day gets renamed or moved.
     let matched = null;
-    if (profile.peak_week.showDate) {
-      const show = new Date(profile.peak_week.showDate + 'T12:00:00');
-      const today = new Date(); today.setHours(12, 0, 0, 0);
-      const daysUntil = Math.round((show - today) / 86400000);
-      const count = profile.peak_week.days.length;
-      const idx = count - daysUntil;
-      if (idx >= 0 && idx < count) matched = profile.peak_week.days[idx];
-    }
+    const now = new Date();
+    const todayISO = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+    matched = profile.peak_week.days.find(d => d.date === todayISO) || null;
     focusLabel = matched ? matched.label : 'Peak Week Active';
     focusIcon = '🏆';
   } else if (profile.workout_plan?.days?.length) {

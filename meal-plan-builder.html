@@ -314,7 +314,7 @@ Enable Peak Week Protocol for this client
   </div>
   <div class="field" style="margin-bottom:0;">
     <label>Show Date (optional)</label>
-    <input type="date" id="peak-show-date">
+    <input type="date" id="peak-show-date" onchange="recalcPeakDayDates()">
   </div>
 </div>
 <div id="peak-days-container"></div>
@@ -785,7 +785,7 @@ function onClientSelect(){
     document.getElementById('peak-day-count').value=String(peakWeek.days.length||7);
     document.getElementById('peak-meal-count').value=String(peakWeek.days[0]?.meals?.length||5);
     document.getElementById('peak-show-date').value=peakWeek.showDate||'';
-    renderPeakDays();
+    recalcPeakDayDates();
     renderPeakChecklist();
   } else {
     document.getElementById('peak-enabled').checked=false;
@@ -2550,6 +2550,27 @@ function initPeakDays(count) {
     return day;
   });
   if (openPeakDayIndex >= count) openPeakDayIndex = 0;
+  recalcPeakDayDates();
+  renderPeakDays();
+}
+
+function recalcPeakDayDates() {
+  const showDateStr = document.getElementById('peak-show-date')?.value;
+  const count = peakWeek.days.length;
+  if (!showDateStr) {
+    // No show date set — clear any stored dates so matching falls back to the generic
+    // "Peak Week Active" state on the client side instead of showing a stale date.
+    peakWeek.days.forEach(d => { delete d.date; });
+    renderPeakDays();
+    return;
+  }
+  const show = new Date(showDateStr + 'T12:00:00');
+  peakWeek.days.forEach((d, i) => {
+    const daysOut = count - i;
+    const dayDate = new Date(show);
+    dayDate.setDate(dayDate.getDate() - daysOut);
+    d.date = dayDate.toISOString().slice(0, 10);
+  });
   renderPeakDays();
 }
 
@@ -2666,13 +2687,13 @@ function renderPeakDays() {
   el.innerHTML = peakWeek.days.map((d, i) => `
     <div style="background:var(--black);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;">
       <div onclick="togglePeakDay(${i})" style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;cursor:pointer;background:var(--dark);">
-        <div style="font-size:13px;font-weight:800;color:var(--white);">🏆 ${d.label}</div>
+        <div style="font-size:13px;font-weight:800;color:var(--white);">🏆 ${d.label}${d.date ? ` <span style="font-size:11px;font-weight:400;color:var(--gold);">(${new Date(d.date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'numeric',day:'numeric'})})</span>` : ''}</div>
         <span style="color:var(--muted);font-size:12px;" id="peak-chev-${i}">${i===openPeakDayIndex?'▲':'▼'}</span>
       </div>
       <div id="peak-body-${i}" style="display:${i===openPeakDayIndex?'block':'none'};padding:14px 16px;">
-        ${i < peakWeek.days.length - 1 ? `
+        ${peakWeek.days.length > 1 ? `
           <div style="margin-bottom:14px;">
-            <button class="btn btn-outline btn-sm" onclick="copyPeakDayToNext(${i})">📋 Copy This Day to "${peakWeek.days[i+1].label}"</button>
+            <button class="btn btn-outline btn-sm" onclick="copyPeakDayToAny(${i})">📋 Copy This Day to Another Day</button>
           </div>
         ` : ''}
         <div class="field">
@@ -2747,17 +2768,22 @@ function renderPeakDays() {
   });
 }
 
-function copyPeakDayToNext(i) {
-  if (i >= peakWeek.days.length - 1) return;
-  const target = peakWeek.days[i + 1];
-  if ((target.meals?.some(m=>m.foods.length) || target.workout || target.notes) && !confirm(`"${target.label}" already has content — overwrite it with "${peakWeek.days[i].label}"'s plan?`)) return;
-  peakWeek.days[i + 1] = {
+function copyPeakDayToAny(i) {
+  const source = peakWeek.days[i];
+  const options = peakWeek.days.map((d, di) => di === i ? null : `${di + 1}. ${d.label}`).filter(Boolean).join('\n');
+  const choice = prompt(`Copy "${source.label}" to which day?\n\n${options}\n\nEnter a number:`);
+  if (choice === null) return;
+  const idx = parseInt(choice) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= peakWeek.days.length || idx === i) { alert('Not a valid option.'); return; }
+  const target = peakWeek.days[idx];
+  if ((target.meals?.some(m=>m.foods.length) || target.workout || target.notes) && !confirm(`"${target.label}" already has content — overwrite it with "${source.label}"'s plan?`)) return;
+  peakWeek.days[idx] = {
     ...target,
-    meals: JSON.parse(JSON.stringify(peakWeek.days[i].meals)),
-    workout: peakWeek.days[i].workout,
-    notes: peakWeek.days[i].notes,
+    meals: JSON.parse(JSON.stringify(source.meals)),
+    workout: source.workout,
+    notes: source.notes,
   };
-  openPeakDayIndex = i + 1;
+  openPeakDayIndex = idx;
   renderPeakDays();
   showToast(`✓ Copied to "${target.label}" — adjust as needed`);
 }
