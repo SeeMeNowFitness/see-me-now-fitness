@@ -962,7 +962,7 @@ const macrosLink=document.getElementById('edit-macros-link');
 if(macrosLink) macrosLink.style.display=canSelfEditMacros?'block':'none';
 // Old always-on upsell strip disabled in favor of the consistency-timed nudge (see checkConsistencyNudge) — re-enable only if a different, non-timed prompt is wanted here
 document.getElementById('upsell-block').style.display='none';
-const zzt=document.getElementById('zigzag-toggle');if(zzt)zzt.style.display=clientProfile.tracking_method==='zigzag'?'block':'none';
+const zzt=document.getElementById('zigzag-toggle');if(zzt)zzt.style.display=(clientProfile.tracking_method==='zigzag' && !clientProfile.peak_week?.enabled)?'block':'none';
 if(clientProfile.tracking_method==='zigzag'){const hd=clientProfile.high_days_per_week||2;const ld=7-hd;const dc=document.getElementById('zigzag-day-count');if(dc)dc.textContent=`🔥 ${hd} High Day${hd!==1?'s':''} · ❄️ ${ld} Low Day${ld!==1?'s':''} per week`;}
 const sb=document.getElementById('setup-banner');if(sb)sb.style.display=(!CLIENT_ID||CLIENT_ID==='demo')?'block':'none';
 if(tier==='contest_prep'&&clientProfile.show_date){
@@ -3549,7 +3549,7 @@ function renderCheckinBlock() {
     el.innerHTML = `
       <a href="https://www.seemenowfitness.com/blank-4" target="_blank" style="display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,rgba(76,175,118,0.1),rgba(76,175,118,0.04));border:1px solid rgba(76,175,118,0.3);border-radius:var(--radius);padding:14px 16px;text-decoration:none;">
         <div>
-          <div style="font-size:13px;font-weight:800;color:var(--green);margin-bottom:3px;">📋 Coach Check-In</div>
+          <div style="font-size:13px;font-weight:800;color:var(--green);margin-bottom:3px;">📋 Check-In</div>
           <div style="font-size:12px;color:var(--muted);">Submit your progress update to Coach Charles</div>
         </div>
         <div style="background:var(--green);color:var(--black);border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;white-space:nowrap;">Check In →</div>
@@ -3589,11 +3589,31 @@ function renderPlanSummary() {
   const m = getMacros();
   const profile = clientProfile || {};
   const isZigzag = profile.tracking_method === 'zigzag';
+  const peakEnabled = profile.peak_week?.enabled && profile.peak_week?.days?.length;
+
+  // Hide the My Plan tab's High/Low toggle during an active Peak Week protocol — the client
+  // should be following the peak week countdown, not a separate zigzag schedule, during that time.
+  const dayToggle = document.getElementById('plan-day-toggle');
+  if (dayToggle) dayToggle.style.display = peakEnabled ? 'none' : 'flex';
 
   // Determine focus label
   let focusLabel = '';
   let focusIcon = '💪';
-  if (profile.workout_plan?.days?.length) {
+  if (peakEnabled) {
+    // If a Show Date was set, automatically match today's real date to the corresponding
+    // Peak Week day so the countdown updates on its own, day by day, with no manual step.
+    let matched = null;
+    if (profile.peak_week.showDate) {
+      const show = new Date(profile.peak_week.showDate + 'T12:00:00');
+      const today = new Date(); today.setHours(12, 0, 0, 0);
+      const daysUntil = Math.round((show - today) / 86400000);
+      const count = profile.peak_week.days.length;
+      const idx = count - daysUntil;
+      if (idx >= 0 && idx < count) matched = profile.peak_week.days[idx];
+    }
+    focusLabel = matched ? matched.label : 'Peak Week Active';
+    focusIcon = '🏆';
+  } else if (profile.workout_plan?.days?.length) {
     // Use today's workout day focus from assigned plan
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
     const todayDay = profile.workout_plan.days.find(d => d.day === today);
