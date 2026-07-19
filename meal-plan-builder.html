@@ -294,13 +294,22 @@ Enable Peak Week Protocol for this client
 </label>
 </div>
 <div id="peak-section" style="display:none;">
-<div class="grid-2" style="margin-bottom:16px;">
+<div class="grid-3" style="margin-bottom:16px;">
   <div class="field" style="margin-bottom:0;">
     <label>Number of Days</label>
     <select id="peak-day-count" onchange="onPeakDayCountChange()">
       <option value="5">5 Days Out</option>
       <option value="6">6 Days Out</option>
       <option value="7" selected>7 Days Out</option>
+    </select>
+  </div>
+  <div class="field" style="margin-bottom:0;">
+    <label>Meals Per Day</label>
+    <select id="peak-meal-count" onchange="onPeakMealCountChange()">
+      <option value="3">3 meals</option>
+      <option value="4">4 meals</option>
+      <option value="5" selected>5 meals</option>
+      <option value="6">6 meals</option>
     </select>
   </div>
   <div class="field" style="margin-bottom:0;">
@@ -774,6 +783,7 @@ function onClientSelect(){
     peakWeek={enabled:true,days:JSON.parse(JSON.stringify(selectedClient.peak_week.days||[])),showDate:selectedClient.peak_week.showDate||'',checklist:[...(selectedClient.peak_week.checklist||[])]};
     openPeakDayIndex=0;
     document.getElementById('peak-day-count').value=String(peakWeek.days.length||7);
+    document.getElementById('peak-meal-count').value=String(peakWeek.days[0]?.meals?.length||5);
     document.getElementById('peak-show-date').value=peakWeek.showDate||'';
     renderPeakDays();
     renderPeakChecklist();
@@ -2475,7 +2485,13 @@ function togglePeakSection() {
   peakWeek.enabled = enabled;
   document.getElementById('peak-section').style.display = enabled ? 'block' : 'none';
   document.getElementById('peak-copy-btn').style.display = enabled ? 'block' : 'none';
-  if (enabled && !peakWeek.days.length) initPeakDays(parseInt(document.getElementById('peak-day-count').value) || 7);
+  if (enabled && !peakWeek.days.length) {
+    // Default Peak Week's meal count to match whatever's already selected in Section 2,
+    // so it just works out of the box — the coach can still override it independently after.
+    const mainMealCount = document.getElementById('meal-count').value || '5';
+    document.getElementById('peak-meal-count').value = mainMealCount;
+    initPeakDays(parseInt(document.getElementById('peak-day-count').value) || 7);
+  }
   if (enabled && !peakWeek.checklist.length) loadDefaultPeakChecklist();
 }
 
@@ -2500,8 +2516,24 @@ function onPeakDayCountChange() {
   initPeakDays(parseInt(document.getElementById('peak-day-count').value) || 7);
 }
 
+function onPeakMealCountChange() {
+  const newCount = parseInt(document.getElementById('peak-meal-count').value) || 5;
+  const hasExistingFoods = peakWeek.days.some(d => d.meals?.some(m => m.foods.length));
+  if (hasExistingFoods && !confirm(`Changing meal count will reset the meal slots for all ${peakWeek.days.length} days — any foods you've already added will be lost. Continue?`)) {
+    // Revert the dropdown back to reflect the actual current state
+    document.getElementById('peak-meal-count').value = peakWeek.days[0]?.meals?.length || 5;
+    return;
+  }
+  const names = MEAL_NAMES[newCount] || MEAL_NAMES[5];
+  peakWeek.days.forEach(d => { d.meals = names.map(n => ({ name: n, foods: [] })); });
+  renderPeakDays();
+  showToast(`✓ All days now have ${newCount} meal slots`);
+}
+
 function initPeakDays(count) {
   const existing = peakWeek.days || [];
+  const mealCount = parseInt(document.getElementById('peak-meal-count')?.value) || 5;
+  const mealNames = MEAL_NAMES[mealCount] || MEAL_NAMES[5];
   peakWeek.days = Array.from({ length: count }, (_, i) => {
     const daysOut = count - i;
     const day = existing[i] || {
@@ -2510,7 +2542,7 @@ function initPeakDays(count) {
       workout: '',
       notes: '',
     };
-    if (!day.meals) day.meals = MEAL_NAMES[5].map(n => ({ name: n, foods: [] }));
+    if (!day.meals) day.meals = mealNames.map(n => ({ name: n, foods: [] }));
     return day;
   });
   if (openPeakDayIndex >= count) openPeakDayIndex = 0;
