@@ -3777,7 +3777,13 @@ function renderPlanSummary() {
     }
   }
 
-  document.getElementById('plan-summary-pills').innerHTML = `
+  document.getElementById('plan-summary-pills').innerHTML = peakEnabled ? `
+    <div style="background:var(--black);border:1px solid var(--gold-dim);border-radius:8px;padding:10px 12px;flex:1;min-width:100%;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--blue);">Peak Week</div>
+      <div style="font-size:13px;font-weight:900;color:var(--white);margin-top:3px;">${focusIcon} ${focusLabel}</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">Your macro targets for today are in your Peak Week Protocol below — not the numbers you'd normally see here.</div>
+    </div>
+  ` : `
     <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;padding:8px 12px;flex:1;">
       <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);">Calories</div>
       <div style="font-size:18px;font-weight:900;color:var(--white);">${m.calories}<span style="font-size:11px;font-weight:400;color:var(--muted);">kcal</span></div>
