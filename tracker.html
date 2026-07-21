@@ -221,8 +221,8 @@ select option{background:var(--dark);}
 .food-list{margin-top:8px;}
 .food-list-row{padding:10px 0;border-bottom:1px solid rgba(42,42,42,0.5);}
 .food-list-row:last-child{border-bottom:none;}
-.food-list-name{color:var(--white);font-size:13px;font-weight:700;margin-bottom:4px;}
-.food-list-amount{color:var(--muted);font-weight:400;font-size:12px;margin-right:6px;}
+.food-list-name{color:var(--white);font-size:13px;font-weight:700;margin-bottom:4px;display:flex;align-items:baseline;}
+.food-list-amount{color:var(--muted);font-weight:400;font-size:12px;display:inline-block;min-width:88px;flex-shrink:0;}
 .food-list-macros{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);padding-left:42px;}
 .food-list-macros strong{color:var(--white);font-weight:700;}
 .food-list-cals{color:var(--gold)!important;font-weight:700;margin-left:auto;}
@@ -1713,7 +1713,7 @@ function renderMealLog(){
         ${items.map(m => `
           <div class="meal-log-item" style="cursor:pointer;" onclick="openEditMeal(${m._idx})">
             <div class="row-between">
-              <div class="name">${m.servingLabel?`<span style="font-size:12px;color:var(--muted);font-weight:400;">${m.servingLabel}</span> `:''}${m.name}</div>
+              <div class="name" style="display:flex;align-items:baseline;">${m.servingLabel?`<span style="font-size:12px;color:var(--muted);font-weight:400;display:inline-block;min-width:88px;flex-shrink:0;">${m.servingLabel}</span>`:''}<span>${m.name}</span></div>
               <div style="display:flex;gap:8px;align-items:center;">
                 <button class="edit-btn" onclick="event.stopPropagation();openEditMeal(${m._idx})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">Edit</button>
                 <button class="delete-btn" onclick="event.stopPropagation();deleteMeal(${m._idx})">✕</button>
