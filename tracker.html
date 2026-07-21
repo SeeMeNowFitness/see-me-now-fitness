@@ -218,6 +218,16 @@ select option{background:var(--dark);}
 .food-table td{padding:8px 0;border-bottom:1px solid rgba(42,42,42,0.5);color:var(--white);}
 .food-table td:not(:first-child){text-align:right;color:var(--muted);}
 .food-table tr:last-child td{border-bottom:none;}
+.food-list{margin-top:8px;}
+.food-list-row{padding:10px 0;border-bottom:1px solid rgba(42,42,42,0.5);}
+.food-list-row:last-child{border-bottom:none;}
+.food-list-name{color:var(--white);font-size:13px;font-weight:700;margin-bottom:4px;}
+.food-list-amount{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px;}
+.food-list-macros{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);}
+.food-list-macros strong{color:var(--white);font-weight:700;}
+.food-list-cals{color:var(--gold)!important;font-weight:700;margin-left:auto;}
+.food-list-total .food-list-name{color:var(--gold);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
+.food-list-total .food-list-macros strong{color:var(--gold);}
 .macro-donut-wrap{display:flex;align-items:center;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
 .macro-legend{flex:1;}
 .macro-legend-item{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;}
@@ -4231,21 +4241,18 @@ function renderMealPlan() {
         </div>
       </div>
       <div class="meal-plan-card-body" id="meal-${i}" style="display:none;">
-        <table class="food-table">
-          <tr><th>Food</th><th>Amount</th><th>P</th><th>C</th><th>F</th><th>kcal</th></tr>
-          ${meal.foods.map(f => `<tr>
-            <td>${f.name}</td>
-            <td>${f.amount}</td>
-            <td>${f.protein}g</td>
-            <td>${f.carbs}g</td>
-            <td>${f.fat}g</td>
-            <td>${f.cals}</td>
-          </tr>`).join('')}
-          <tr style="font-weight:800;">
-            <td colspan="2" style="color:var(--gold);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;">Total</td>
-            <td>${totalP}g</td><td>${totalC}g</td><td>${totalF}g</td><td>${totalCal}</td>
-          </tr>
-        </table>
+        <div class="food-list">
+          ${meal.foods.map(f => `
+            <div class="food-list-row">
+              <div class="food-list-name">${f.name}<span class="food-list-amount">${f.amount}</span></div>
+              <div class="food-list-macros"><span>P <strong>${f.protein}g</strong></span><span>C <strong>${f.carbs}g</strong></span><span>F <strong>${f.fat}g</strong></span><span class="food-list-cals">${f.cals} kcal</span></div>
+            </div>
+          `).join('')}
+          <div class="food-list-row food-list-total">
+            <div class="food-list-name">Total</div>
+            <div class="food-list-macros"><span>P <strong>${totalP}g</strong></span><span>C <strong>${totalC}g</strong></span><span>F <strong>${totalF}g</strong></span><span class="food-list-cals">${totalCal} kcal</span></div>
+          </div>
+        </div>
         <div class="macro-donut-wrap">
           <svg width="70" height="70" viewBox="0 0 70 70">
             <circle cx="35" cy="35" r="${r}" fill="none" stroke="#2a2a2a" stroke-width="8"/>
