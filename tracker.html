@@ -222,7 +222,7 @@ select option{background:var(--dark);}
 .food-list-row{padding:10px 0;border-bottom:1px solid rgba(42,42,42,0.5);}
 .food-list-row:last-child{border-bottom:none;}
 .food-list-name{color:var(--white);font-size:13px;font-weight:700;margin-bottom:4px;}
-.food-list-amount{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px;}
+.food-list-amount{color:var(--muted);font-weight:400;font-size:12px;margin-right:6px;}
 .food-list-macros{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);}
 .food-list-macros strong{color:var(--white);font-weight:700;}
 .food-list-cals{color:var(--gold)!important;font-weight:700;margin-left:auto;}
@@ -1712,7 +1712,7 @@ function renderMealLog(){
         ${items.map(m => `
           <div class="meal-log-item" style="cursor:pointer;" onclick="openEditMeal(${m._idx})">
             <div class="row-between">
-              <div class="name">${m.name}${m.servingLabel?` <span style="font-size:11px;color:var(--muted);font-weight:400;">(${m.servingLabel})</span>`:''}</div>
+              <div class="name">${m.servingLabel?`<span style="font-size:12px;color:var(--muted);font-weight:400;">${m.servingLabel}</span> `:''}${m.name}</div>
               <div style="display:flex;gap:8px;align-items:center;">
                 <button class="edit-btn" onclick="event.stopPropagation();openEditMeal(${m._idx})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;">Edit</button>
                 <button class="delete-btn" onclick="event.stopPropagation();deleteMeal(${m._idx})">✕</button>
@@ -4244,7 +4244,7 @@ function renderMealPlan() {
         <div class="food-list">
           ${meal.foods.map(f => `
             <div class="food-list-row">
-              <div class="food-list-name">${f.name}<span class="food-list-amount">${f.amount}${(f.unit||'g')==='g'?'g':' '+(f.unit||'g')}</span></div>
+              <div class="food-list-name"><span class="food-list-amount">${f.amount}${(f.unit||'g')==='g'?'g':' '+(f.unit||'g')}</span> ${f.name}</div>
               <div class="food-list-macros"><span>P <strong>${f.protein}g</strong></span><span>C <strong>${f.carbs}g</strong></span><span>F <strong>${f.fat}g</strong></span><span class="food-list-cals">${f.cals} kcal</span></div>
             </div>
           `).join('')}
@@ -4474,7 +4474,7 @@ function renderPeakWeek() {
                   </div>
                   ${m.foods.map(f => `
                     <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
-                      <span style="color:var(--white);">${f.name} <span style="color:var(--muted);">— ${f.amount}${f.unit==='g'?'g':' '+f.unit}</span></span>
+                      <span style="color:var(--white);"><span style="color:var(--muted);">${f.amount}${f.unit==='g'?'g':' '+f.unit}</span> ${f.name}</span>
                       <span style="color:var(--muted);white-space:nowrap;margin-left:8px;">${f.cals} kcal · P:${f.protein}g C:${f.carbs}g F:${f.fat}g</span>
                     </div>
                   `).join('')}
