@@ -78,7 +78,7 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 .approved-food-row input{padding:8px 10px;font-size:12px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);}
 .tab-btn-active{flex:1;padding:9px;border-radius:8px;background:var(--gold);color:var(--black);border:none;font-size:12px;font-weight:800;cursor:pointer;}
 .tab-btn-inactive{flex:1;padding:9px;border-radius:8px;background:var(--card);color:var(--muted);border:1px solid var(--border);font-size:12px;font-weight:800;cursor:pointer;}
-.flex-meal-row{display:grid;grid-template-columns:140px 1fr 160px 36px;gap:8px;align-items:center;margin-bottom:8px;}
+.flex-meal-row{display:grid;grid-template-columns:110px 130px 1fr 140px 36px;gap:8px;align-items:center;margin-bottom:8px;}
 .flex-meal-row input{padding:8px 10px;font-size:12px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;width:100%;}
 </style>
 </head>
@@ -2828,19 +2828,20 @@ let flexMeals = [];
 let flexEnabled = false;
 
 const DEFAULT_FLEX_MEALS = [
-  { restaurant: "Chick-fil-A", meal: "12ct Grilled Nuggets + Medium Waffle Fries (+ fruit cup optional)", notes: "High protein, balanced carbs" },
-  { restaurant: "Chick-fil-A", meal: "Grilled Chicken Sandwich + Fruit Cup", notes: "Cleaner option" },
-  { restaurant: "Chick-fil-A", meal: "8ct Grilled Nuggets + Kale Crunch Side + Fruit Cup", notes: "Best for lower-calorie targets" },
-  { restaurant: "Chipotle", meal: "Double Chicken Bowl + White Rice + Fajita Veggies + Mild Salsa + Lettuce", notes: "Add cheese/guac only if calories allow" },
-  { restaurant: "McDonald's", meal: "2 McDoubles (no mayo) + Small Fries", notes: "More protein per calorie — easiest to fit" },
-  { restaurant: "McDonald's", meal: "Double Quarter Pounder + Medium Fries + Water/Diet Drink", notes: "High protein, controlled fats" },
-  { restaurant: "Wendy's", meal: "Dave's Single + Medium Fries", notes: "Balanced option" },
-  { restaurant: "Wendy's", meal: "Grilled Chicken Sandwich + Small Fries", notes: "Lower fat option" },
-  { restaurant: "Wendy's", meal: "Grilled Chicken Wrap", notes: "If available in your area" },
-  { restaurant: "Raising Cane's", meal: "3 Chicken Fingers + Fries + Light Sauce", notes: "Skip Texas Toast if calories are tight" },
-  { restaurant: "Subway", meal: "Footlong Grilled Chicken + White Bread + Veggies + Light Sauce", notes: "High protein, flexible" },
-  { restaurant: "MOD Pizza", meal: "Thin Crust Pizza + Chicken/Lean Meat + Veggies + Light Cheese", notes: "Keep toppings simple" },
+  { category: "Fast Food", restaurant: "Chick-fil-A", meal: "12ct Grilled Nuggets + Medium Waffle Fries (+ fruit cup optional)", notes: "High protein, balanced carbs" },
+  { category: "Fast Food", restaurant: "Chick-fil-A", meal: "Grilled Chicken Sandwich + Fruit Cup", notes: "Cleaner option" },
+  { category: "Fast Food", restaurant: "Chick-fil-A", meal: "8ct Grilled Nuggets + Kale Crunch Side + Fruit Cup", notes: "Best for lower-calorie targets" },
+  { category: "Mexican", restaurant: "Chipotle", meal: "Double Chicken Bowl + White Rice + Fajita Veggies + Mild Salsa + Lettuce", notes: "Add cheese/guac only if calories allow" },
+  { category: "Fast Food", restaurant: "McDonald's", meal: "2 McDoubles (no mayo) + Small Fries", notes: "More protein per calorie — easiest to fit" },
+  { category: "Fast Food", restaurant: "McDonald's", meal: "Double Quarter Pounder + Medium Fries + Water/Diet Drink", notes: "High protein, controlled fats" },
+  { category: "Fast Food", restaurant: "Wendy's", meal: "Dave's Single + Medium Fries", notes: "Balanced option" },
+  { category: "Fast Food", restaurant: "Wendy's", meal: "Grilled Chicken Sandwich + Small Fries", notes: "Lower fat option" },
+  { category: "Fast Food", restaurant: "Wendy's", meal: "Grilled Chicken Wrap", notes: "If available in your area" },
+  { category: "Fast Food", restaurant: "Raising Cane's", meal: "3 Chicken Fingers + Fries + Light Sauce", notes: "Skip Texas Toast if calories are tight" },
+  { category: "Fast Food", restaurant: "Subway", meal: "Footlong Grilled Chicken + White Bread + Veggies + Light Sauce", notes: "High protein, flexible" },
+  { category: "Pizza", restaurant: "MOD Pizza", meal: "Thin Crust Pizza + Chicken/Lean Meat + Veggies + Light Cheese", notes: "Keep toppings simple" },
 ];
+const FLEX_CATEGORIES = ["Fast Food", "Mexican", "Pizza", "Asian", "Breakfast", "Grocery Store", "Other"];
 
 function toggleFlexSection() {
   flexEnabled = document.getElementById('flex-enabled').checked;
@@ -2854,12 +2855,19 @@ function loadDefaultFlexMeals() {
 }
 
 function addFlexMealRow() {
-  flexMeals.push({ restaurant: '', meal: '', notes: '' });
+  flexMeals.push({ category: 'Fast Food', restaurant: '', meal: '', notes: '' });
   renderFlexMeals();
 }
 
 function removeFlexMeal(i) {
   flexMeals.splice(i, 1);
+  renderFlexMeals();
+}
+
+let openFlexCategory = null;
+
+function toggleFlexCategory(cat) {
+  openFlexCategory = (openFlexCategory === cat) ? null : cat;
   renderFlexMeals();
 }
 
@@ -2869,22 +2877,46 @@ function renderFlexMeals() {
     el.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;">No flex meals added. Use buttons below.</div>';
     return;
   }
-  el.innerHTML = `
-    <div class="flex-meal-row" style="margin-bottom:4px;">
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Restaurant</div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Meal Option</div>
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);">Notes</div>
-      <div></div>
-    </div>
-    ${flexMeals.map((m, i) => `
-      <div class="flex-meal-row">
-        <input type="text" value="${m.restaurant}" placeholder="e.g. Chick-fil-A" oninput="flexMeals[${i}].restaurant=this.value">
-        <input type="text" value="${m.meal}" placeholder="e.g. Grilled Nuggets + Waffle Fries" oninput="flexMeals[${i}].meal=this.value">
-        <input type="text" value="${m.notes}" placeholder="e.g. High protein" oninput="flexMeals[${i}].notes=this.value">
-        <button class="del-btn" onclick="removeFlexMeal(${i})">✕</button>
+  // Group into categories, preserving original array index for each item so edits/removals
+  // still target the correct entry in the flat flexMeals array.
+  const grouped = {};
+  flexMeals.forEach((m, i) => {
+    const cat = m.category || 'Other';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push({ ...m, _idx: i });
+  });
+  // Show categories in the standard order first, then any custom ones that show up
+  const orderedCats = [...FLEX_CATEGORIES.filter(c => grouped[c]), ...Object.keys(grouped).filter(c => !FLEX_CATEGORIES.includes(c))];
+  if (openFlexCategory === null) openFlexCategory = orderedCats[0];
+
+  el.innerHTML = orderedCats.map(cat => `
+    <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;">
+      <div onclick="toggleFlexCategory('${cat}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;background:var(--dark);">
+        <span style="font-size:12px;font-weight:700;color:var(--white);">${cat} (${grouped[cat].length})</span>
+        <span style="color:var(--muted);font-size:12px;">${openFlexCategory===cat?'▲':'▼'}</span>
       </div>
-    `).join('')}
-  `;
+      <div style="display:${openFlexCategory===cat?'block':'none'};padding:10px 12px;">
+        <div class="flex-meal-row" style="margin-bottom:4px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);">Category</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);">Restaurant</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);">Meal Option</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);">Notes</div>
+          <div></div>
+        </div>
+        ${grouped[cat].map(m => `
+          <div class="flex-meal-row">
+            <select onchange="flexMeals[${m._idx}].category=this.value;renderFlexMeals();" style="padding:8px 6px;font-size:11px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);">
+              ${FLEX_CATEGORIES.map(c => `<option value="${c}" ${c===cat?'selected':''}>${c}</option>`).join('')}
+            </select>
+            <input type="text" value="${m.restaurant}" placeholder="e.g. Chick-fil-A" oninput="flexMeals[${m._idx}].restaurant=this.value">
+            <input type="text" value="${m.meal}" placeholder="e.g. Grilled Nuggets + Waffle Fries" oninput="flexMeals[${m._idx}].meal=this.value">
+            <input type="text" value="${m.notes}" placeholder="e.g. High protein" oninput="flexMeals[${m._idx}].notes=this.value">
+            <button class="del-btn" onclick="removeFlexMeal(${m._idx})">✕</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
 }
 
 // ── SAVE (updated to include flex meals) ──
