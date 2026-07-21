@@ -691,7 +691,7 @@ select option{background:var(--dark);}
 <div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-workout')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWorkout()">Save</button></div>
 </div></div>
 
-<div class="modal-overlay" id="modal-weight" onclick="closeModalOutside(event,'modal-weight')"><div class="modal"><div class="modal-handle"></div><h3>⚖️ Log Weight</h3><label>Weight (lbs)</label><input type="number" id="weight-input" placeholder="e.g. 185.4" inputmode="decimal" step="0.1"><div style="font-size:12px;color:var(--muted);margin-top:8px;">Weigh first thing in the morning, after using the bathroom.</div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-weight')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWeight()">Save</button></div></div></div>
+<div class="modal-overlay" id="modal-weight" onclick="closeModalOutside(event,'modal-weight')"><div class="modal"><div class="modal-handle"></div><h3>⚖️ Log Weight</h3><label>Weight (lbs)</label><input type="number" id="weight-input" placeholder="e.g. 185.4" inputmode="decimal" step="0.1"><div style="font-size:12px;color:var(--muted);margin-top:8px;">💡 Best practice: weigh yourself first thing in the morning, after using the bathroom, but before eating or drinking anything — this gives the most consistent reading.</div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-weight')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWeight()">Save</button></div></div></div>
 
 <div class="modal-overlay" id="modal-water" onclick="closeModalOutside(event,'modal-water')"><div class="modal"><div class="modal-handle"></div><h3>💧 Add Water</h3><div id="water-current-total" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div><label>Ounces to add</label><input type="number" id="water-input" placeholder="e.g. 16" inputmode="numeric"><div class="steps-quick"><button class="steps-chip" onclick="document.getElementById('water-input').value=16">+16 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=32">+32 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=64">+½ Gal</button><button class="steps-chip" onclick="document.getElementById('water-input').value=128">+1 Gal</button></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-water')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWater()">Add</button></div></div></div>
 
@@ -1512,6 +1512,16 @@ function renderActivityBars(){
   }).join('');
 }
 function renderMacroBars(){
+const profile0=clientProfile||{};
+if(profile0.peak_week?.enabled){
+  document.getElementById('macro-bars').innerHTML=`<div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-dim);border-radius:8px;padding:12px 14px;text-align:center;">
+    <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:4px;">🏆 Peak Week Protocol Active</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.5;">Your macro targets for today are in your Peak Week Protocol — check My Plan for today's specifics.</div>
+  </div>`;
+  const existingAvg=document.getElementById('weekly-avg-bar');
+  if(existingAvg) existingAvg.remove();
+  return;
+}
 const m=getMacros(),l={protein:0,carbs:0,fat:0,calories:0};
 dayData.meals.forEach(x=>{l.protein+=x.protein||0;l.carbs+=x.carbs||0;l.fat+=x.fat||0;l.calories+=x.calories||0;});
 const items=[{key:'protein',label:'Protein',color:'bar-protein',unit:'g'},{key:'carbs',label:'Carbs',color:'bar-carbs',unit:'g'},{key:'fat',label:'Fat',color:'bar-fat',unit:'g'},{key:'calories',label:'Calories',color:'bar-calories',unit:'kcal'}];
