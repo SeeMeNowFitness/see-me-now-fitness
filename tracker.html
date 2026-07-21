@@ -4244,7 +4244,7 @@ function renderMealPlan() {
         <div class="food-list">
           ${meal.foods.map(f => `
             <div class="food-list-row">
-              <div class="food-list-name">${f.name}<span class="food-list-amount">${f.amount}</span></div>
+              <div class="food-list-name">${f.name}<span class="food-list-amount">${f.amount}${(f.unit||'g')==='g'?'g':' '+(f.unit||'g')}</span></div>
               <div class="food-list-macros"><span>P <strong>${f.protein}g</strong></span><span>C <strong>${f.carbs}g</strong></span><span>F <strong>${f.fat}g</strong></span><span class="food-list-cals">${f.cals} kcal</span></div>
             </div>
           `).join('')}
