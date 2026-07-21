@@ -115,6 +115,7 @@ a{color:var(--gold);}
 
 <!-- CLIENTS -->
 <div class="admin-panel active" id="panel-clients">
+<input type="text" id="client-search-input" placeholder="🔍 Search clients by name…" oninput="filterClientList()" style="width:100%;padding:12px 14px;font-size:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;margin-bottom:14px;">
 <div id="clients-list"><div style="color:var(--muted);font-size:14px;padding:20px;">Loading clients…</div></div>
 </div>
 
@@ -322,6 +323,12 @@ async function loadClients(){
   catch(e){document.getElementById('clients-list').innerHTML='<div style="color:var(--red);">Could not load clients.</div>';}
 }
 
+function filterClientList(){
+  const q=(document.getElementById('client-search-input')?.value||'').trim().toLowerCase();
+  if(!q){renderClientList(allClients);return;}
+  const filtered=allClients.filter(c=>(c.name||'').toLowerCase().includes(q));
+  renderClientList(filtered);
+}
 function renderClientList(clients){
   const el=document.getElementById('clients-list');
   if(!clients.length){el.innerHTML='<div style="color:var(--muted);font-size:14px;padding:20px;">No clients yet. Use + New Client to add one.</div>';return;}
