@@ -126,7 +126,7 @@ select option{background:var(--dark);}
 .food-result-add{background:var(--gold);color:var(--black);border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;}
 .meal-log-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;}
 .meal-log-item .name{font-size:14px;font-weight:700;}
-.meal-log-item .macros{font-size:11px;color:var(--muted);margin-top:3px;}
+.meal-log-item .macros{font-size:11px;color:var(--muted);margin-top:3px;padding-left:42px;}
 .meal-log-item .delete-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;}
 .barcode-btn{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;padding:4px;}
 .barcode-btn:active{color:var(--gold);}
@@ -223,10 +223,11 @@ select option{background:var(--dark);}
 .food-list-row:last-child{border-bottom:none;}
 .food-list-name{color:var(--white);font-size:13px;font-weight:700;margin-bottom:4px;}
 .food-list-amount{color:var(--muted);font-weight:400;font-size:12px;margin-right:6px;}
-.food-list-macros{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);}
+.food-list-macros{display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--muted);padding-left:42px;}
 .food-list-macros strong{color:var(--white);font-weight:700;}
 .food-list-cals{color:var(--gold)!important;font-weight:700;margin-left:auto;}
 .food-list-total .food-list-name{color:var(--gold);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;}
+.food-list-total .food-list-macros{padding-left:0;}
 .food-list-total .food-list-macros strong{color:var(--gold);}
 .macro-donut-wrap{display:flex;align-items:center;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);}
 .macro-legend{flex:1;}
@@ -1775,6 +1776,22 @@ function updateEditPreview() {
     `<div style="font-size:11px;color:var(--muted);margin-top:4px;">${amount} ${unit} (${Math.round(grams)}g)</div>`;
 }
 
+function getServingWord(originalServing,amount){
+  // Pulls the actual food-specific word out of a Blueprint Food's serving description
+  // (e.g. "1 egg white" -> "egg white", "1 scoop (30g)" -> "scoop") instead of showing a
+  // generic, meaningless "piece" label that doesn't tell the client what they're counting.
+  if(!originalServing) return amount!==1?'pieces':'piece';
+  let word=String(originalServing).replace(/^\d+(\.\d+)?\s*/,'').replace(/\s*\([^)]*\)/g,'').trim();
+  if(!word) return amount!==1?'pieces':'piece';
+  if(amount!==1 && !/s$/i.test(word)) word+='s';
+  return word;
+}
+function formatFoodAmount(f){
+  const amount=f.amount;
+  const unit=f.unit||'g';
+  if(unit==='piece') return `${amount} ${getServingWord(f.serving,parseFloat(amount))}`;
+  return `${amount}${unit==='g'?'g':' '+unit}`;
+}
 function confirmEditMeal() {
   const idx = editingMealIdx;
   if (idx === null) return;
@@ -1788,7 +1805,7 @@ function confirmEditMeal() {
   const perGramP = (m.protein || 0) / origGrams;
   const perGramC = (m.carbs || 0) / origGrams;
   const perGramF = (m.fat || 0) / origGrams;
-  const unitLabels = {g:`${Math.round(grams)}g`,oz:`${amount} oz`,cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,piece:`${amount} piece${amount!==1?'s':''}`,scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`};
+  const unitLabels = {g:`${Math.round(grams)}g`,oz:`${amount} oz`,cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,piece:`${amount} ${getServingWord(m.serving,amount)}`,scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`};
   const newMealGroup = document.getElementById('edit-food-meal').value;
   dayData.meals[idx] = {
     ...m,
@@ -2381,15 +2398,15 @@ function updateAddPreview(){
   const grams=amount*unitGrams;
   const mult=grams/100;
   const pieceLabel = pendingFood._pieceOverride
-    ? (pendingFood._blueprintServing || 'piece')
-    : (pendingFood._piecePortionLabel || 'piece');
+    ? getServingWord(pendingFood._blueprintServing, amount)
+    : (pendingFood._piecePortionLabel || getServingWord(null, amount));
   const unitLabels={
     g:`${Math.round(grams)}g`,
     oz:`${amount} oz (${Math.round(grams)}g)`,
     cup:`${amount} cup${amount!==1?'s':''} (${Math.round(grams)}g)`,
     tbsp:`${amount} tbsp (${Math.round(grams)}g)`,
     tsp:`${amount} tsp (${Math.round(grams)}g)`,
-    piece:`${amount} × ${pieceLabel} (~${Math.round(grams)}g)`,
+    piece:`${amount} ${pieceLabel} (~${Math.round(grams)}g)`,
     scoop:`${amount} scoop${amount!==1?'s':''} (~${Math.round(grams)}g)`,
     ml:`${Math.round(amount)}ml`,
     fl_oz:`${amount} fl oz (${Math.round(grams)}ml)`,
@@ -2420,12 +2437,12 @@ function confirmAddFood(){
   const grams=amount*unitGrams;
   const mult=grams/100;
   const pieceLabel = pendingFood._pieceOverride
-    ? (pendingFood._blueprintServing || 'piece')
-    : (pendingFood._piecePortionLabel || 'piece');
+    ? getServingWord(pendingFood._blueprintServing, amount)
+    : (pendingFood._piecePortionLabel || getServingWord(null, amount));
   const unitLabels={
     g:`${Math.round(grams)}g`,oz:`${amount} oz`,
     cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,
-    piece:`${amount} × ${pieceLabel}`,
+    piece:`${amount} ${pieceLabel}`,
     scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`,fl_oz:`${amount} fl oz`,l:`${amount}L`
   };
   const mealGroup = document.getElementById('add-food-meal')?.value || null;
@@ -2433,6 +2450,7 @@ function confirmAddFood(){
     name:pendingFood.name,
     grams:Math.round(grams),
     servingLabel:unitLabels[unit]||`${Math.round(grams)}g`,
+    serving:pendingFood._blueprintServing||null,
     calories:Math.round((pendingFood.cals||0)*mult),
     protein:Math.round((pendingFood.protein||0)*mult*10)/10,
     carbs:Math.round((pendingFood.carbs||0)*mult*10)/10,
@@ -4244,7 +4262,7 @@ function renderMealPlan() {
         <div class="food-list">
           ${meal.foods.map(f => `
             <div class="food-list-row">
-              <div class="food-list-name"><span class="food-list-amount">${f.amount}${(f.unit||'g')==='g'?'g':' '+(f.unit||'g')}</span> ${f.name}</div>
+              <div class="food-list-name"><span class="food-list-amount">${formatFoodAmount(f)}</span> ${f.name}</div>
               <div class="food-list-macros"><span>P <strong>${f.protein}g</strong></span><span>C <strong>${f.carbs}g</strong></span><span>F <strong>${f.fat}g</strong></span><span class="food-list-cals">${f.cals} kcal</span></div>
             </div>
           `).join('')}
@@ -4474,7 +4492,7 @@ function renderPeakWeek() {
                   </div>
                   ${m.foods.map(f => `
                     <div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);">
-                      <span style="color:var(--white);"><span style="color:var(--muted);">${f.amount}${f.unit==='g'?'g':' '+f.unit}</span> ${f.name}</span>
+                      <span style="color:var(--white);"><span style="color:var(--muted);">${formatFoodAmount(f)}</span> ${f.name}</span>
                       <span style="color:var(--muted);white-space:nowrap;margin-left:8px;">${f.cals} kcal · P:${f.protein}g C:${f.carbs}g F:${f.fat}g</span>
                     </div>
                   `).join('')}
