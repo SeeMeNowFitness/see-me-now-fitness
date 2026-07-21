@@ -239,9 +239,10 @@ Enable Flex Dieting for this client
 <div id="flex-section" style="display:none;">
 <div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-d);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--gold);line-height:1.7;">
 <strong>Client will see this instruction:</strong><br>
-<span style="color:var(--white);">⭐ Choose ONE of these options to replace Meal 2 on ONE day of the weekend only.<br>
-✅ Option to REPLACE — not add on top of plan.<br>
-💧 Stick to water or zero calorie drinks.</span>
+<span style="color:var(--white);">⭐ Choose ONE option below to replace ONE meal on ONE day of the weekend.<br>
+✅ Replace your planned meal — don't add this on top of your nutrition plan.<br>
+🥤 Stick to water or zero-calorie drinks.<br>
+🍟 Keep modifications to a minimum so portions stay close to plan.</span>
 </div>
 <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Add restaurant flex meal options below. These show in the client's My Plan tab.</div>
 <div id="flex-meals-container"></div>
@@ -2829,12 +2830,14 @@ let flexEnabled = false;
 const DEFAULT_FLEX_MEALS = [
   { restaurant: "Chick-fil-A", meal: "12ct Grilled Nuggets + Medium Waffle Fries (+ fruit cup optional)", notes: "High protein, balanced carbs" },
   { restaurant: "Chick-fil-A", meal: "Grilled Chicken Sandwich + Fruit Cup", notes: "Cleaner option" },
-  { restaurant: "Chipotle", meal: "Double Chicken Bowl + White Rice + Fajita Veggies + Mild Salsa + Light Cheese", notes: "Customizable, macro-friendly" },
+  { restaurant: "Chick-fil-A", meal: "8ct Grilled Nuggets + Kale Crunch Side + Fruit Cup", notes: "Best for lower-calorie targets" },
+  { restaurant: "Chipotle", meal: "Double Chicken Bowl + White Rice + Fajita Veggies + Mild Salsa + Lettuce", notes: "Add cheese/guac only if calories allow" },
+  { restaurant: "McDonald's", meal: "2 McDoubles (no mayo) + Small Fries", notes: "More protein per calorie — easiest to fit" },
   { restaurant: "McDonald's", meal: "Double Quarter Pounder + Medium Fries + Water/Diet Drink", notes: "High protein, controlled fats" },
-  { restaurant: "McDonald's", meal: "2 McDoubles (no mayo) + Small Fries", notes: "Cleaner alternative" },
   { restaurant: "Wendy's", meal: "Dave's Single + Medium Fries", notes: "Balanced option" },
   { restaurant: "Wendy's", meal: "Grilled Chicken Sandwich + Small Fries", notes: "Lower fat option" },
-  { restaurant: "Raising Cane's", meal: "3 Chicken Fingers + Fries + Light Sauce", notes: "Skip toast if needed" },
+  { restaurant: "Wendy's", meal: "Grilled Chicken Wrap", notes: "If available in your area" },
+  { restaurant: "Raising Cane's", meal: "3 Chicken Fingers + Fries + Light Sauce", notes: "Skip Texas Toast if calories are tight" },
   { restaurant: "Subway", meal: "Footlong Grilled Chicken + White Bread + Veggies + Light Sauce", notes: "High protein, flexible" },
   { restaurant: "MOD Pizza", meal: "Thin Crust Pizza + Chicken/Lean Meat + Veggies + Light Cheese", notes: "Keep toppings simple" },
 ];

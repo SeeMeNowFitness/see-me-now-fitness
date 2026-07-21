@@ -377,7 +377,7 @@ select option{background:var(--dark);}
 </div>
 <div class="card"><div class="row-between" style="margin-bottom:8px;"><div class="card-title" data-i18n="macros-today" style="margin-bottom:0;">Macros Today</div><span id="edit-macros-link" data-i18n="edit-macros" style="display:none;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;" onclick="openMacrosModal()">✏️ Edit Macros</span></div><div id="macro-bars"></div></div>
 <div class="card"><div class="row-between" style="margin-bottom:8px;"><div class="card-title" data-i18n="steps-hydration" style="margin-bottom:0;">Steps &amp; Hydration</div><span id="edit-goals-link" data-i18n="edit-goals" style="display:none;font-size:11px;font-weight:700;color:var(--gold);cursor:pointer;" onclick="openGoalsModal()">✏️ Edit Goals</span></div><div id="activity-bars"></div></div>
-<div class="modal-overlay" id="modal-goals" onclick="closeModalOutside(event,'modal-goals')"><div class="modal"><div class="modal-handle"></div><h3>🎯 Your Daily Goals</h3><label>Step Goal</label><input type="number" id="goals-step-input" inputmode="numeric" placeholder="e.g. 10000"><label>Water Goal (oz)</label><input type="number" id="goals-water-input" inputmode="numeric" placeholder="e.g. 100" min="1"><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-goals')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveOwnGoals()">Save</button></div></div></div>
+<div class="modal-overlay" id="modal-goals" onclick="closeModalOutside(event,'modal-goals')"><div class="modal"><div class="modal-handle"></div><h3>🎯 Your Daily Goals</h3><label>Step Goal</label><input type="number" id="goals-step-input" inputmode="numeric" placeholder="e.g. 10000"><label>Water Goal (oz)</label><input type="number" id="goals-water-input" inputmode="numeric" placeholder="e.g. 100" min="1" oninput="updateGoalsWaterLiters()"><div id="goals-water-liters" style="font-size:11px;color:var(--muted);margin-top:-8px;margin-bottom:14px;"></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-goals')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveOwnGoals()">Save</button></div></div></div>
 <div class="modal-overlay" id="modal-macros" onclick="closeModalOutside(event,'modal-macros')"><div class="modal"><div class="modal-handle"></div><h3>🎯 Your Daily Macros</h3><label>Goal</label><select id="macros-goal-input"><option value="fat_loss">Fat Loss</option><option value="muscle_gain">Muscle Gain</option><option value="maintenance">Maintenance</option><option value="performance">Performance</option></select><label>Protein (g)</label><input type="number" id="macros-protein-input" inputmode="numeric" placeholder="e.g. 150" oninput="updateMacrosCaloriePreview()"><label>Carbs (g)</label><input type="number" id="macros-carbs-input" inputmode="numeric" placeholder="e.g. 175" oninput="updateMacrosCaloriePreview()"><label>Fat (g)</label><input type="number" id="macros-fat-input" inputmode="numeric" placeholder="e.g. 55" oninput="updateMacrosCaloriePreview()"><div style="font-size:12px;color:var(--muted);margin-top:8px;">Calories: <span id="macros-cal-preview" style="color:var(--gold);font-weight:700;">—</span> (calculated automatically)</div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-macros')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveOwnMacros()">Save</button></div></div></div>
 <div class="stat-grid">
 <div class="stat-tile"><div class="lbl" data-i18n="weight">Weight</div><div class="val" id="stat-weight">—</div><div class="unit">lbs today</div><div id="weight-trend" style="display:none;margin-top:6px;font-size:10px;line-height:1.6;"></div></div>
@@ -693,7 +693,7 @@ select option{background:var(--dark);}
 
 <div class="modal-overlay" id="modal-weight" onclick="closeModalOutside(event,'modal-weight')"><div class="modal"><div class="modal-handle"></div><h3>⚖️ Log Weight</h3><label>Weight (lbs)</label><input type="number" id="weight-input" placeholder="e.g. 185.4" inputmode="decimal" step="0.1"><div style="font-size:12px;color:var(--muted);margin-top:8px;">💡 Best practice: weigh yourself first thing in the morning, after using the bathroom, but before eating or drinking anything — this gives the most consistent reading.</div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-weight')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWeight()">Save</button></div></div></div>
 
-<div class="modal-overlay" id="modal-water" onclick="closeModalOutside(event,'modal-water')"><div class="modal"><div class="modal-handle"></div><h3>💧 Add Water</h3><div id="water-current-total" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div><label>Ounces to add</label><input type="number" id="water-input" placeholder="e.g. 16" inputmode="numeric"><div class="steps-quick"><button class="steps-chip" onclick="document.getElementById('water-input').value=16">+16 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=32">+32 oz</button><button class="steps-chip" onclick="document.getElementById('water-input').value=64">+½ Gal</button><button class="steps-chip" onclick="document.getElementById('water-input').value=128">+1 Gal</button></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-water')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWater()">Add</button></div></div></div>
+<div class="modal-overlay" id="modal-water" onclick="closeModalOutside(event,'modal-water')"><div class="modal"><div class="modal-handle"></div><h3>💧 Add Water</h3><div id="water-current-total" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><label style="margin-bottom:0;">Amount to add</label><div style="display:flex;gap:4px;"><button type="button" id="water-unit-oz" onclick="setWaterInputUnit('oz')" style="padding:4px 10px;font-size:11px;font-weight:800;border-radius:6px;border:1px solid var(--gold-d);background:var(--gold);color:var(--black);cursor:pointer;">oz</button><button type="button" id="water-unit-l" onclick="setWaterInputUnit('l')" style="padding:4px 10px;font-size:11px;font-weight:800;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;">L</button></div></div><input type="number" id="water-input" placeholder="e.g. 16" inputmode="numeric" step="0.1"><div class="steps-quick"><button class="steps-chip" onclick="setWaterInputUnit('oz');document.getElementById('water-input').value=16">+16 oz</button><button class="steps-chip" onclick="setWaterInputUnit('oz');document.getElementById('water-input').value=32">+32 oz</button><button class="steps-chip" onclick="setWaterInputUnit('oz');document.getElementById('water-input').value=64">+½ Gal</button><button class="steps-chip" onclick="setWaterInputUnit('oz');document.getElementById('water-input').value=128">+1 Gal</button></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-water')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWater()">Add</button></div></div></div>
 
 <!-- EDIT FOOD MODAL -->
 <div class="modal-overlay" id="modal-edit-food" onclick="closeModalOutside(event,'modal-edit-food')"><div class="modal"><div class="modal-handle"></div>
@@ -2704,17 +2704,38 @@ function saveWorkout(){
 }
 
 function saveWeight(){const v=parseFloat(document.getElementById('weight-input').value);if(!v||v<=0)return;dayData.weight=v;saveDay();closeModal('modal-weight');renderToday();showToast('Weight saved ✓');}
+let waterInputUnit='oz';
+function setWaterInputUnit(unit){
+  waterInputUnit=unit;
+  const ozBtn=document.getElementById('water-unit-oz'), lBtn=document.getElementById('water-unit-l');
+  if(unit==='oz'){
+    ozBtn.style.background='var(--gold)';ozBtn.style.color='var(--black)';ozBtn.style.borderColor='var(--gold-d)';
+    lBtn.style.background='var(--card)';lBtn.style.color='var(--muted)';lBtn.style.borderColor='var(--border)';
+  } else {
+    lBtn.style.background='var(--gold)';lBtn.style.color='var(--black)';lBtn.style.borderColor='var(--gold-d)';
+    ozBtn.style.background='var(--card)';ozBtn.style.color='var(--muted)';ozBtn.style.borderColor='var(--border)';
+  }
+}
 function openWaterModal(){
   const oz=dayData.water||0;
   const gal=oz/128;
-  const galText=oz>=32?` (${gal.toFixed(2).replace(/\.?0+$/,'')} gal)`:'';
+  const liters=(oz*0.0295735).toFixed(2);
+  const galText=oz>=32?` (${gal.toFixed(2).replace(/\.?0+$/,'')} gal / ${liters} L)`:'';
   document.getElementById('water-current-total').textContent=`Today's total so far: ${oz} oz${galText}`;
+  setWaterInputUnit('oz');
+  document.getElementById('water-input').value='';
   openModal('modal-water');
+}
+function updateGoalsWaterLiters(){
+  const oz=parseFloat(document.getElementById('goals-water-input').value)||0;
+  const el=document.getElementById('goals-water-liters');
+  if(el) el.textContent=oz>0?`= ${(oz*0.0295735).toFixed(2)} L`:'';
 }
 function openGoalsModal(){
   const profile=clientProfile||{};
   document.getElementById('goals-step-input').value=profile.step_goal||10000;
   document.getElementById('goals-water-input').value=profile.water_goal||100;
+  updateGoalsWaterLiters();
   openModal('modal-goals');
 }
 async function saveOwnGoals(){
@@ -2767,7 +2788,17 @@ async function saveOwnMacros(){
   renderMealLog();
   showToast('Macros updated ✓');
 }
-function saveWater(){const v=parseInt(document.getElementById('water-input').value);if(!v||v<=0)return;dayData.water=(dayData.water||0)+v;saveDay();closeModal('modal-water');renderToday();const oz=dayData.water,gal=oz/128,galText=oz>=32?` (${gal.toFixed(2).replace(/\.?0+$/,'')} gal)`:'';showToast(`Water logged — ${oz}oz${galText} today ✓`);}
+function saveWater(){
+  const raw=parseFloat(document.getElementById('water-input').value);
+  if(!raw||raw<=0)return;
+  const v=Math.round(waterInputUnit==='l'?raw*33.814:raw);
+  dayData.water=(dayData.water||0)+v;
+  saveDay();
+  closeModal('modal-water');
+  renderToday();
+  const oz=dayData.water,gal=oz/128,liters=(oz*0.0295735).toFixed(2),galText=oz>=32?` (${gal.toFixed(2).replace(/\.?0+$/,'')} gal / ${liters} L)`:'';
+  showToast(`Water logged — ${oz}oz${galText} today ✓`);
+}
 
 // FIREBASE IO
 async function loadDay(dateKey){updateDateLabel();if(!CLIENT_ID||CLIENT_ID==='demo'){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0,workout_plan_notes:'',meal_plan_notes:''};renderToday();renderMealLog();return;}try{const d=await fsGet(`clients/${CLIENT_ID}/days/${dateKey}`);dayData=d?{meals:d.meals||[],steps:d.steps||0,workout:d.workout||{type:null,duration:0,calories:0,notes:''},workouts:d.workouts||[],weight:d.weight||null,water:d.water||0,target_macros:d.target_macros||null,target_day_type:d.target_day_type||null,target_step_goal:d.target_step_goal||null,target_water_goal:d.target_water_goal||null,workout_plan_notes:d.workout_plan_notes||'',meal_plan_notes:d.meal_plan_notes||''}:{meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0,workout_plan_notes:'',meal_plan_notes:''};}catch(e){dayData={meals:[],steps:0,workout:{type:null,duration:0,calories:0,notes:''},workouts:[],weight:null,water:0,workout_plan_notes:'',meal_plan_notes:''};}renderToday();renderMealLog();}
@@ -4359,9 +4390,10 @@ function renderFlexMeals() {
   if (!profile.flex_enabled || !profile.flex_meals?.length) { section.style.display = 'none'; return; }
   section.style.display = 'block';  el.innerHTML = `
     <div style="background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.04));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
-      <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:8px;">⭐ Choose ONE option to replace Meal 2 — ONE day of the weekend only</div>
-      <div style="font-size:12px;color:var(--white);margin-bottom:4px;">✅ <strong>REPLACE</strong> — do not add on top of your plan</div>
-      <div style="font-size:12px;color:var(--white);">💧 Stick to water or zero calorie drinks only</div>
+      <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:8px;">⭐ Choose ONE option below to replace ONE meal on ONE day of the weekend</div>
+      <div style="font-size:12px;color:var(--white);margin-bottom:4px;">✅ <strong>Replace</strong> your planned meal — don't add this on top of your nutrition plan</div>
+      <div style="font-size:12px;color:var(--white);margin-bottom:4px;">🥤 Stick to water or zero-calorie drinks</div>
+      <div style="font-size:12px;color:var(--white);">🍟 Keep modifications to a minimum so portions stay close to plan</div>
     </div>
     <div style="overflow-x:auto;">
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
