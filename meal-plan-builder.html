@@ -332,6 +332,14 @@ Enable Peak Week Protocol for this client
 </div>
 </div>
 
+<!-- 9. Reverse Diet Schedule (read-only — enabled/edited in Admin) -->
+<div class="section" id="rd-builder-section" style="display:none;">
+<h3>9. Reverse Diet Schedule <span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(set in Admin — read-only here)</span></h3>
+<div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">This client's Tracking Method is set to Reverse Diet in Admin, so their weekly schedule shows here automatically. To change the schedule, go to Admin → Macro Targets → Reverse Diet.</div>
+<div id="rd-builder-status" style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:12px;"></div>
+<div id="rd-builder-weeks"></div>
+</div>
+
 <!-- Save -->
 <div class="btn-row">
 <button class="btn btn-gold" onclick="savePlan()">💾 Save Plan to Client</button>
@@ -781,6 +789,33 @@ function getReverseDietWeekInfoBuilder(rd){
   if(weekIndex>=rd.weeks.length)weekIndex=rd.weeks.length-1;
   return {weekIndex, totalWeeks:rd.weeks.length, macros:rd.weeks[weekIndex]};
 }
+// Shows/hides the whole Reverse Diet section purely based on what's set in Admin — there's no
+// checkbox here to toggle, unlike Peak Week, so this can never drift out of sync with Admin.
+function renderReverseDietBuilderSection(){
+  const section=document.getElementById('rd-builder-section');
+  if(!section) return;
+  const rd=selectedClient?.reverse_diet;
+  if(!selectedClient || selectedClient.tracking_method!=='reverse_diet' || !rd?.weeks?.length){
+    section.style.display='none';
+    return;
+  }
+  section.style.display='block';
+  const info2=getReverseDietWeekInfoBuilder(rd);
+  document.getElementById('rd-builder-status').textContent=`📈 Currently: Week ${info2.weekIndex+1} of ${info2.totalWeeks}`;
+  const startDate=rd.startDate;
+  document.getElementById('rd-builder-weeks').innerHTML=rd.weeks.map((w,i)=>{
+    let dateLabel='';
+    if(startDate){
+      const d=new Date(startDate+'T12:00:00'); d.setDate(d.getDate()+i*7);
+      dateLabel=` · ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+    }
+    const isCurrent=i===info2.weekIndex;
+    return `<div style="display:flex;gap:16px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--border);${isCurrent?'background:rgba(201,168,76,0.08);border-radius:6px;':''}">
+      <div style="width:120px;font-size:12px;font-weight:800;color:${isCurrent?'var(--gold)':'var(--white)'};">${isCurrent?'▶ ':''}Week ${i+1}${dateLabel}</div>
+      <div style="font-size:12px;color:var(--muted);">P: <strong style="color:var(--white);">${w.protein}g</strong> &nbsp; C: <strong style="color:var(--white);">${w.carbs}g</strong> &nbsp; F: <strong style="color:var(--white);">${w.fat}g</strong> &nbsp; <strong style="color:var(--gold);">${w.calories} kcal</strong></div>
+    </div>`;
+  }).join('');
+}
 function onClientSelect(){
   const id=document.getElementById('client-select').value;
   selectedClient=allClients.find(c=>c.id===id)||null;
@@ -812,6 +847,7 @@ function onClientSelect(){
   }
   info.style.display = 'block';
   info.innerHTML = `<strong style="color:var(--white);">${selectedClient.name}</strong>${displayLabel} &nbsp;·&nbsp; Target: <strong style="color:var(--gold);">${m.calories||'—'} kcal</strong> &nbsp;·&nbsp; P: ${m.protein||'—'}g &nbsp; C: ${m.carbs||'—'}g &nbsp; F: ${m.fat||'—'}g${rdNote}`;
+  renderReverseDietBuilderSection();
   updateTargetCompare();
   if(selectedClient.blood_type){document.getElementById('blood-type-select').value=selectedClient.blood_type;onBloodTypeChange();}
   if(selectedClient.supplements?.length){supplements=selectedClient.supplements.map(s=>({...s}));renderSupplements();}
