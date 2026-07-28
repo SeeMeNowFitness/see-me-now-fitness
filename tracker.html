@@ -1165,11 +1165,31 @@ function setDayType(t){
     if(document.getElementById('plan-meal-content')) renderMealPlan();
   }
 }
+// Computes which week of a reverse diet schedule "today" falls into, based on real elapsed
+// time since the coach-set start date — mirrors the Peak Week pattern of matching the real
+// date rather than array position, so it stays correct even if the client doesn't open the
+// app every day. Clamps to the first/last week outside the schedule's date range so an
+// early visit or a schedule that's run its course still returns a sensible target instead of
+// undefined.
+function getReverseDietWeekInfo(rd){
+  if(!rd?.startDate || !rd.weeks?.length) return {weekIndex:0, totalWeeks:rd?.weeks?.length||0, macros:null};
+  const start=new Date(rd.startDate+'T00:00:00');
+  const now=new Date(); now.setHours(0,0,0,0);
+  const diffDays=Math.floor((now-start)/86400000);
+  let weekIndex=Math.floor(diffDays/7);
+  if(weekIndex<0)weekIndex=0;
+  if(weekIndex>=rd.weeks.length)weekIndex=rd.weeks.length-1;
+  return {weekIndex, totalWeeks:rd.weeks.length, macros:rd.weeks[weekIndex]};
+}
 function getMacros(){
   // If this specific day already has a frozen target snapshot (set the first time it was
   // saved), use it — so later coach changes to macros don't retroactively alter history.
   if(dayData && dayData.target_macros) return dayData.target_macros;
   if(!clientProfile)return{protein:150,carbs:175,fat:55,calories:1795};
+  if(clientProfile.reverse_diet?.enabled && clientProfile.reverse_diet?.weeks?.length){
+    const info=getReverseDietWeekInfo(clientProfile.reverse_diet);
+    if(info.macros) return {protein:info.macros.protein,carbs:info.macros.carbs,fat:info.macros.fat,calories:info.macros.calories};
+  }
   if(clientProfile.tracking_method==='zigzag')return currentDayType==='high'?(clientProfile.macros_high||clientProfile.macros):(clientProfile.macros_low||clientProfile.macros);
   return clientProfile.macros||{protein:150,carbs:175,fat:55,calories:1795};
 }
@@ -1345,8 +1365,8 @@ function getBlueprintInsightES(zone,net,goal,macroStatus,isToday){
     if(zone==='deficit') return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.below(dayWord),sub:c.belowSub};
     return {icon:'🟡',label:BI_ES.attentionLabel,color:'var(--gold)',msg:c.above(dayWord),sub:c.aboveSub};
   }
-  // fat_loss — also the fallback for contest_prep/meet_prep, which don't yet have dedicated
-  // Spanish copy; they still get correct zone-based logic, just fat-loss-style wording for now.
+  // fat_loss — also the fallback for contest_prep/meet_prep/reverse_diet, which don't yet have
+  // dedicated Spanish copy; they still get correct zone-based logic, just fat-loss-style wording for now.
   const c=BI_ES.fatLoss;
   if(zone==='deficit'){
     if(macrosDialedIn) return {icon:'🟢',label:BI_ES.onTrackLabel,color:'var(--green)',msg:c.onTrack(dayWord),sub:c.onTrackSub};
@@ -1395,6 +1415,15 @@ function getBlueprintInsight(zone,net,goal,macroStatus,isToday){
     if(!macrosDialedIn) return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:macroMsg,sub:'Consistency in macros matters even at maintenance.'};
     if(zone==='deficit') return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s intake ${runVerb} below your maintenance target.`,sub:'Not a problem occasionally — just stay aware of the trend.'};
     return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s intake ${runVerb} above your maintenance target.`,sub:tomorrowSub('Return to your nutrition plan tomorrow.','Getting back on plan afterward matters.')};
+  }
+
+  if(g==='reverse_diet'){
+    // A reverse diet is built around consistently hitting a target that's intentionally being
+    // raised week over week — a deficit here works against the whole point, so under-eating is
+    // flagged as the thing to watch, not celebrated the way it would be for a fat-loss goal.
+    if(zone!=='deficit'&&macrosDialedIn) return {icon:'🟢',label:'On Track',color:'var(--green)',msg:`${dayRef}'s nutrition ${support} your reverse diet.`,sub:tomorrowSub('Trust the process — your metabolism is adapting.','That kept your reverse diet on track.')};
+    if(!macrosDialedIn) return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:macroMsg,sub:'Hitting your full targets — calories especially — is what makes a reverse diet work.'};
+    return {icon:'🟡',label:'Needs Attention',color:'var(--gold)',msg:`${dayRef}'s intake ${runVerb} below your reverse diet target.`,sub:'Under-eating during a reverse diet works against the goal — aim to hit your full target.'};
   }
 
   // Deficit-oriented goals (fat_loss, contest_prep, meet_prep) share the same core logic:
@@ -3812,6 +3841,7 @@ function renderPlanSummary() {
   const profile = clientProfile || {};
   const isZigzag = profile.tracking_method === 'zigzag';
   const peakEnabled = profile.peak_week?.enabled && profile.peak_week?.days?.length;
+  const rdEnabled = !peakEnabled && profile.reverse_diet?.enabled && profile.reverse_diet?.weeks?.length;
 
   // Hide the My Plan tab's High/Low toggle during an active Peak Week protocol — the client
   // should be following the peak week countdown, not a separate zigzag schedule, during that time.
@@ -3831,6 +3861,10 @@ function renderPlanSummary() {
     matched = profile.peak_week.days.find(d => d.date === todayISO) || null;
     focusLabel = matched ? matched.label : 'Peak Week Active';
     focusIcon = '🏆';
+  } else if (rdEnabled) {
+    const info = getReverseDietWeekInfo(profile.reverse_diet);
+    focusLabel = `Reverse Diet — Week ${info.weekIndex + 1} of ${info.totalWeeks}`;
+    focusIcon = '📈';
   } else if (profile.workout_plan?.days?.length) {
     // Use today's workout day focus from assigned plan
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });

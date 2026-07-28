@@ -769,6 +769,18 @@ async function loadClients(){
   try{const snap=await db.collection('clients').get();allClients=snap.docs.map(d=>({id:d.id,...d.data()}));allClients.sort((a,b)=>(a.name||'').localeCompare(b.name||''));allClients.forEach(c=>{const opt=document.createElement('option');opt.value=c.id;opt.textContent=c.name+(c.tier?` (${c.tier})`:'');sel.appendChild(opt);});}catch(e){}
 }
 
+// Matches tracker.html's getReverseDietWeekInfo exactly, so the status shown here to the coach
+// always agrees with what the client is actually seeing that day.
+function getReverseDietWeekInfoBuilder(rd){
+  if(!rd?.startDate || !rd.weeks?.length) return {weekIndex:0, totalWeeks:rd?.weeks?.length||0, macros:null};
+  const start=new Date(rd.startDate+'T00:00:00');
+  const now=new Date(); now.setHours(0,0,0,0);
+  const diffDays=Math.floor((now-start)/86400000);
+  let weekIndex=Math.floor(diffDays/7);
+  if(weekIndex<0)weekIndex=0;
+  if(weekIndex>=rd.weeks.length)weekIndex=rd.weeks.length-1;
+  return {weekIndex, totalWeeks:rd.weeks.length, macros:rd.weeks[weekIndex]};
+}
 function onClientSelect(){
   const id=document.getElementById('client-select').value;
   selectedClient=allClients.find(c=>c.id===id)||null;
@@ -777,7 +789,16 @@ function onClientSelect(){
   // Show correct macros based on tracking method
   let displayLabel = '';
   let m = {};
-  if(selectedClient.tracking_method === 'zigzag' && selectedClient.macros_high && selectedClient.macros_low) {
+  let rdNote = '';
+  if(selectedClient.tracking_method === 'reverse_diet' && selectedClient.reverse_diet?.weeks?.length) {
+    // Reverse diet schedules are built and edited in Admin (Macro Targets → Reverse Diet) —
+    // this is a read-only status view so the builder never becomes a second, driftable source
+    // of truth for the same schedule.
+    const info2 = getReverseDietWeekInfoBuilder(selectedClient.reverse_diet);
+    m = info2.macros || {};
+    displayLabel = ` <span style="font-size:11px;color:var(--gold);">📈 Reverse Diet — Week ${info2.weekIndex+1} of ${info2.totalWeeks}</span>`;
+    rdNote = `<div style="font-size:11px;color:var(--muted);margin-top:4px;">Schedule is managed in Admin (Macro Targets → Reverse Diet) — this view is read-only.</div>`;
+  } else if(selectedClient.tracking_method === 'zigzag' && selectedClient.macros_high && selectedClient.macros_low) {
     const hd = selectedClient.high_days_per_week || 2;
     const ld = 7 - hd;
     const avgCal = Math.round((selectedClient.macros_high.calories * hd + selectedClient.macros_low.calories * ld) / 7);
@@ -790,7 +811,7 @@ function onClientSelect(){
     m = selectedClient.macros || {};
   }
   info.style.display = 'block';
-  info.innerHTML = `<strong style="color:var(--white);">${selectedClient.name}</strong>${displayLabel} &nbsp;·&nbsp; Target: <strong style="color:var(--gold);">${m.calories||'—'} kcal</strong> &nbsp;·&nbsp; P: ${m.protein||'—'}g &nbsp; C: ${m.carbs||'—'}g &nbsp; F: ${m.fat||'—'}g`;
+  info.innerHTML = `<strong style="color:var(--white);">${selectedClient.name}</strong>${displayLabel} &nbsp;·&nbsp; Target: <strong style="color:var(--gold);">${m.calories||'—'} kcal</strong> &nbsp;·&nbsp; P: ${m.protein||'—'}g &nbsp; C: ${m.carbs||'—'}g &nbsp; F: ${m.fat||'—'}g${rdNote}`;
   updateTargetCompare();
   if(selectedClient.blood_type){document.getElementById('blood-type-select').value=selectedClient.blood_type;onBloodTypeChange();}
   if(selectedClient.supplements?.length){supplements=selectedClient.supplements.map(s=>({...s}));renderSupplements();}

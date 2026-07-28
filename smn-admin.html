@@ -134,7 +134,7 @@ a{color:var(--gold);}
 </div>
 <div class="grid-2">
 <div class="field"><label>Tier</label><select id="e-tier" onchange="updateTierFields()"><option value="contest_prep">Contest Prep</option><option value="lifestyle">Online Lifestyle</option><option value="inperson">In-Person</option><option value="nutrition">Nutrition</option><option value="tracker">Standalone Tracker ($9)</option></select></div>
-<div class="field"><label>Goal</label><select id="e-goal"><option value="fat_loss">Fat Loss</option><option value="muscle_gain">Muscle Gain</option><option value="maintenance">Maintenance</option><option value="performance">Performance</option><option value="contest_prep">Contest Prep</option><option value="meet_prep">Strength / Meet Prep</option></select></div>
+<div class="field"><label>Goal</label><select id="e-goal"><option value="fat_loss">Fat Loss</option><option value="muscle_gain">Muscle Gain</option><option value="maintenance">Maintenance</option><option value="performance">Performance</option><option value="contest_prep">Contest Prep</option><option value="meet_prep">Strength / Meet Prep</option><option value="reverse_diet">Reverse Diet</option></select></div>
 <div class="field"><label>Language</label><select id="e-language"><option value="en">English</option><option value="es">Español (Spanish)</option></select></div>
 </div>
 <div class="grid-2">
@@ -148,7 +148,7 @@ a{color:var(--gold);}
 </div>
 <div class="form-section" id="edit-macros" style="display:none;">
 <h3>Macro Targets</h3>
-<div class="field" style="margin-bottom:16px;"><label>Tracking Method</label><div style="display:flex;gap:8px;margin-top:6px;"><button id="method-standard" onclick="setTrackingMethod('standard')" class="btn btn-gold btn-sm" style="flex:1;">Standard</button><button id="method-zigzag" onclick="setTrackingMethod('zigzag')" class="btn btn-outline btn-sm" style="flex:1;">Zig Zag (High / Low)</button></div></div>
+<div class="field" style="margin-bottom:16px;"><label>Tracking Method</label><div style="display:flex;gap:8px;margin-top:6px;"><button id="method-standard" onclick="setTrackingMethod('standard')" class="btn btn-gold btn-sm" style="flex:1;">Standard</button><button id="method-zigzag" onclick="setTrackingMethod('zigzag')" class="btn btn-outline btn-sm" style="flex:1;">Zig Zag (High / Low)</button><button id="method-reverse" onclick="setTrackingMethod('reverse_diet')" class="btn btn-outline btn-sm" style="flex:1;">📈 Reverse Diet</button></div></div>
 <div id="macros-standard"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">Daily Targets</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein" oninput="autoCalcCalories('standard')"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs" oninput="autoCalcCalories('standard')"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat" oninput="autoCalcCalories('standard')"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories" style="color:var(--gold)"></div></div></div>
 <div id="macros-zigzag" style="display:none;">
 <div style="margin-bottom:16px;">
@@ -161,6 +161,21 @@ a{color:var(--gold);}
   <div id="weekly-avg-preview" style="margin-top:10px;font-size:12px;color:var(--muted);padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;display:none;"></div>
 </div>
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">🔥 High Day</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein-high" oninput="autoCalcCalories('high');updateWeeklyAvgPreview()"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-high" oninput="autoCalcCalories('high');updateWeeklyAvgPreview()"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat-high" oninput="autoCalcCalories('high');updateWeeklyAvgPreview()"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-high" style="color:var(--gold)" oninput="updateWeeklyAvgPreview()"></div></div><div style="margin-bottom:16px;"></div><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">❄️ Low Day</div><div class="grid-4"><div class="field"><label>Protein (g)</label><input type="number" id="e-protein-low" oninput="autoCalcCalories('low');updateWeeklyAvgPreview()"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-carbs-low" oninput="autoCalcCalories('low');updateWeeklyAvgPreview()"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-fat-low" oninput="autoCalcCalories('low');updateWeeklyAvgPreview()"></div><div class="field"><label>Calories (auto)</label><input type="number" id="e-calories-low" style="color:var(--gold)" oninput="updateWeeklyAvgPreview()"></div></div></div>
+
+</div>
+<div id="macros-reverse" style="display:none;">
+<div style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">Set a starting point and weekly increase — this generates a week-by-week schedule that auto-advances in the client's tracker based on the real date, no manual updates needed. You can hand-edit any individual week after generating.</div>
+<div class="grid-2">
+<div class="field"><label>Start Date</label><input type="date" id="e-rd-start-date" onchange="renderReverseDietWeeks()"></div>
+<div class="field"><label>Number of Weeks</label><input type="number" id="e-rd-weeks" value="8" min="1" max="52"></div>
+</div>
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">Starting Macros (Week 1)</div>
+<div class="grid-3"><div class="field"><label>Protein (g)</label><input type="number" id="e-rd-start-protein"></div><div class="field"><label>Carbs (g)</label><input type="number" id="e-rd-start-carbs"></div><div class="field"><label>Fat (g)</label><input type="number" id="e-rd-start-fat"></div></div>
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">Weekly Increase</div>
+<div class="grid-3"><div class="field"><label>Protein (g/wk)</label><input type="number" id="e-rd-inc-protein" value="0"></div><div class="field"><label>Carbs (g/wk)</label><input type="number" id="e-rd-inc-carbs" value="0"></div><div class="field"><label>Fat (g/wk)</label><input type="number" id="e-rd-inc-fat" value="0"></div></div>
+<div class="btn-row" style="margin:14px 0;"><button class="btn btn-outline btn-sm" onclick="generateReverseDietWeeks()">↻ Generate / Regenerate Weeks</button></div>
+<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);margin-bottom:8px;">Weekly Schedule</div>
+<div id="rd-weeks-container" style="margin-bottom:8px;"></div>
 </div>
 <div class="form-section" id="edit-bmr" style="display:none;">
 <h3>BMR Inputs (Mifflin-St Jeor)</h3>
@@ -643,6 +658,13 @@ async function loadClientIntoForm(id){
   setHighDays(client.high_days_per_week||2);
   document.getElementById('e-protein-high').value=mh.protein||'';document.getElementById('e-carbs-high').value=mh.carbs||'';document.getElementById('e-fat-high').value=mh.fat||'';document.getElementById('e-calories-high').value=mh.calories||'';
   document.getElementById('e-protein-low').value=ml.protein||'';document.getElementById('e-carbs-low').value=ml.carbs||'';document.getElementById('e-fat-low').value=ml.fat||'';document.getElementById('e-calories-low').value=ml.calories||'';
+  const rd=client.reverse_diet||{};
+  reverseDiet={enabled:method==='reverse_diet',startDate:rd.startDate||'',weeksCount:rd.weeksCount||8,startMacros:{...(rd.startMacros||{protein:0,carbs:0,fat:0})},weeklyIncrease:{...(rd.weeklyIncrease||{protein:0,carbs:0,fat:0})},weeks:JSON.parse(JSON.stringify(rd.weeks||[]))};
+  document.getElementById('e-rd-start-date').value=reverseDiet.startDate;
+  document.getElementById('e-rd-weeks').value=reverseDiet.weeksCount;
+  document.getElementById('e-rd-start-protein').value=reverseDiet.startMacros.protein||'';document.getElementById('e-rd-start-carbs').value=reverseDiet.startMacros.carbs||'';document.getElementById('e-rd-start-fat').value=reverseDiet.startMacros.fat||'';
+  document.getElementById('e-rd-inc-protein').value=reverseDiet.weeklyIncrease.protein||0;document.getElementById('e-rd-inc-carbs').value=reverseDiet.weeklyIncrease.carbs||0;document.getElementById('e-rd-inc-fat').value=reverseDiet.weeklyIncrease.fat||0;
+  renderReverseDietWeeks();
   const b=client.bmr_inputs||{};
   document.getElementById('e-weight-lbs').value=b.weight_lbs||'';document.getElementById('e-height-cm').value=b.height_cm||'';document.getElementById('e-height-input').value=b.height_cm?b.height_cm+'cm':'';document.getElementById('e-age').value=b.age||'';document.getElementById('e-gender').value=b.gender||'male';
   document.getElementById('e-competition-type').value=client.competition_type||'bodybuilding';
@@ -693,7 +715,76 @@ function updateWeeklyAvgPreview() {
   el.innerHTML = `📊 <strong style="color:var(--gold);">Weekly Average</strong> (${currentHighDays} High / ${lowDays} Low) &nbsp;·&nbsp; <strong style="color:var(--white);">${avgCal} kcal</strong> &nbsp;·&nbsp; P: ${avgP}g &nbsp; C: ${avgC}g &nbsp; F: ${avgF}g`;
 }
 
-function setTrackingMethod(method){currentTrackingMethod=method;document.getElementById('macros-standard').style.display=method==='standard'?'':'none';document.getElementById('macros-zigzag').style.display=method==='zigzag'?'':'none';document.getElementById('method-standard').className='btn btn-sm '+(method==='standard'?'btn-gold':'btn-outline');document.getElementById('method-zigzag').className='btn btn-sm '+(method==='zigzag'?'btn-gold':'btn-outline');document.getElementById('method-standard').style.flex='1';document.getElementById('method-zigzag').style.flex='1';}
+function setTrackingMethod(method){
+  currentTrackingMethod=method;
+  document.getElementById('macros-standard').style.display=method==='standard'?'':'none';
+  document.getElementById('macros-zigzag').style.display=method==='zigzag'?'':'none';
+  document.getElementById('macros-reverse').style.display=method==='reverse_diet'?'':'none';
+  document.getElementById('method-standard').className='btn btn-sm '+(method==='standard'?'btn-gold':'btn-outline');
+  document.getElementById('method-zigzag').className='btn btn-sm '+(method==='zigzag'?'btn-gold':'btn-outline');
+  document.getElementById('method-reverse').className='btn btn-sm '+(method==='reverse_diet'?'btn-gold':'btn-outline');
+  document.getElementById('method-standard').style.flex='1';
+  document.getElementById('method-zigzag').style.flex='1';
+  document.getElementById('method-reverse').style.flex='1';
+  reverseDiet.enabled=(method==='reverse_diet');
+}
+
+// ── REVERSE DIET SCHEDULE ──
+// Coach sets a starting point + weekly increase, which generates a week-by-week macro table.
+// The generated weeks are stored and editable individually afterward — regenerating recalculates
+// from scratch, so it warns first if weeks already have (possibly hand-edited) data.
+let reverseDiet = { enabled:false, startDate:'', weeksCount:8, startMacros:{protein:0,carbs:0,fat:0}, weeklyIncrease:{protein:0,carbs:0,fat:0}, weeks:[] };
+
+function generateReverseDietWeeks(){
+  const weeksCount=parseInt(document.getElementById('e-rd-weeks').value)||8;
+  const startP=parseFloat(document.getElementById('e-rd-start-protein').value)||0;
+  const startC=parseFloat(document.getElementById('e-rd-start-carbs').value)||0;
+  const startF=parseFloat(document.getElementById('e-rd-start-fat').value)||0;
+  const incP=parseFloat(document.getElementById('e-rd-inc-protein').value)||0;
+  const incC=parseFloat(document.getElementById('e-rd-inc-carbs').value)||0;
+  const incF=parseFloat(document.getElementById('e-rd-inc-fat').value)||0;
+  if(reverseDiet.weeks.length && !confirm(`This will regenerate all ${weeksCount} weeks from your starting macros and weekly increases — any manual overrides you've made to individual weeks will be lost. Continue?`)) return;
+  reverseDiet.weeksCount=weeksCount;
+  reverseDiet.startMacros={protein:startP,carbs:startC,fat:startF};
+  reverseDiet.weeklyIncrease={protein:incP,carbs:incC,fat:incF};
+  reverseDiet.weeks=Array.from({length:weeksCount},(_,i)=>{
+    const protein=Math.round((startP+incP*i)*10)/10;
+    const carbs=Math.round((startC+incC*i)*10)/10;
+    const fat=Math.round((startF+incF*i)*10)/10;
+    const calories=Math.round(protein*4+carbs*4+fat*9);
+    return {protein,carbs,fat,calories};
+  });
+  renderReverseDietWeeks();
+}
+
+function renderReverseDietWeeks(){
+  const container=document.getElementById('rd-weeks-container');
+  if(!container) return;
+  if(!reverseDiet.weeks.length){container.innerHTML='<div style="font-size:12px;color:var(--muted);">Set your starting macros and weekly increases above, then click Generate Weeks.</div>';return;}
+  const startDate=document.getElementById('e-rd-start-date').value;
+  container.innerHTML=reverseDiet.weeks.map((w,i)=>{
+    let dateLabel='';
+    if(startDate){
+      const d=new Date(startDate+'T12:00:00'); d.setDate(d.getDate()+i*7);
+      dateLabel=` · ${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+    }
+    return `<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+      <div style="width:100px;font-size:12px;font-weight:700;color:var(--gold);">Week ${i+1}${dateLabel}</div>
+      <input type="number" value="${w.protein}" onchange="updateReverseDietWeek(${i},'protein',this.value)" style="width:64px;" title="Protein g">g P
+      <input type="number" value="${w.carbs}" onchange="updateReverseDietWeek(${i},'carbs',this.value)" style="width:64px;" title="Carbs g">g C
+      <input type="number" value="${w.fat}" onchange="updateReverseDietWeek(${i},'fat',this.value)" style="width:64px;" title="Fat g">g F
+      <div style="font-size:12px;color:var(--muted);margin-left:auto;">${w.calories} kcal</div>
+    </div>`;
+  }).join('');
+}
+
+function updateReverseDietWeek(i,key,val){
+  const v=parseFloat(val)||0;
+  reverseDiet.weeks[i][key]=v;
+  const w=reverseDiet.weeks[i];
+  w.calories=Math.round(w.protein*4+w.carbs*4+w.fat*9);
+  renderReverseDietWeeks();
+}
 
 function autoCalcCalories(type){if(type==='standard'){const p=parseFloat(document.getElementById('e-protein').value)||0,c=parseFloat(document.getElementById('e-carbs').value)||0,f=parseFloat(document.getElementById('e-fat').value)||0;document.getElementById('e-calories').value=Math.round(p*4+c*4+f*9);}else if(type==='high'){const p=parseFloat(document.getElementById('e-protein-high').value)||0,c=parseFloat(document.getElementById('e-carbs-high').value)||0,f=parseFloat(document.getElementById('e-fat-high').value)||0;document.getElementById('e-calories-high').value=Math.round(p*4+c*4+f*9);}else if(type==='low'){const p=parseFloat(document.getElementById('e-protein-low').value)||0,c=parseFloat(document.getElementById('e-carbs-low').value)||0,f=parseFloat(document.getElementById('e-fat-low').value)||0;document.getElementById('e-calories-low').value=Math.round(p*4+c*4+f*9);}}
 
@@ -704,7 +795,7 @@ function calcBMRPreview(){const w=parseFloat(document.getElementById('e-weight-l
 async function saveClient(){
   if(!selectedClientId)return;
   const tier=document.getElementById('e-tier').value;
-  const data={name:document.getElementById('e-name').value,nickname:document.getElementById('e-nickname').value,email:document.getElementById('e-email').value,email_lower:document.getElementById('e-email').value.trim().toLowerCase(),tier,goal:document.getElementById('e-goal').value,language:document.getElementById('e-language').value,phone:document.getElementById('e-phone').value,step_goal:parseInt(document.getElementById('e-step-goal').value)||10000,water_goal:parseInt(document.getElementById('e-water-goal').value)||100,tracking_method:currentTrackingMethod,macros:{protein:parseInt(document.getElementById('e-protein').value)||0,carbs:parseInt(document.getElementById('e-carbs').value)||0,fat:parseInt(document.getElementById('e-fat').value)||0,calories:parseInt(document.getElementById('e-calories').value)||0},macros_high:{protein:parseInt(document.getElementById('e-protein-high').value)||0,carbs:parseInt(document.getElementById('e-carbs-high').value)||0,fat:parseInt(document.getElementById('e-fat-high').value)||0,calories:parseInt(document.getElementById('e-calories-high').value)||0},macros_low:{protein:parseInt(document.getElementById('e-protein-low').value)||0,carbs:parseInt(document.getElementById('e-carbs-low').value)||0,fat:parseInt(document.getElementById('e-fat-low').value)||0,calories:parseInt(document.getElementById('e-calories-low').value)||0},high_days_per_week:currentHighDays,bmr_inputs:{weight_lbs:parseFloat(document.getElementById('e-weight-lbs').value)||0,height_cm:parseFloat(document.getElementById('e-height-cm').value)||0,age:parseInt(document.getElementById('e-age').value)||0,gender:document.getElementById('e-gender').value},notes:document.getElementById('e-notes').value,health_considerations:document.getElementById('e-health-considerations').value,updated_at:new Date().toISOString()};
+  const data={name:document.getElementById('e-name').value,nickname:document.getElementById('e-nickname').value,email:document.getElementById('e-email').value,email_lower:document.getElementById('e-email').value.trim().toLowerCase(),tier,goal:document.getElementById('e-goal').value,language:document.getElementById('e-language').value,phone:document.getElementById('e-phone').value,step_goal:parseInt(document.getElementById('e-step-goal').value)||10000,water_goal:parseInt(document.getElementById('e-water-goal').value)||100,tracking_method:currentTrackingMethod,macros:{protein:parseInt(document.getElementById('e-protein').value)||0,carbs:parseInt(document.getElementById('e-carbs').value)||0,fat:parseInt(document.getElementById('e-fat').value)||0,calories:parseInt(document.getElementById('e-calories').value)||0},macros_high:{protein:parseInt(document.getElementById('e-protein-high').value)||0,carbs:parseInt(document.getElementById('e-carbs-high').value)||0,fat:parseInt(document.getElementById('e-fat-high').value)||0,calories:parseInt(document.getElementById('e-calories-high').value)||0},macros_low:{protein:parseInt(document.getElementById('e-protein-low').value)||0,carbs:parseInt(document.getElementById('e-carbs-low').value)||0,fat:parseInt(document.getElementById('e-fat-low').value)||0,calories:parseInt(document.getElementById('e-calories-low').value)||0},high_days_per_week:currentHighDays,bmr_inputs:{weight_lbs:parseFloat(document.getElementById('e-weight-lbs').value)||0,height_cm:parseFloat(document.getElementById('e-height-cm').value)||0,age:parseInt(document.getElementById('e-age').value)||0,gender:document.getElementById('e-gender').value},notes:document.getElementById('e-notes').value,health_considerations:document.getElementById('e-health-considerations').value,reverse_diet:{enabled:currentTrackingMethod==='reverse_diet',startDate:document.getElementById('e-rd-start-date').value,weeksCount:parseInt(document.getElementById('e-rd-weeks').value)||0,startMacros:{protein:parseFloat(document.getElementById('e-rd-start-protein').value)||0,carbs:parseFloat(document.getElementById('e-rd-start-carbs').value)||0,fat:parseFloat(document.getElementById('e-rd-start-fat').value)||0},weeklyIncrease:{protein:parseFloat(document.getElementById('e-rd-inc-protein').value)||0,carbs:parseFloat(document.getElementById('e-rd-inc-carbs').value)||0,fat:parseFloat(document.getElementById('e-rd-inc-fat').value)||0},weeks:reverseDiet.weeks||[]},updated_at:new Date().toISOString()};
   if(tier==='contest_prep'){data.competition_type=document.getElementById('e-competition-type').value;data.show_name=document.getElementById('e-show-name').value;data.federation=document.getElementById('e-federation').value;data.show_date=document.getElementById('e-show-date').value;}
   if(tier==='inperson'){data.sessions_purchased=parseInt(document.getElementById('e-sessions-purchased').value)||0;data.sessions_used=parseInt(document.getElementById('e-sessions-used').value)||0;data.next_session=document.getElementById('e-next-session').value;}
   data.checkin_streak=parseInt(document.getElementById('e-checkin-streak').value)||0;data.checkin_schedule=document.getElementById('e-checkin-schedule').value;
