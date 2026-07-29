@@ -2879,7 +2879,10 @@ async function saveDay(){
   // profile (macros, step goal, water goal) don't retroactively alter what was already logged.
   if(!dayData.target_macros){
     const profile=clientProfile||{};
-    if(profile.tracking_method==='zigzag'){
+    if(profile.reverse_diet?.enabled && profile.reverse_diet?.weeks?.length){
+      const info=getReverseDietWeekInfo(profile.reverse_diet);
+      dayData.target_macros = info.macros ? {protein:info.macros.protein,carbs:info.macros.carbs,fat:info.macros.fat,calories:info.macros.calories} : (profile.macros||{protein:150,carbs:175,fat:55,calories:1795});
+    } else if(profile.tracking_method==='zigzag'){
       dayData.target_macros = currentDayType==='high' ? (profile.macros_high||profile.macros) : (profile.macros_low||profile.macros);
       dayData.target_day_type = currentDayType;
     } else {
