@@ -229,8 +229,11 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 
 <!-- 6. Flex Meals (Lifestyle Only) -->
 <div class="section">
-<h3>6. Flex Meal Options <span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(Lifestyle clients only)</span></h3>
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<h3 style="margin-bottom:0;">6. Flex Meal Options <span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(Lifestyle clients only)</span></h3>
+<span id="flex-collapse-btn" onclick="toggleFlexCollapse()" style="display:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px 8px;">▲</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;margin-top:12px;">
 <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:700;color:var(--white);">
 <input type="checkbox" id="flex-enabled" onchange="toggleFlexSection()" style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;">
 Enable Flex Dieting for this client
@@ -600,6 +603,7 @@ const BT_FOODS={
     ],
     fruits:[
       {name:'Pineapple',macro:'1g P / 13g C / 0g F per 100g'},
+      {name:'Watermelon',macro:'0.6g P / 8g C / 0.2g F per 100g'},
       {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
       {name:'Apricots',macro:'1g P / 11g C / 0g F per 100g'},
       {name:'Plums',macro:'1g P / 11g C / 0g F per 100g'},
@@ -853,7 +857,8 @@ function onClientSelect(){
   if(selectedClient.supplements?.length){supplements=selectedClient.supplements.map(s=>({...s}));renderSupplements();}
   if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),vegetables:(selectedClient.approved_foods.vegetables||[]).map(f=>({...f})),fruits:(selectedClient.approved_foods.fruits||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
   // Load flex meals
-  if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;document.getElementById('flex-section').style.display='block';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));renderFlexMeals();}
+  if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;flexSectionCollapsed=false;document.getElementById('flex-section').style.display='block';document.getElementById('flex-collapse-btn').style.display='block';document.getElementById('flex-collapse-btn').textContent='▲';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));renderFlexMeals();}
+  else{document.getElementById('flex-enabled').checked=false;flexEnabled=false;flexSectionCollapsed=false;document.getElementById('flex-section').style.display='none';document.getElementById('flex-collapse-btn').style.display='none';flexMeals=[];}
   // Load peak week
   if(selectedClient.peak_week?.enabled){
     document.getElementById('peak-enabled').checked=true;
@@ -2904,6 +2909,7 @@ function renderPeakChecklist() {
 // ── FLEX MEALS ──
 let flexMeals = [];
 let flexEnabled = false;
+let flexSectionCollapsed = false;
 
 const DEFAULT_FLEX_MEALS = [
   { category: "Fast Food", restaurant: "Chick-fil-A", meal: "12ct Grilled Nuggets + Medium Waffle Fries (+ fruit cup optional)", notes: "High protein, balanced carbs" },
@@ -2923,8 +2929,19 @@ const FLEX_CATEGORIES = ["Fast Food", "Mexican", "Pizza", "Asian", "Breakfast", 
 
 function toggleFlexSection() {
   flexEnabled = document.getElementById('flex-enabled').checked;
+  // Collapse is only meaningful once flex dieting is on — reset to expanded each time it's
+  // (re)enabled so the coach isn't left staring at a collapsed section that looks empty.
+  flexSectionCollapsed = false;
   document.getElementById('flex-section').style.display = flexEnabled ? 'block' : 'none';
+  document.getElementById('flex-collapse-btn').style.display = flexEnabled ? 'block' : 'none';
+  document.getElementById('flex-collapse-btn').textContent = '▲';
   if (flexEnabled && flexMeals.length === 0) loadDefaultFlexMeals();
+}
+
+function toggleFlexCollapse() {
+  flexSectionCollapsed = !flexSectionCollapsed;
+  document.getElementById('flex-section').style.display = flexSectionCollapsed ? 'none' : 'block';
+  document.getElementById('flex-collapse-btn').textContent = flexSectionCollapsed ? '▼' : '▲';
 }
 
 function loadDefaultFlexMeals() {

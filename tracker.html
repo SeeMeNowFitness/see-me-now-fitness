@@ -707,7 +707,7 @@ select option{background:var(--dark);}
 <div class="modal-overlay" id="modal-water" onclick="closeModalOutside(event,'modal-water')"><div class="modal"><div class="modal-handle"></div><h3>💧 Add Water</h3><div id="water-current-total" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><label style="margin-bottom:0;">Amount to add</label><div style="display:flex;gap:4px;"><button type="button" id="water-unit-oz" onclick="setWaterInputUnit('oz')" style="padding:4px 10px;font-size:11px;font-weight:800;border-radius:6px;border:1px solid var(--gold-d);background:var(--gold);color:var(--black);cursor:pointer;">oz</button><button type="button" id="water-unit-l" onclick="setWaterInputUnit('l')" style="padding:4px 10px;font-size:11px;font-weight:800;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;">L</button></div></div><input type="number" id="water-input" placeholder="e.g. 16" inputmode="numeric" step="0.1"><div class="steps-quick"><button class="steps-chip" onclick="setWaterInputUnit('oz');document.getElementById('water-input').value=16">+16 oz</button><button class="steps-chip" onclick="setWaterInputUnit('oz');document.getElementById('water-input').value=32">+32 oz</button><button class="steps-chip" onclick="setWaterInputUnit('oz');document.getElementById('water-input').value=64">+½ Gal</button><button class="steps-chip" onclick="setWaterInputUnit('oz');document.getElementById('water-input').value=128">+1 Gal</button></div><div style="margin-top:16px;display:flex;gap:10px;"><button class="btn btn-outline btn-full" onclick="closeModal('modal-water')">Cancel</button><button class="btn btn-gold btn-full" onclick="saveWater()">Add</button></div></div></div>
 
 <!-- EDIT FOOD MODAL -->
-<div class="modal-overlay" id="modal-edit-food" onclick="closeModalOutside(event,'modal-edit-food')"><div class="modal"><div class="modal-handle"></div>
+<div class="modal-overlay" id="modal-edit-food" onclick="closeModalOutsideEditFood(event)"><div class="modal"><div class="modal-handle"></div>
 <div style="padding:0 16px 16px;">
   <div style="font-size:14px;font-weight:800;color:var(--white);margin-bottom:4px;" id="edit-food-title">Edit Entry</div>
   <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">Adjust amount to update macros.</div>
@@ -728,7 +728,7 @@ select option{background:var(--dark);}
   <label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--muted);display:block;margin-bottom:6px;">Move to Meal</label>
   <select id="edit-food-meal" style="width:100%;padding:12px;font-size:14px;background:var(--dark);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;margin-bottom:16px;"></select>
   <div style="display:flex;gap:10px;">
-    <button class="btn btn-outline btn-full" onclick="closeModal('modal-edit-food')">Cancel</button>
+    <button class="btn btn-outline btn-full" onclick="cancelEditMeal()">Cancel</button>
     <button class="btn btn-gold btn-full" onclick="confirmEditMeal()">Update</button>
   </div>
 </div>
@@ -1769,11 +1769,13 @@ function renderMealLog(){
   }).join('');
 }
 let editingMealIdx = null;
+let editMealSnapshot = null;
 
 function openEditMeal(idx) {
   editingMealIdx = idx;
   const m = dayData.meals[idx];
   if (!m) return;
+  editMealSnapshot = { ...m };
   document.getElementById('edit-food-title').textContent = m.name;
   // Determine current amount and unit from servingLabel or default
   const currentAmount = m.grams || 100;
@@ -1801,12 +1803,14 @@ function updateEditPreview() {
   const amount = parseFloat(document.getElementById('edit-food-amount').value) || 1;
   const unit = document.getElementById('edit-food-unit').value;
   const grams = amount * (UNIT_TO_GRAMS[unit] || 1);
-  // Calculate macros based on per-gram values from original entry
-  const origGrams = m.grams || 100;
-  const perGramCals = (m.calories || 0) / origGrams;
-  const perGramP = (m.protein || 0) / origGrams;
-  const perGramC = (m.carbs || 0) / origGrams;
-  const perGramF = (m.fat || 0) / origGrams;
+  // Calculate macros based on per-gram values from the ORIGINAL snapshot, not the current
+  // (possibly already live-updated) entry — this fires on every keystroke, so basing the ratio
+  // off anything but the pristine original would compound rounding error as digits are typed.
+  const origGrams = editMealSnapshot?.grams || m.grams || 100;
+  const perGramCals = (editMealSnapshot?.calories ?? m.calories ?? 0) / origGrams;
+  const perGramP = (editMealSnapshot?.protein ?? m.protein ?? 0) / origGrams;
+  const perGramC = (editMealSnapshot?.carbs ?? m.carbs ?? 0) / origGrams;
+  const perGramF = (editMealSnapshot?.fat ?? m.fat ?? 0) / origGrams;
   const newCals = Math.round(perGramCals * grams);
   const newP = Math.round(perGramP * grams * 10) / 10;
   const newC = Math.round(perGramC * grams * 10) / 10;
@@ -1817,6 +1821,14 @@ function updateEditPreview() {
     `&nbsp; C: <strong style="color:var(--white)">${newC}g</strong>` +
     `&nbsp; F: <strong style="color:var(--white)">${newF}g</strong>` +
     `<div style="font-size:11px;color:var(--muted);margin-top:4px;">${amount} ${unit} (${Math.round(grams)}g)</div>`;
+  // Live-apply to the underlying entry so the meal subtotal and daily rings update in real time
+  // as the amount changes, instead of only after tapping Update. This is safe to do optimistically
+  // — Cancel or tapping outside the modal reverts to editMealSnapshot — and the actual Firestore
+  // write still only happens once, when the modal closes via Update.
+  const unitLabels = {g:`${Math.round(grams)}g`,oz:`${amount} oz`,cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,piece:`${amount} ${getServingWord(m.serving,amount)}`,scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`};
+  dayData.meals[idx] = { ...m, grams: Math.round(grams), servingLabel: unitLabels[unit] || `${Math.round(grams)}g`, calories: newCals, protein: newP, carbs: newC, fat: newF };
+  renderMealLog();
+  renderMacroBars();
 }
 
 function getServingWord(originalServing,amount){
@@ -1840,32 +1852,33 @@ function confirmEditMeal() {
   if (idx === null) return;
   const m = dayData.meals[idx];
   if (!m) return;
-  const amount = parseFloat(document.getElementById('edit-food-amount').value) || 1;
-  const unit = document.getElementById('edit-food-unit').value;
-  const grams = amount * (UNIT_TO_GRAMS[unit] || 1);
-  const origGrams = m.grams || 100;
-  const perGramCals = (m.calories || 0) / origGrams;
-  const perGramP = (m.protein || 0) / origGrams;
-  const perGramC = (m.carbs || 0) / origGrams;
-  const perGramF = (m.fat || 0) / origGrams;
-  const unitLabels = {g:`${Math.round(grams)}g`,oz:`${amount} oz`,cup:`${amount} cup${amount!==1?'s':''}`,tbsp:`${amount} tbsp`,tsp:`${amount} tsp`,piece:`${amount} ${getServingWord(m.serving,amount)}`,scoop:`${amount} scoop${amount!==1?'s':''}`,ml:`${Math.round(amount)}ml`};
+  // Amount/unit changes are already live-applied to dayData.meals[idx] by updateEditPreview()
+  // as the user typed — this just needs to apply a meal reassignment (if changed) and persist.
   const newMealGroup = document.getElementById('edit-food-meal').value;
-  dayData.meals[idx] = {
-    ...m,
-    grams: Math.round(grams),
-    servingLabel: unitLabels[unit] || `${Math.round(grams)}g`,
-    calories: Math.round(perGramCals * grams),
-    protein: Math.round(perGramP * grams * 10) / 10,
-    carbs: Math.round(perGramC * grams * 10) / 10,
-    fat: Math.round(perGramF * grams * 10) / 10,
-    mealGroup: newMealGroup || m.mealGroup,
-  };
+  if (newMealGroup) dayData.meals[idx] = { ...m, mealGroup: newMealGroup };
   saveDay();
   closeModal('modal-edit-food');
   renderMealLog();
   renderToday();
   showToast('✓ Entry updated');
   editingMealIdx = null;
+  editMealSnapshot = null;
+}
+function cancelEditMeal() {
+  const idx = editingMealIdx;
+  if (idx !== null && editMealSnapshot) {
+    // Revert the optimistic live updates from updateEditPreview() — nothing was saved to
+    // Firestore, so this only needs to restore local state and re-render.
+    dayData.meals[idx] = editMealSnapshot;
+    renderMealLog();
+    renderMacroBars();
+  }
+  closeModal('modal-edit-food');
+  editingMealIdx = null;
+  editMealSnapshot = null;
+}
+function closeModalOutsideEditFood(e) {
+  if (e.target === document.getElementById('modal-edit-food')) cancelEditMeal();
 }
 
 function deleteMeal(i){dayData.meals.splice(i,1);saveDay();renderMealLog();renderToday();showToast('Meal removed');}
