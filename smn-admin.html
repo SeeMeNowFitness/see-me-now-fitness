@@ -115,6 +115,13 @@ a{color:var(--gold);}
 
 <!-- CLIENTS -->
 <div class="admin-panel active" id="panel-clients">
+<div id="missed-today-panel" style="display:none;background:rgba(201,168,76,0.08);border:1px solid var(--gold-d);border-radius:8px;padding:14px 16px;margin-bottom:14px;">
+<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;" onclick="toggleMissedTodayPanel()">
+<div style="font-size:13px;font-weight:800;color:var(--gold);" id="missed-today-summary">⏰ Checking today's activity…</div>
+<span id="missed-today-chev" style="color:var(--muted);font-size:12px;">▼</span>
+</div>
+<div id="missed-today-list" style="margin-top:10px;"></div>
+</div>
 <input type="text" id="client-search-input" placeholder="🔍 Search clients by name…" oninput="filterClientList()" style="width:100%;padding:12px 14px;font-size:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;margin-bottom:14px;">
 <div id="clients-list"><div style="color:var(--muted);font-size:14px;padding:20px;">Loading clients…</div></div>
 </div>
@@ -281,7 +288,7 @@ a{color:var(--gold);}
 <div class="form-section">
 <h3>New Client</h3>
 <div class="grid-2"><div class="field"><label>Full Name</label><input type="text" id="n-name"></div><div class="field"><label>Email</label><input type="email" id="n-email"></div></div>
-<div class="grid-2"><div class="field"><label>Tier</label><select id="n-tier"><option value="lifestyle">Online Lifestyle</option><option value="contest_prep">Contest Prep</option><option value="inperson">In-Person</option><option value="tracker">Standalone Tracker ($5)</option></select></div><div class="field"><label>Phone / WhatsApp</label><input type="text" id="n-phone"></div></div>
+<div class="grid-2"><div class="field"><label>Tier</label><select id="n-tier"><option value="lifestyle">Online Lifestyle</option><option value="contest_prep">Contest Prep</option><option value="inperson">In-Person</option><option value="nutrition">Nutrition</option><option value="tracker">Standalone Tracker ($9)</option></select></div><div class="field"><label>Phone / WhatsApp</label><input type="text" id="n-phone"></div></div>
 <div class="btn-row"><button class="btn btn-gold" onclick="createNewClient()">Create Client</button><span class="save-feedback" id="new-feedback">✓ Client created</span></div>
 </div>
 </div>
@@ -334,8 +341,59 @@ async function initAdmin(){
 
 async function loadClients(){
   if(!db){renderClientList([{id:'demo1',name:'Demo Client',tier:'lifestyle',email:'demo@example.com'},{id:'demo2',name:'Contest Athlete',tier:'contest_prep',email:'athlete@example.com'}]);return;}
-  try{const snap=await db.collection('clients').get();allClients=snap.docs.map(d=>({id:d.id,...d.data()}));renderClientList(allClients);}
+  try{const snap=await db.collection('clients').get();allClients=snap.docs.map(d=>({id:d.id,...d.data()}));renderClientList(allClients);checkTodayActivity();}
   catch(e){document.getElementById('clients-list').innerHTML='<div style="color:var(--red);">Could not load clients.</div>';}
+}
+
+// ── TODAY'S ACTIVITY CHECK ──
+// A quick-glance list of who hasn't logged anything yet today, so the coach doesn't have to open
+// each client individually to know who might need a nudge. This is read-only and manual — it
+// doesn't send anything on its own, it just tells the coach who to reach out to.
+let missedTodayPanelOpen = true;
+async function checkTodayActivity(){
+  if(!db || !allClients.length) return;
+  const now=new Date();
+  const todayISO=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  try{
+    const results=await Promise.all(allClients.map(async c=>{
+      try{
+        const doc=await db.collection('clients').doc(c.id).collection('days').doc(todayISO).get();
+        const d=doc.exists?doc.data():null;
+        const hasLogged = d && ((d.meals&&d.meals.length>0) || (d.steps>0) || (d.water>0));
+        return {id:c.id,name:c.name,phone:c.phone,hasLogged:!!hasLogged};
+      }catch(e){ return {id:c.id,name:c.name,phone:c.phone,hasLogged:true}; } // fail-open: don't wrongly flag someone if a single read errors
+    }));
+    const missed=results.filter(r=>!r.hasLogged);
+    renderMissedTodayPanel(missed);
+  }catch(e){
+    document.getElementById('missed-today-panel').style.display='none';
+  }
+}
+
+function renderMissedTodayPanel(missed){
+  const panel=document.getElementById('missed-today-panel');
+  if(!missed.length){panel.style.display='none';return;}
+  panel.style.display='block';
+  document.getElementById('missed-today-summary').textContent=`⏰ ${missed.length} client${missed.length===1?'':'s'} haven't logged today`;
+  document.getElementById('missed-today-list').style.display=missedTodayPanelOpen?'block':'none';
+  document.getElementById('missed-today-chev').textContent=missedTodayPanelOpen?'▲':'▼';
+  document.getElementById('missed-today-list').innerHTML=missed.map(m=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-top:1px solid var(--border);">
+      <div style="font-size:13px;color:var(--white);cursor:pointer;" onclick="selectClientById('${m.id}')">${m.name}</div>
+      <div style="font-size:12px;color:var(--muted);">${m.phone?m.phone:''}</div>
+    </div>
+  `).join('');
+}
+
+function toggleMissedTodayPanel(){
+  missedTodayPanelOpen=!missedTodayPanelOpen;
+  const list=document.getElementById('missed-today-list');
+  list.style.display=missedTodayPanelOpen?'block':'none';
+  document.getElementById('missed-today-chev').textContent=missedTodayPanelOpen?'▲':'▼';
+}
+
+function selectClientById(id){
+  selectClient(id);
 }
 
 function filterClientList(){
