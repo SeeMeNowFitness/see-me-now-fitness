@@ -349,7 +349,7 @@ async function loadClients(){
 // A quick-glance list of who hasn't logged anything yet today, so the coach doesn't have to open
 // each client individually to know who might need a nudge. This is read-only and manual — it
 // doesn't send anything on its own, it just tells the coach who to reach out to.
-let missedTodayPanelOpen = true;
+let missedTodayPanelOpen = false;
 async function checkTodayActivity(){
   if(!db || !allClients.length) return;
   const now=new Date();
