@@ -857,8 +857,8 @@ function onClientSelect(){
   if(selectedClient.supplements?.length){supplements=selectedClient.supplements.map(s=>({...s}));renderSupplements();}
   if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),vegetables:(selectedClient.approved_foods.vegetables||[]).map(f=>({...f})),fruits:(selectedClient.approved_foods.fruits||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
   // Load flex meals
-  if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;flexSectionCollapsed=false;document.getElementById('flex-section').style.display='block';document.getElementById('flex-collapse-btn').style.display='block';document.getElementById('flex-collapse-btn').textContent='▲';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));renderFlexMeals();}
-  else{document.getElementById('flex-enabled').checked=false;flexEnabled=false;flexSectionCollapsed=false;document.getElementById('flex-section').style.display='none';document.getElementById('flex-collapse-btn').style.display='none';flexMeals=[];}
+  if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;flexSectionCollapsed=false;document.getElementById('flex-section').style.display='block';document.getElementById('flex-collapse-btn').style.display='block';document.getElementById('flex-collapse-btn').textContent='▲';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));flexCategoryInitialized=false;openFlexCategory=null;renderFlexMeals();}
+  else{document.getElementById('flex-enabled').checked=false;flexEnabled=false;flexSectionCollapsed=false;document.getElementById('flex-section').style.display='none';document.getElementById('flex-collapse-btn').style.display='none';flexMeals=[];flexCategoryInitialized=false;openFlexCategory=null;}
   // Load peak week
   if(selectedClient.peak_week?.enabled){
     document.getElementById('peak-enabled').checked=true;
@@ -2960,6 +2960,7 @@ function removeFlexMeal(i) {
 }
 
 let openFlexCategory = null;
+let flexCategoryInitialized = false;
 
 function toggleFlexCategory(cat) {
   openFlexCategory = (openFlexCategory === cat) ? null : cat;
@@ -2982,7 +2983,11 @@ function renderFlexMeals() {
   });
   // Show categories in the standard order first, then any custom ones that show up
   const orderedCats = [...FLEX_CATEGORIES.filter(c => grouped[c]), ...Object.keys(grouped).filter(c => !FLEX_CATEGORIES.includes(c))];
-  if (openFlexCategory === null) openFlexCategory = orderedCats[0];
+  // Only auto-open the first category on the very first render for this client — after that,
+  // respect whatever the coach has explicitly set (including fully collapsed). Previously this
+  // ran on every render, which meant clicking to collapse the already-open category immediately
+  // snapped it back open again, making the toggle appear broken.
+  if (!flexCategoryInitialized) { openFlexCategory = orderedCats[0]; flexCategoryInitialized = true; }
 
   el.innerHTML = orderedCats.map(cat => `
     <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;">
