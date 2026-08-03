@@ -3970,7 +3970,6 @@ function renderPlanSummary() {
 function renderWorkoutPlan() {
   const el = document.getElementById('plan-workout-content');
   const profile = clientProfile || {};
-  const isLeg = currentPlanDay === 'leg';
   const assignedPlan = profile.workout_plan;
 
   if (assignedPlan?.days?.length) {
@@ -3998,14 +3997,15 @@ function renderWorkoutPlan() {
     return;
   }
 
-  // Fallback template
-  const templateKey = isLeg ? 'ppl_legs' : 'ppl_push';
-  const template = WORKOUT_TEMPLATES[templateKey];
+  // No plan assigned yet — show an honest empty state rather than a generic template that
+  // could be mistaken for a real, coach-reviewed prescription. Nothing here is personalized to
+  // this client's injuries, mobility, or experience, so it shouldn't look like it is.
   el.innerHTML = `
-    <div style="font-size:11px;color:var(--muted);margin-bottom:10px;padding:8px 12px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:8px;">
-      📋 <strong style="color:var(--gold);">Blueprint Template</strong> — Your coach will assign your personalized workout plan.
+    <div style="text-align:center;padding:32px 16px;">
+      <div style="font-size:32px;margin-bottom:10px;">🏋️</div>
+      <div style="font-size:14px;font-weight:800;color:var(--white);margin-bottom:6px;">No Workout Assigned Yet</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;max-width:280px;margin:0 auto;">Your coach is building your personalized training plan. This will update automatically once it's ready — check back soon.</div>
     </div>
-    ${renderWorkoutDayCard(template)}
   `;
 }
 
