@@ -283,6 +283,15 @@ Enable Flex Dieting for this client
   </div>
 </div>
 <div id="workout-template-preview" style="display:none;">
+  <div style="display:flex;gap:8px;margin-bottom:14px;">
+    <button id="wmode-single" onclick="setWorkoutMode('single')" class="btn btn-gold btn-sm" style="flex:1;">Single Repeating Week</button>
+    <button id="wmode-multi" onclick="setWorkoutMode('multi_week')" class="btn btn-outline btn-sm" style="flex:1;">📅 Multi-Week Program</button>
+  </div>
+  <div id="workout-multiweek-controls" style="display:none;margin-bottom:16px;">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px;line-height:1.6;">Each week below is a full 7-day program. New weeks start as a copy of the previous one — tweak what's different for that week (weight, an exercise swap, a deload) instead of rebuilding from scratch. Clients see the correct week automatically based on today's date.</div>
+    <div class="field" style="margin-bottom:12px;"><label>Program Start Date</label><input type="date" id="workout-mw-start-date" onchange="saveWorkoutMwStartDate()"></div>
+    <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:4px;" id="workout-week-tabs"></div>
+  </div>
   <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Rename any day below — clients see your names, not the template structure.</div>
   <div id="workout-days-container"></div>
 </div>
@@ -857,7 +866,7 @@ function onClientSelect(){
   if(selectedClient.supplements?.length){supplements=selectedClient.supplements.map(s=>({...s}));renderSupplements();}
   if(selectedClient.approved_foods){approvedFoods={protein:(selectedClient.approved_foods.protein||[]).map(f=>({...f})),carbs:(selectedClient.approved_foods.carbs||[]).map(f=>({...f})),vegetables:(selectedClient.approved_foods.vegetables||[]).map(f=>({...f})),fruits:(selectedClient.approved_foods.fruits||[]).map(f=>({...f})),fats:(selectedClient.approved_foods.fats||[]).map(f=>({...f}))};renderApprovedFoods();}
   // Load flex meals
-  if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;flexSectionCollapsed=false;document.getElementById('flex-section').style.display='block';document.getElementById('flex-collapse-btn').style.display='block';document.getElementById('flex-collapse-btn').textContent='▲';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));flexCategoryInitialized=false;openFlexCategory=null;renderFlexMeals();}
+  if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;flexSectionCollapsed=true;document.getElementById('flex-section').style.display='none';document.getElementById('flex-collapse-btn').style.display='block';document.getElementById('flex-collapse-btn').textContent='▼';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));flexCategoryInitialized=false;openFlexCategory=null;renderFlexMeals();}
   else{document.getElementById('flex-enabled').checked=false;flexEnabled=false;flexSectionCollapsed=false;document.getElementById('flex-section').style.display='none';document.getElementById('flex-collapse-btn').style.display='none';flexMeals=[];flexCategoryInitialized=false;openFlexCategory=null;}
   // Load peak week
   if(selectedClient.peak_week?.enabled){
@@ -885,10 +894,18 @@ function onClientSelect(){
   // Load workout plan
   if(selectedClient.workout_plan){
     workoutPlan=JSON.parse(JSON.stringify(selectedClient.workout_plan));
+    activeWorkoutWeekIdx=0;
     document.getElementById('workout-template-select').value=selectedClient.workout_plan.template||'';
     document.getElementById('workout-plan-name').value=selectedClient.workout_plan.name||'';
     document.getElementById('workout-template-preview').style.display='block';
+    renderWorkoutModeUI();
     renderWorkoutDays();
+  } else {
+    workoutPlan=null;
+    activeWorkoutWeekIdx=0;
+    document.getElementById('workout-template-select').value='';
+    document.getElementById('workout-plan-name').value='';
+    document.getElementById('workout-template-preview').style.display='none';
   }
   if(selectedClient.meal_plan || selectedClient.meal_plan_high || selectedClient.meal_plan_low){
     const hasHigh = !!selectedClient.meal_plan_high;
@@ -918,6 +935,7 @@ function loadExistingPlan(plan){
   document.getElementById('meal-count').value=Math.min(6,Math.max(3,count));
   meals=plan.map(m=>({
     name:m.name,
+    notes:m.notes||'',
     foods:(m.foods||[]).map(f=>({
       ...f,
       unit: f.unit || 'g',
@@ -1032,6 +1050,9 @@ function renderMeals(){
             </div>
           </div>
         `:`<div style="font-size:13px;color:var(--muted);padding:8px 0;">No foods added yet. Search above to add.</div>`}
+        <div style="margin-top:14px;">
+          <div class="field" style="margin-bottom:0;"><label>Notes (optional)</label><textarea rows="2" placeholder="e.g. Prep on Sundays, sub chicken for tofu if needed…" oninput="meals[${mi}].notes=this.value;">${meal.notes||''}</textarea></div>
+        </div>
       </div>
     </div>
   `).join('');
@@ -1529,6 +1550,7 @@ function toggleAFChunk(ci){
 
 // ── WORKOUT TEMPLATES ──
 let workoutPlan = null;
+let activeWorkoutWeekIdx = 0;
 
 const WORKOUT_TEMPLATES = {
   ppl: {
@@ -2016,9 +2038,99 @@ const WORKOUT_TEMPLATES = {
   },
 };
 
+// ── MULTI-WEEK WORKOUT PROGRAMMING ──
+// Returns whichever days array is currently "live" for editing — either the single repeating
+// week, or the active week within a multi-week program. Every exercise-editing function reads
+// and writes through this instead of workoutPlan.days directly, so the exact same editing UI
+// works unmodified for both modes.
+function activeWorkoutDays() {
+  if (workoutPlan?.mode === 'multi_week' && workoutPlan.multiWeek?.weeks?.length) {
+    return workoutPlan.multiWeek.weeks[activeWorkoutWeekIdx].days;
+  }
+  return workoutPlan?.days || [];
+}
+
+function setWorkoutMode(mode) {
+  if (!workoutPlan) return;
+  workoutPlan.mode = mode;
+  if (mode === 'multi_week' && !workoutPlan.multiWeek) {
+    // First time switching to multi-week — seed Week 1 from whatever single-week days already
+    // exist (from the template picked above), so nothing already built gets lost.
+    workoutPlan.multiWeek = { startDate: '', weeks: [{ label: 'Week 1', days: workoutPlan.days || [] }] };
+    activeWorkoutWeekIdx = 0;
+  }
+  document.getElementById('wmode-single').className = 'btn btn-sm ' + (mode === 'single' ? 'btn-gold' : 'btn-outline');
+  document.getElementById('wmode-multi').className = 'btn btn-sm ' + (mode === 'multi_week' ? 'btn-gold' : 'btn-outline');
+  document.getElementById('wmode-single').style.flex = '1';
+  document.getElementById('wmode-multi').style.flex = '1';
+  document.getElementById('workout-multiweek-controls').style.display = mode === 'multi_week' ? 'block' : 'none';
+  renderWorkoutModeUI();
+  renderWorkoutDays();
+}
+
+function renderWorkoutModeUI() {
+  if (!workoutPlan) return;
+  const mode = workoutPlan.mode || 'single';
+  document.getElementById('wmode-single').className = 'btn btn-sm ' + (mode === 'single' ? 'btn-gold' : 'btn-outline');
+  document.getElementById('wmode-multi').className = 'btn btn-sm ' + (mode === 'multi_week' ? 'btn-gold' : 'btn-outline');
+  document.getElementById('wmode-single').style.flex = '1';
+  document.getElementById('wmode-multi').style.flex = '1';
+  document.getElementById('workout-multiweek-controls').style.display = mode === 'multi_week' ? 'block' : 'none';
+  if (mode !== 'multi_week' || !workoutPlan.multiWeek) return;
+  document.getElementById('workout-mw-start-date').value = workoutPlan.multiWeek.startDate || '';
+  const weeks = workoutPlan.multiWeek.weeks;
+  document.getElementById('workout-week-tabs').innerHTML = weeks.map((w, wi) => `
+    <div onclick="selectWorkoutWeek(${wi})" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;${wi === activeWorkoutWeekIdx ? 'background:var(--gold);color:var(--black);' : 'background:var(--card);border:1px solid var(--border);color:var(--muted);'}">
+      <span>${w.label}</span>
+      ${weeks.length > 1 ? `<span onclick="event.stopPropagation();deleteWorkoutWeek(${wi})" style="opacity:0.7;">✕</span>` : ''}
+    </div>
+  `).join('') + `<div onclick="addWorkoutWeek()" style="flex-shrink:0;padding:8px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:700;background:var(--card);border:1px dashed var(--gold-dim);color:var(--gold);">+ Add Week</div>`;
+}
+
+function selectWorkoutWeek(wi) {
+  activeWorkoutWeekIdx = wi;
+  renderWorkoutModeUI();
+  renderWorkoutDays();
+}
+
+function addWorkoutWeek() {
+  const weeks = workoutPlan.multiWeek.weeks;
+  const lastWeek = weeks[weeks.length - 1];
+  weeks.push({ label: `Week ${weeks.length + 1}`, days: JSON.parse(JSON.stringify(lastWeek.days)) });
+  activeWorkoutWeekIdx = weeks.length - 1;
+  renderWorkoutModeUI();
+  renderWorkoutDays();
+}
+
+function deleteWorkoutWeek(wi) {
+  const weeks = workoutPlan.multiWeek.weeks;
+  if (weeks.length <= 1) { alert("A multi-week program needs at least one week."); return; }
+  if (!confirm(`Delete ${weeks[wi].label}? This can't be undone.`)) return;
+  weeks.splice(wi, 1);
+  // Renumber remaining weeks' default labels so there's never a gap like Week 1, Week 3
+  weeks.forEach((w, i) => { if (/^Week \d+$/.test(w.label)) w.label = `Week ${i + 1}`; });
+  if (activeWorkoutWeekIdx >= weeks.length) activeWorkoutWeekIdx = weeks.length - 1;
+  renderWorkoutModeUI();
+  renderWorkoutDays();
+}
+
+function saveWorkoutMwStartDate() {
+  if (!workoutPlan?.multiWeek) return;
+  workoutPlan.multiWeek.startDate = document.getElementById('workout-mw-start-date').value;
+}
+
 function onWorkoutTemplateChange() {
   const key = document.getElementById('workout-template-select').value;
   const preview = document.getElementById('workout-template-preview');
+  if (workoutPlan?.mode === 'multi_week') {
+    // Re-seeding a template mid-program only replaces the currently active week — the rest of
+    // the program (other weeks, start date) stays untouched.
+    if (!key) { workoutPlan.multiWeek.weeks[activeWorkoutWeekIdx].days = []; renderWorkoutDays(); return; }
+    const template = JSON.parse(JSON.stringify(WORKOUT_TEMPLATES[key]));
+    workoutPlan.multiWeek.weeks[activeWorkoutWeekIdx].days = template.days;
+    renderWorkoutDays();
+    return;
+  }
   if (!key) {
     workoutPlan = null;
     preview.style.display = 'none';
@@ -2026,8 +2138,10 @@ function onWorkoutTemplateChange() {
   }
   const template = JSON.parse(JSON.stringify(WORKOUT_TEMPLATES[key])); // deep copy
   workoutPlan = template;
+  workoutPlan.mode = 'single';
   document.getElementById('workout-plan-name').value = template.name;
   preview.style.display = 'block';
+  renderWorkoutModeUI();
   renderWorkoutDays();
 }
 
@@ -2062,7 +2176,7 @@ function getDefaultWarmup(focus) {
 
 function addCustomExercise(di) {
   if (!workoutPlan) return;
-  workoutPlan.days[di].exercises.push({ name: '', sets: '3', reps: '10-12', rest: '60s', tip: '', custom: true });
+  activeWorkoutDays()[di].exercises.push({ name: '', sets: '3', reps: '10-12', rest: '60s', tip: '', custom: true });
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
   if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
@@ -2070,7 +2184,7 @@ function addCustomExercise(di) {
 
 function removeExercise(di, ei) {
   if (!workoutPlan) return;
-  workoutPlan.days[di].exercises.splice(ei, 1);
+  activeWorkoutDays()[di].exercises.splice(ei, 1);
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
   if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
@@ -2078,8 +2192,8 @@ function removeExercise(di, ei) {
 
 function addCustomWarmup(di) {
   if (!workoutPlan) return;
-  if (!workoutPlan.days[di].warmup) workoutPlan.days[di].warmup = [];
-  workoutPlan.days[di].warmup.push({ name: '', sets: '1', reps: '', rest: '—', tip: '', custom: true });
+  if (!activeWorkoutDays()[di].warmup) activeWorkoutDays()[di].warmup = [];
+  activeWorkoutDays()[di].warmup.push({ name: '', sets: '1', reps: '', rest: '—', tip: '', custom: true });
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
   if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
@@ -2087,7 +2201,7 @@ function addCustomWarmup(di) {
 
 function removeWarmup(di, wi) {
   if (!workoutPlan) return;
-  workoutPlan.days[di].warmup.splice(wi, 1);
+  activeWorkoutDays()[di].warmup.splice(wi, 1);
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
   if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
@@ -2095,7 +2209,7 @@ function removeWarmup(di, wi) {
 
 function loadDefaultWarmup(di) {
   if (!workoutPlan) return;
-  workoutPlan.days[di].warmup = getDefaultWarmup(workoutPlan.days[di].focus).map(w => ({ ...w }));
+  activeWorkoutDays()[di].warmup = getDefaultWarmup(activeWorkoutDays()[di].focus).map(w => ({ ...w }));
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
   if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
@@ -2103,17 +2217,17 @@ function loadDefaultWarmup(di) {
 
 function setGroupType(di, ei, type) {
   if (!workoutPlan) return;
-  workoutPlan.days[di].exercises[ei].group = type;
+  activeWorkoutDays()[di].exercises[ei].group = type;
   // Auto-set rest for grouped exercises
   if (type === 'superset' || type === 'triset') {
-    workoutPlan.days[di].exercises[ei].groupRest = workoutPlan.days[di].exercises[ei].rest || '60s';
-    workoutPlan.days[di].exercises[ei].rest = 'No rest';
+    activeWorkoutDays()[di].exercises[ei].groupRest = activeWorkoutDays()[di].exercises[ei].rest || '60s';
+    activeWorkoutDays()[di].exercises[ei].rest = 'No rest';
   } else {
     // Restore original rest if ungrouping
-    if (workoutPlan.days[di].exercises[ei].groupRest) {
-      workoutPlan.days[di].exercises[ei].rest = workoutPlan.days[di].exercises[ei].groupRest;
+    if (activeWorkoutDays()[di].exercises[ei].groupRest) {
+      activeWorkoutDays()[di].exercises[ei].rest = activeWorkoutDays()[di].exercises[ei].groupRest;
     }
-    delete workoutPlan.days[di].exercises[ei].groupRest;
+    delete activeWorkoutDays()[di].exercises[ei].groupRest;
   }
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
@@ -2134,16 +2248,16 @@ function renderExerciseRow(ex, di, ei, isWarmup = false) {
       <div style="display:grid;grid-template-columns:1fr 54px 62px 54px 30px;gap:6px;align-items:center;margin-bottom:6px;">
         <div style="display:flex;align-items:center;gap:6px;">
           ${groupBadge}
-          <input type="text" value="${ex.name}" placeholder="${isWarmup ? 'e.g. Band Pull-Aparts' : 'e.g. Incline Machine Press'}" oninput="workoutPlan.days[${di}].${arr}[${ei}].name=this.value" style="${exInputStyle}font-weight:700;font-size:13px;">
+          <input type="text" value="${ex.name}" placeholder="${isWarmup ? 'e.g. Band Pull-Aparts' : 'e.g. Incline Machine Press'}" oninput="activeWorkoutDays()[${di}].${arr}[${ei}].name=this.value" style="${exInputStyle}font-weight:700;font-size:13px;">
         </div>
-        <input type="text" value="${ex.sets}" oninput="workoutPlan.days[${di}].${arr}[${ei}].sets=this.value" placeholder="Sets" style="${exInputStyle}text-align:center;">
-        <input type="text" value="${ex.reps}" oninput="workoutPlan.days[${di}].${arr}[${ei}].reps=this.value" placeholder="Reps" style="${exInputStyle}text-align:center;">
-        <input type="text" value="${ex.rest||'60s'}" oninput="workoutPlan.days[${di}].${arr}[${ei}].rest=this.value" placeholder="Rest" style="${exInputStyle}text-align:center;${group!=='none'&&ex.rest==='No rest'?'color:var(--muted);':''}">
+        <input type="text" value="${ex.sets}" oninput="activeWorkoutDays()[${di}].${arr}[${ei}].sets=this.value" placeholder="Sets" style="${exInputStyle}text-align:center;">
+        <input type="text" value="${ex.reps}" oninput="activeWorkoutDays()[${di}].${arr}[${ei}].reps=this.value" placeholder="Reps" style="${exInputStyle}text-align:center;">
+        <input type="text" value="${ex.rest||'60s'}" oninput="activeWorkoutDays()[${di}].${arr}[${ei}].rest=this.value" placeholder="Rest" style="${exInputStyle}text-align:center;${group!=='none'&&ex.rest==='No rest'?'color:var(--muted);':''}">
         <button onclick="${isWarmup ? `removeWarmup(${di},${ei})` : `removeExercise(${di},${ei})`}" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0;">✕</button>
       </div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:${!isWarmup?'6px':'0'};">
         <span style="font-size:10px;color:var(--gold);font-weight:700;white-space:nowrap;">Tip:</span>
-        <input type="text" value="${ex.tip||''}" oninput="workoutPlan.days[${di}].${arr}[${ei}].tip=this.value" placeholder="Add a coach tip…" style="${exInputStyle}color:var(--muted);font-size:11px;">
+        <input type="text" value="${ex.tip||''}" oninput="activeWorkoutDays()[${di}].${arr}[${ei}].tip=this.value" placeholder="Add a coach tip…" style="${exInputStyle}color:var(--muted);font-size:11px;">
       </div>
       ${!isWarmup ? `
         <div style="display:flex;gap:5px;align-items:center;">
@@ -2160,7 +2274,7 @@ function renderExerciseRow(ex, di, ei, isWarmup = false) {
 function renderWorkoutDays() {
   if (!workoutPlan) return;
   const container = document.getElementById('workout-days-container');
-  container.innerHTML = workoutPlan.days.map((day, di) => {
+  container.innerHTML = activeWorkoutDays().map((day, di) => {
     const warmup = day.warmup || [];
     const isRest = day.exercises.length === 0;
     return `
@@ -2182,11 +2296,11 @@ function renderWorkoutDays() {
         <div class="grid-2" style="margin-bottom:14px;">
           <div class="field" style="margin-bottom:0;">
             <label>Day Label (shown to client)</label>
-            <input type="text" value="${day.label}" oninput="workoutPlan.days[${di}].label=this.value">
+            <input type="text" value="${day.label}" oninput="activeWorkoutDays()[${di}].label=this.value">
           </div>
           <div class="field" style="margin-bottom:0;">
             <label>Focus (shown to client)</label>
-            <input type="text" value="${day.focus}" oninput="workoutPlan.days[${di}].focus=this.value">
+            <input type="text" value="${day.focus}" oninput="activeWorkoutDays()[${di}].focus=this.value">
           </div>
         </div>
 
@@ -3025,6 +3139,7 @@ async function savePlan() {
   const planType = document.getElementById('plan-type').value;
   const planData = meals.map(meal => ({
     name: meal.name,
+    notes: meal.notes || '',
     foods: meal.foods.map(f => ({
       name: f.name,
       amount: f.amount || '100',
@@ -3076,7 +3191,9 @@ async function savePlan() {
         workout_plan: workoutPlan ? {
           name: document.getElementById('workout-plan-name').value || workoutPlan.name,
           template: document.getElementById('workout-template-select').value,
-          days: workoutPlan.days
+          mode: workoutPlan.mode || 'single',
+          days: workoutPlan.days,
+          multiWeek: workoutPlan.mode === 'multi_week' ? workoutPlan.multiWeek : null,
         } : null,
       }, { merge: true });
     }

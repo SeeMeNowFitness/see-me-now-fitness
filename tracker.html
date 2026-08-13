@@ -1235,9 +1235,9 @@ function renderGreetingCard() {
   const pills = [];
 
   // Workout focus for today
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  if (clientProfile.workout_plan?.days?.length) {
-    const todayDay = clientProfile.workout_plan.days.find(d => d.day === today);
+  const hasWorkoutPlan = clientProfile.workout_plan?.days?.length || (clientProfile.workout_plan?.mode === 'multi_week' && clientProfile.workout_plan?.multiWeek?.weeks?.length);
+  if (hasWorkoutPlan) {
+    const todayDay = getWorkoutDayForDate(clientProfile.workout_plan, new Date());
     if (todayDay && todayDay.exercises.length > 0) {
       pills.push({ icon: '💪', text: todayDay.label, color: 'var(--gold)' });
     } else if (todayDay) {
@@ -3894,10 +3894,9 @@ function renderPlanSummary() {
     const info = getReverseDietWeekInfo(profile.reverse_diet);
     focusLabel = `Reverse Diet — Week ${info.weekIndex + 1} of ${info.totalWeeks}`;
     focusIcon = '📈';
-  } else if (profile.workout_plan?.days?.length) {
-    // Use today's workout day focus from assigned plan
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    const todayDay = profile.workout_plan.days.find(d => d.day === today);
+  } else if (profile.workout_plan?.days?.length || (profile.workout_plan?.mode === 'multi_week' && profile.workout_plan?.multiWeek?.weeks?.length)) {
+    // Use today's workout day focus from assigned plan (single repeating week or multi-week)
+    const todayDay = getWorkoutDayForDate(profile.workout_plan, new Date());
     if (todayDay) {
       focusLabel = todayDay.exercises.length === 0 ? 'Rest Day' : todayDay.label;
       focusIcon = todayDay.icon || '💪';
@@ -3967,33 +3966,46 @@ function renderPlanSummary() {
   `;
 }
 
+// Resolves which day-template applies to a GIVEN date — not just "today" — since the calendar
+// renders a whole month at once. For multi-week plans, walks the real elapsed time from the
+// program's start date to find the right week (mirrors getReverseDietWeekInfo's approach);
+// for a single repeating week, it's just a day-of-week lookup.
+function getWorkoutDayForDate(plan, dateObj) {
+  const dow = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+  if (plan.mode === 'multi_week' && plan.multiWeek?.weeks?.length) {
+    const mw = plan.multiWeek;
+    if (!mw.startDate) return mw.weeks[0].days.find(d => d.day === dow) || null;
+    const start = new Date(mw.startDate + 'T00:00:00');
+    const d0 = new Date(dateObj); d0.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((d0 - start) / 86400000);
+    let weekIdx = Math.floor(diffDays / 7);
+    if (weekIdx < 0) weekIdx = 0;
+    if (weekIdx >= mw.weeks.length) weekIdx = mw.weeks.length - 1;
+    return mw.weeks[weekIdx].days.find(d => d.day === dow) || null;
+  }
+  return (plan.days || []).find(d => d.day === dow) || null;
+}
+
+let workoutCalMonth = null;
+let workoutCalYear = null;
+let workoutCalSelectedDate = null;
+
 function renderWorkoutPlan() {
   const el = document.getElementById('plan-workout-content');
   const profile = clientProfile || {};
   const assignedPlan = profile.workout_plan;
+  const hasPlan = assignedPlan?.days?.length || (assignedPlan?.mode === 'multi_week' && assignedPlan?.multiWeek?.weeks?.length);
 
-  if (assignedPlan?.days?.length) {
-    // Show weekly day strip
-    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-    const weekStrip = `
-      <div style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;">
-        ${assignedPlan.days.map((day, i) => {
-          const isToday = day.day === today;
-          const isRest = day.exercises.length === 0;
-          return `<div onclick="selectWorkoutDay(${i})" id="wstrip-${i}" style="flex-shrink:0;text-align:center;padding:10px 8px;border-radius:10px;cursor:pointer;min-width:52px;transition:all 0.15s;${isToday ? 'background:var(--gold);color:var(--black);' : 'background:var(--card);border:1px solid var(--border);color:var(--muted);'}">
-            <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;${isToday?'color:var(--black)':''}">${day.day.slice(0,3)}</div>
-            <div style="font-size:16px;margin-bottom:3px;">${day.icon}</div>
-            <div style="font-size:9px;font-weight:700;${isToday?'color:var(--black)':'color:var(--muted)'};">${isRest ? 'Rest' : day.label.split(' ')[0]}</div>
-          </div>`;
-        }).join('')}
-      </div>`;
-
-    // Find today's day index
-    const todayIdx = assignedPlan.days.findIndex(d => d.day === today);
-    const activeIdx = todayIdx >= 0 ? todayIdx : 0;
-
-    el.innerHTML = weekStrip + `<div id="workout-day-detail"></div>`;
-    renderWorkoutDayDetail(activeIdx, assignedPlan, false);
+  if (hasPlan) {
+    if (workoutCalSelectedDate === null) {
+      const now = new Date();
+      workoutCalMonth = now.getMonth();
+      workoutCalYear = now.getFullYear();
+      workoutCalSelectedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+    el.innerHTML = `<div id="workout-cal-grid-wrap"></div><div id="workout-day-detail" style="margin-top:14px;"></div>`;
+    renderWorkoutCalendarGrid(assignedPlan);
+    renderWorkoutSelectedDayDetail(assignedPlan);
     return;
   }
 
@@ -4009,24 +4021,59 @@ function renderWorkoutPlan() {
   `;
 }
 
-function selectWorkoutDay(idx) {
+function renderWorkoutCalendarGrid(plan) {
+  const wrap = document.getElementById('workout-cal-grid-wrap');
+  if (!wrap) return;
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const dim = new Date(workoutCalYear, workoutCalMonth + 1, 0).getDate();
+  const fdw = new Date(workoutCalYear, workoutCalMonth, 1).getDay();
+  const now = new Date();
+  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+  let cells = '';
+  for (let i = 0; i < fdw; i++) cells += '<div></div>';
+  for (let d = 1; d <= dim; d++) {
+    const dateObj = new Date(workoutCalYear, workoutCalMonth, d);
+    const iso = `${workoutCalYear}-${String(workoutCalMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dayEntry = getWorkoutDayForDate(plan, dateObj);
+    const icon = dayEntry ? dayEntry.icon : '·';
+    const isToday = iso === todayISO;
+    const isSelected = iso === workoutCalSelectedDate;
+    let cellStyle = 'background:var(--card);border:1px solid var(--border);';
+    if (isToday) cellStyle = 'background:var(--gold);';
+    else if (isSelected) cellStyle = 'background:var(--card);border:1px solid var(--gold);';
+    cells += `<div onclick="selectWorkoutCalDate('${iso}')" style="aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;cursor:pointer;${cellStyle}">
+      <div style="font-size:9px;font-weight:800;${isToday ? 'color:var(--black);' : 'color:var(--muted);'}">${d}</div>
+      <div style="font-size:13px;line-height:1;">${icon}</div>
+    </div>`;
+  }
+
+  wrap.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div onclick="changeWorkoutCalMonth(-1)" style="color:var(--muted);font-size:18px;padding:4px 12px;cursor:pointer;">‹</div>
+      <div style="color:var(--white);font-size:13px;font-weight:800;letter-spacing:0.03em;">${monthNames[workoutCalMonth]} ${workoutCalYear}</div>
+      <div onclick="changeWorkoutCalMonth(1)" style="color:var(--muted);font-size:18px;padding:4px 12px;cursor:pointer;">›</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;">
+      ${['S','M','T','W','T','F','S'].map(d => `<div style="text-align:center;font-size:9px;font-weight:800;color:var(--muted);letter-spacing:0.05em;">${d}</div>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;">${cells}</div>
+  `;
+}
+
+function changeWorkoutCalMonth(delta) {
+  workoutCalMonth += delta;
+  if (workoutCalMonth < 0) { workoutCalMonth = 11; workoutCalYear--; }
+  if (workoutCalMonth > 11) { workoutCalMonth = 0; workoutCalYear++; }
   const profile = clientProfile || {};
-  const plan = profile.workout_plan;
-  if (!plan) return;
-  plan.days.forEach((_, i) => {
-    const strip = document.getElementById(`wstrip-${i}`);
-    if (!strip) return;
-    if (i === idx) {
-      strip.style.background = 'var(--gold)';
-      strip.style.border = 'none';
-      strip.querySelectorAll('div').forEach(d => d.style.color = 'var(--black)');
-    } else {
-      strip.style.background = 'var(--card)';
-      strip.style.border = '1px solid var(--border)';
-      strip.querySelectorAll('div').forEach(d => d.style.color = 'var(--muted)');
-    }
-  });
-  renderWorkoutDayDetail(idx, plan, false);
+  renderWorkoutCalendarGrid(profile.workout_plan);
+}
+
+function selectWorkoutCalDate(iso) {
+  workoutCalSelectedDate = iso;
+  const profile = clientProfile || {};
+  renderWorkoutCalendarGrid(profile.workout_plan);
+  renderWorkoutSelectedDayDetail(profile.workout_plan);
 }
 
 function toggleWorkoutDetail() {
@@ -4038,14 +4085,30 @@ function toggleWorkoutDetail() {
   chev.textContent = open ? '▼' : '▲';
 }
 
-function renderWorkoutDayDetail(idx, plan, startOpen = false) {
+function renderWorkoutSelectedDayDetail(plan) {
   const el = document.getElementById('workout-day-detail');
-  if (!el) return;
-  const day = plan.days[idx];
-  if (!day) return;
-  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  const isToday = day.day === today;
+  if (!el || !plan) return;
+  const iso = workoutCalSelectedDate;
+  const dateObj = new Date(iso + 'T12:00:00');
+  const day = getWorkoutDayForDate(plan, dateObj);
+  if (!day) { el.innerHTML = ''; return; }
+
+  const now = new Date();
+  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const isToday = iso === todayISO;
+  const dateLabel = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const warmup = day.warmup || [];
+
+  // Notes are tied to dayData, which only ever represents today's actual logged day — showing
+  // an editable notes box while browsing a past or future date would silently write today's
+  // notes under a date that isn't really loaded, so notes only appear when isToday is true.
+  const notesBlock = isToday ? `
+    <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">📝 Your Notes</div>
+      <textarea id="workout-plan-notes-input" rows="3" placeholder="Weights used, how it felt, anything for yourself or your coach..." style="width:100%;resize:vertical;font-size:13px;" onblur="saveWorkoutPlanNotes()">${dayData.workout_plan_notes||''}</textarea>
+      <div id="workout-notes-saved-indicator" style="font-size:10px;color:var(--green);margin-top:4px;opacity:0;transition:opacity 0.3s;">✓ Saved</div>
+    </div>
+  ` : `<div style="font-size:11px;color:var(--muted);margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);">📅 Previewing ${dateLabel} — notes are available on today's workout.</div>`;
 
   if (day.exercises.length === 0 && warmup.length === 0) {
     el.innerHTML = `
@@ -4053,12 +4116,9 @@ function renderWorkoutDayDetail(idx, plan, startOpen = false) {
         <div style="font-size:32px;margin-bottom:8px;">😴</div>
         <div style="font-size:15px;font-weight:800;color:var(--white);margin-bottom:4px;">${day.label}</div>
         <div style="font-size:13px;color:var(--muted);">${day.focus}</div>
+        <div style="margin-top:4px;font-size:11px;color:var(--muted);">${dateLabel}</div>
         ${isToday ? '<div style="margin-top:10px;font-size:12px;color:var(--green);font-weight:700;">✓ Today — enjoy your recovery!</div>' : ''}
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);text-align:left;">
-          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">📝 Your Notes</div>
-          <textarea id="workout-plan-notes-input" rows="3" placeholder="How you're feeling, soreness, recovery — anything for yourself or your coach..." style="width:100%;resize:vertical;font-size:13px;" onblur="saveWorkoutPlanNotes()">${dayData.workout_plan_notes||''}</textarea>
-          <div id="workout-notes-saved-indicator" style="font-size:10px;color:var(--green);margin-top:4px;opacity:0;transition:opacity 0.3s;">✓ Saved</div>
-        </div>
+        <div style="margin-top:16px;text-align:left;">${notesBlock}</div>
       </div>`;
     return;
   }
@@ -4070,19 +4130,16 @@ function renderWorkoutDayDetail(idx, plan, startOpen = false) {
           <div>
             <div style="font-size:15px;font-weight:800;color:var(--white);">${day.icon} ${day.label}</div>
             <div style="font-size:11px;color:var(--muted);margin-top:2px;">${day.focus}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:2px;">${dateLabel}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             ${isToday ? '<div style="background:var(--gold);color:var(--black);font-size:10px;font-weight:800;letter-spacing:0.06em;padding:4px 10px;border-radius:99px;">TODAY</div>' : ''}
-            <span style="color:var(--muted);font-size:12px;" id="workout-detail-chev">${startOpen ? '▲' : '▼'}</span>
+            <span style="color:var(--muted);font-size:12px;" id="workout-detail-chev">▼</span>
           </div>
         </div>
       </div>
-      <div id="workout-detail-body" style="display:${startOpen ? 'block' : 'none'};padding:14px 16px;">
-        <div style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);">
-          <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:8px;">📝 Your Notes</div>
-          <textarea id="workout-plan-notes-input" rows="3" placeholder="Weights used, how it felt, anything for yourself or your coach..." style="width:100%;resize:vertical;font-size:13px;" onblur="saveWorkoutPlanNotes()">${dayData.workout_plan_notes||''}</textarea>
-          <div id="workout-notes-saved-indicator" style="font-size:10px;color:var(--green);margin-top:4px;opacity:0;transition:opacity 0.3s;">✓ Saved</div>
-        </div>
+      <div id="workout-detail-body" style="display:none;padding:14px 16px;">
+        ${notesBlock}
         ${warmup.length ? `
           <div style="margin-bottom:14px;">
             <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;color:var(--green);margin-bottom:8px;">🔥 Warmup</div>
