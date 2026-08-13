@@ -283,6 +283,7 @@ Enable Flex Dieting for this client
   </div>
 </div>
 <div id="workout-template-preview" style="display:none;">
+  <div class="field"><label>Coach's Notes (shown to client, above their calendar)</label><textarea id="workout-coach-notes" rows="2" placeholder="e.g. Focus on form over weight this month — deload week is built into week 4."></textarea></div>
   <div style="display:flex;gap:8px;margin-bottom:14px;">
     <button id="wmode-single" onclick="setWorkoutMode('single')" class="btn btn-gold btn-sm" style="flex:1;">Single Repeating Week</button>
     <button id="wmode-multi" onclick="setWorkoutMode('multi_week')" class="btn btn-outline btn-sm" style="flex:1;">📅 Multi-Week Program</button>
@@ -897,6 +898,7 @@ function onClientSelect(){
     activeWorkoutWeekIdx=0;
     document.getElementById('workout-template-select').value=selectedClient.workout_plan.template||'';
     document.getElementById('workout-plan-name').value=selectedClient.workout_plan.name||'';
+    document.getElementById('workout-coach-notes').value=selectedClient.workout_plan.coachNotes||'';
     document.getElementById('workout-template-preview').style.display='block';
     renderWorkoutModeUI();
     renderWorkoutDays();
@@ -905,6 +907,7 @@ function onClientSelect(){
     activeWorkoutWeekIdx=0;
     document.getElementById('workout-template-select').value='';
     document.getElementById('workout-plan-name').value='';
+    document.getElementById('workout-coach-notes').value='';
     document.getElementById('workout-template-preview').style.display='none';
   }
   if(selectedClient.meal_plan || selectedClient.meal_plan_high || selectedClient.meal_plan_low){
@@ -2234,7 +2237,15 @@ function setGroupType(di, ei, type) {
   if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
 }
 
-function renderExerciseRow(ex, di, ei, isWarmup = false) {
+function moveExercise(di, ei, arr, dir) {
+  const list = activeWorkoutDays()[di][arr];
+  const targetIdx = ei + dir;
+  if (targetIdx < 0 || targetIdx >= list.length) return;
+  [list[ei], list[targetIdx]] = [list[targetIdx], list[ei]];
+  renderWorkoutDays();
+}
+
+function renderExerciseRow(ex, di, ei, isWarmup = false, total = 1) {
   const exInputStyle = `font-size:12px;padding:6px 8px;background:var(--dark);border:1px solid var(--border);border-radius:6px;color:var(--white);outline:none;width:100%;`;
   const arr = isWarmup ? 'warmup' : 'exercises';
   const group = !isWarmup ? (ex.group || 'none') : 'none';
@@ -2245,7 +2256,7 @@ function renderExerciseRow(ex, di, ei, isWarmup = false) {
 
   return `
     <div style="padding:10px 0;border-bottom:1px solid ${borderColor};${group!=='none'?`border-left:3px solid ${groupColors[group]};padding-left:10px;margin-left:-2px;`:''}">
-      <div style="display:grid;grid-template-columns:1fr 54px 62px 54px 30px;gap:6px;align-items:center;margin-bottom:6px;">
+      <div style="display:grid;grid-template-columns:1fr 54px 62px 54px 20px 30px;gap:6px;align-items:center;margin-bottom:6px;">
         <div style="display:flex;align-items:center;gap:6px;">
           ${groupBadge}
           <input type="text" value="${ex.name}" placeholder="${isWarmup ? 'e.g. Band Pull-Aparts' : 'e.g. Incline Machine Press'}" oninput="activeWorkoutDays()[${di}].${arr}[${ei}].name=this.value" style="${exInputStyle}font-weight:700;font-size:13px;">
@@ -2253,6 +2264,10 @@ function renderExerciseRow(ex, di, ei, isWarmup = false) {
         <input type="text" value="${ex.sets}" oninput="activeWorkoutDays()[${di}].${arr}[${ei}].sets=this.value" placeholder="Sets" style="${exInputStyle}text-align:center;">
         <input type="text" value="${ex.reps}" oninput="activeWorkoutDays()[${di}].${arr}[${ei}].reps=this.value" placeholder="Reps" style="${exInputStyle}text-align:center;">
         <input type="text" value="${ex.rest||'60s'}" oninput="activeWorkoutDays()[${di}].${arr}[${ei}].rest=this.value" placeholder="Rest" style="${exInputStyle}text-align:center;${group!=='none'&&ex.rest==='No rest'?'color:var(--muted);':''}">
+        <div style="display:flex;flex-direction:column;gap:0;">
+          <span onclick="moveExercise(${di},${ei},'${arr}',-1)" style="cursor:${ei===0?'default':'pointer'};color:${ei===0?'var(--border)':'var(--muted)'};font-size:9px;line-height:1;padding:2px 0;text-align:center;">▲</span>
+          <span onclick="moveExercise(${di},${ei},'${arr}',1)" style="cursor:${ei===total-1?'default':'pointer'};color:${ei===total-1?'var(--border)':'var(--muted)'};font-size:9px;line-height:1;padding:2px 0;text-align:center;">▼</span>
+        </div>
         <button onclick="${isWarmup ? `removeWarmup(${di},${ei})` : `removeExercise(${di},${ei})`}" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;padding:0;">✕</button>
       </div>
       <div style="display:flex;gap:6px;align-items:center;margin-bottom:${!isWarmup?'6px':'0'};">
@@ -2323,7 +2338,7 @@ function renderWorkoutDays() {
               <div style="font-size:10px;color:var(--muted);text-align:center;">Rest</div>
               <div></div>
             </div>
-            ${warmup.map((w, wi) => renderExerciseRow(w, di, wi, true)).join('')}
+            ${warmup.map((w, wi) => renderExerciseRow(w, di, wi, true, warmup.length)).join('')}
           ` : `<div style="font-size:12px;color:var(--muted);">No warmup added. Tap Load Defaults or Add Custom above.</div>`}
         </div>
 
@@ -2337,7 +2352,7 @@ function renderWorkoutDays() {
             <div style="font-size:10px;color:var(--muted);text-align:center;">Rest</div>
             <div></div>
           </div>
-          ${day.exercises.map((ex, ei) => renderExerciseRow(ex, di, ei, false)).join('')}
+          ${day.exercises.map((ex, ei) => renderExerciseRow(ex, di, ei, false, day.exercises.length)).join('')}
           <button onclick="addCustomExercise(${di})" style="margin-top:10px;background:none;border:1px solid var(--gold-d);color:var(--gold);border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">+ Add Custom Exercise</button>
         ` : `
           <button onclick="addCustomExercise(${di})" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%;">+ Add Exercise to Rest Day</button>
@@ -3191,6 +3206,7 @@ async function savePlan() {
         workout_plan: workoutPlan ? {
           name: document.getElementById('workout-plan-name').value || workoutPlan.name,
           template: document.getElementById('workout-template-select').value,
+          coachNotes: document.getElementById('workout-coach-notes').value.trim(),
           mode: workoutPlan.mode || 'single',
           days: workoutPlan.days,
           multiWeek: workoutPlan.mode === 'multi_week' ? workoutPlan.multiWeek : null,

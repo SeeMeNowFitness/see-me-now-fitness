@@ -4003,7 +4003,13 @@ function renderWorkoutPlan() {
       workoutCalYear = now.getFullYear();
       workoutCalSelectedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     }
-    el.innerHTML = `<div id="workout-cal-grid-wrap"></div><div id="workout-day-detail" style="margin-top:14px;"></div>`;
+    const coachNoteBlock = assignedPlan.coachNotes ? `
+      <div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-dim);border-radius:8px;padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:var(--gold);margin-bottom:4px;">💬 Note from your coach</div>
+        <div style="font-size:13px;color:var(--white);line-height:1.5;white-space:pre-line;">${assignedPlan.coachNotes}</div>
+      </div>
+    ` : '';
+    el.innerHTML = `${coachNoteBlock}<div id="workout-cal-grid-wrap"></div><div id="workout-day-detail" style="margin-top:14px;"></div>`;
     renderWorkoutCalendarGrid(assignedPlan);
     renderWorkoutSelectedDayDetail(assignedPlan);
     return;
