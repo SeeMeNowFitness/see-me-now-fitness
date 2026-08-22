@@ -256,6 +256,39 @@ Enable Flex Dieting for this client
 </div>
 </div>
 
+<!-- 6B. Low-Sodium Flex Meal Options (separate from standard Flex Meal Options above) -->
+<div class="section">
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<h3 style="margin-bottom:0;">6B. Low-Sodium Flex Meal Options <span style="font-size:11px;font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">(For clients with sodium restrictions — 1,500mg/day or below)</span></h3>
+<span id="ls-flex-collapse-btn" onclick="toggleLowSodiumFlexCollapse()" style="display:none;cursor:pointer;color:var(--muted);font-size:14px;padding:4px 8px;">▲</span>
+</div>
+<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;margin-top:12px;">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:700;color:var(--white);">
+<input type="checkbox" id="ls-flex-enabled" onchange="toggleLowSodiumFlexSection()" style="width:18px;height:18px;accent-color:var(--gold);cursor:pointer;">
+Enable Low-Sodium Flex Options for this client
+</label>
+</div>
+<div id="ls-flex-section" style="display:none;">
+<div class="field" style="margin-bottom:16px;">
+<label>Client-Specific Notes</label>
+<textarea id="ls-flex-notes" rows="3" placeholder="e.g. Cardiologist recommended max 1,500mg/day due to hypertension. Also avoids processed/cured meats per doctor's note." oninput="lowSodiumFlexNotesChanged()"></textarea>
+</div>
+<div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold-d);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--gold);line-height:1.7;">
+<strong>Client will see this instruction:</strong><br>
+<span style="color:var(--white);">⭐ Choose ONE option below to replace ONE meal on ONE day of the weekend.<br>
+✅ Replace your planned meal — don't add this on top of your nutrition plan.<br>
+🧂 These are lower-sodium swaps, not guaranteed exact totals — ask staff about no-salt-added prep where you can.<br>
+🥤 Stick to water or zero-calorie drinks.</span>
+</div>
+<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Add lower-sodium restaurant flex options below. These show separately in the client's My Plan tab, alongside their standard flex options if both are enabled.</div>
+<div id="ls-flex-meals-container"></div>
+<div style="margin-top:10px;display:flex;gap:8px;">
+<button class="btn btn-outline btn-sm" onclick="addLowSodiumFlexMealRow()">+ Add Restaurant Option</button>
+<button class="btn btn-outline btn-sm" onclick="loadDefaultLowSodiumFlexMeals()">Load SMN Low-Sodium Defaults</button>
+</div>
+</div>
+</div>
+
 <!-- 7. Workout Plan -->
 <div class="section">
 <h3>7. Workout Plan</h3>
@@ -353,13 +386,6 @@ Enable Peak Week Protocol for this client
 <div id="rd-builder-weeks"></div>
 </div>
 
-<!-- Save -->
-<div class="btn-row">
-<button class="btn btn-gold" onclick="savePlan()">💾 Save Plan to Client</button>
-<button class="btn btn-outline" onclick="clearPlan()">Clear All</button>
-<span class="save-status" id="save-status" style="display:none;"></span>
-</div>
-
 <!-- BLUEPRINT FOODS (Global — applies to all clients) -->
 <div style="margin-top:32px;padding-top:24px;border-top:2px solid var(--border);">
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
@@ -407,6 +433,13 @@ Enable Peak Week Protocol for this client
   </div>
   <div id="supp-db-save-status" style="display:none;font-size:13px;font-weight:700;color:var(--green);margin-top:10px;"></div>
 </div>
+</div>
+
+<!-- Save -->
+<div class="btn-row" style="margin-top:32px;padding-top:24px;border-top:2px solid var(--border);">
+<button class="btn btn-gold" onclick="savePlan()">💾 Save Plan to Client</button>
+<button class="btn btn-outline" onclick="clearPlan()">Clear All</button>
+<span class="save-status" id="save-status" style="display:none;"></span>
 </div>
 
 </div>
@@ -869,6 +902,9 @@ function onClientSelect(){
   // Load flex meals
   if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;flexSectionCollapsed=true;document.getElementById('flex-section').style.display='none';document.getElementById('flex-collapse-btn').style.display='block';document.getElementById('flex-collapse-btn').textContent='▼';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));flexCategoryInitialized=false;openFlexCategory=null;renderFlexMeals();}
   else{document.getElementById('flex-enabled').checked=false;flexEnabled=false;flexSectionCollapsed=false;document.getElementById('flex-section').style.display='none';document.getElementById('flex-collapse-btn').style.display='none';flexMeals=[];flexCategoryInitialized=false;openFlexCategory=null;}
+  // Load low-sodium flex meals (separate from standard flex meals above)
+  if(selectedClient.low_sodium_flex_enabled){document.getElementById('ls-flex-enabled').checked=true;lowSodiumFlexEnabled=true;lowSodiumFlexSectionCollapsed=true;document.getElementById('ls-flex-section').style.display='none';document.getElementById('ls-flex-collapse-btn').style.display='block';document.getElementById('ls-flex-collapse-btn').textContent='▼';document.getElementById('ls-flex-notes').value=selectedClient.low_sodium_flex_notes||'';lowSodiumFlexMeals=(selectedClient.low_sodium_flex_meals||[]).map(m=>({...m}));lowSodiumFlexCategoryInitialized=false;openLowSodiumFlexCategory=null;renderLowSodiumFlexMeals();}
+  else{document.getElementById('ls-flex-enabled').checked=false;lowSodiumFlexEnabled=false;lowSodiumFlexSectionCollapsed=false;document.getElementById('ls-flex-section').style.display='none';document.getElementById('ls-flex-collapse-btn').style.display='none';document.getElementById('ls-flex-notes').value='';lowSodiumFlexMeals=[];lowSodiumFlexCategoryInitialized=false;openLowSodiumFlexCategory=null;}
   // Load peak week
   if(selectedClient.peak_week?.enabled){
     document.getElementById('peak-enabled').checked=true;
@@ -895,7 +931,7 @@ function onClientSelect(){
   // Load workout plan
   if(selectedClient.workout_plan){
     workoutPlan=JSON.parse(JSON.stringify(selectedClient.workout_plan));
-    activeWorkoutWeekIdx=0;
+    activeWorkoutWeekIdx=0;openWorkoutDays=new Set();
     document.getElementById('workout-template-select').value=selectedClient.workout_plan.template||'';
     document.getElementById('workout-plan-name').value=selectedClient.workout_plan.name||'';
     document.getElementById('workout-coach-notes').value=selectedClient.workout_plan.coachNotes||'';
@@ -904,7 +940,7 @@ function onClientSelect(){
     renderWorkoutDays();
   } else {
     workoutPlan=null;
-    activeWorkoutWeekIdx=0;
+    activeWorkoutWeekIdx=0;openWorkoutDays=new Set();
     document.getElementById('workout-template-select').value='';
     document.getElementById('workout-plan-name').value='';
     document.getElementById('workout-coach-notes').value='';
@@ -2182,7 +2218,7 @@ function addCustomExercise(di) {
   activeWorkoutDays()[di].exercises.push({ name: '', sets: '3', reps: '10-12', rest: '60s', tip: '', custom: true });
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
-  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+  openWorkoutDays.add(di); if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
 }
 
 function removeExercise(di, ei) {
@@ -2190,7 +2226,7 @@ function removeExercise(di, ei) {
   activeWorkoutDays()[di].exercises.splice(ei, 1);
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
-  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+  openWorkoutDays.add(di); if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
 }
 
 function addCustomWarmup(di) {
@@ -2199,7 +2235,7 @@ function addCustomWarmup(di) {
   activeWorkoutDays()[di].warmup.push({ name: '', sets: '1', reps: '', rest: '—', tip: '', custom: true });
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
-  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+  openWorkoutDays.add(di); if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
 }
 
 function removeWarmup(di, wi) {
@@ -2207,7 +2243,7 @@ function removeWarmup(di, wi) {
   activeWorkoutDays()[di].warmup.splice(wi, 1);
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
-  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+  openWorkoutDays.add(di); if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
 }
 
 function loadDefaultWarmup(di) {
@@ -2215,7 +2251,7 @@ function loadDefaultWarmup(di) {
   activeWorkoutDays()[di].warmup = getDefaultWarmup(activeWorkoutDays()[di].focus).map(w => ({ ...w }));
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
-  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+  openWorkoutDays.add(di); if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
 }
 
 function setGroupType(di, ei, type) {
@@ -2234,7 +2270,7 @@ function setGroupType(di, ei, type) {
   }
   renderWorkoutDays();
   const body = document.getElementById(`wday-body-${di}`);
-  if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
+  openWorkoutDays.add(di); if (body) { body.style.display = 'block'; document.getElementById(`wday-chev-${di}`).textContent = '▲'; }
 }
 
 function moveExercise(di, ei, arr, dir) {
@@ -2304,10 +2340,10 @@ function renderWorkoutDays() {
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
           <span style="font-size:11px;color:var(--gold);font-weight:700;">${isRest ? 'Rest' : day.exercises.length + ' exercises'}</span>
-          <span style="color:var(--muted);font-size:12px;" id="wday-chev-${di}">▼</span>
+          <span style="color:var(--muted);font-size:12px;" id="wday-chev-${di}">${openWorkoutDays.has(di) ? '▲' : '▼'}</span>
         </div>
       </div>
-      <div id="wday-body-${di}" style="display:none;padding:14px 16px;">
+      <div id="wday-body-${di}" style="display:${openWorkoutDays.has(di) ? 'block' : 'none'};padding:14px 16px;">
         <div class="grid-2" style="margin-bottom:14px;">
           <div class="field" style="margin-bottom:0;">
             <label>Day Label (shown to client)</label>
@@ -2362,12 +2398,15 @@ function renderWorkoutDays() {
   }).join('');
 }
 
+let openWorkoutDays = new Set();
 function toggleWDay(di) {
+  if (openWorkoutDays.has(di)) openWorkoutDays.delete(di);
+  else openWorkoutDays.add(di);
   const body = document.getElementById(`wday-body-${di}`);
   const chev = document.getElementById(`wday-chev-${di}`);
-  const open = body.style.display === 'block';
-  body.style.display = open ? 'none' : 'block';
-  chev.textContent = open ? '▼' : '▲';
+  const open = openWorkoutDays.has(di);
+  body.style.display = open ? 'block' : 'none';
+  chev.textContent = open ? '▲' : '▼';
 }
 
 // ── SUPPLEMENTS DATABASE ──
@@ -3056,6 +3095,22 @@ const DEFAULT_FLEX_MEALS = [
 ];
 const FLEX_CATEGORIES = ["Fast Food", "Mexican", "Pizza", "Asian", "Breakfast", "Grocery Store", "Other"];
 
+// Directional lower-sodium swaps — genuine sodium content varies by location/prep, so these
+// lean on behavior (skip the sauce, dressing on the side, no cured meats) rather than claiming
+// precise numbers we can't verify per-location. The section-level notice reinforces this to
+// both coach and client.
+const LOW_SODIUM_FLEX_MEALS = [
+  { category: "Fast Food", restaurant: "Chick-fil-A", meal: "Grilled Chicken Sandwich, no bun sauce + Fruit Cup", notes: "Skip the bun sauce — it's a notable sodium source; ask for the chicken plain" },
+  { category: "Fast Food", restaurant: "Chick-fil-A", meal: "8ct Grilled Nuggets + Side Salad, dressing on the side (use sparingly)", notes: "Skip the Kale Crunch dressing — it's salted; plain greens are the lower-sodium base" },
+  { category: "Fast Food", restaurant: "Wendy's", meal: "Grilled Chicken Sandwich, no cheese or sauce + Apple Slices", notes: "Apple slices instead of fries; skip cheese, which adds sodium on top of the bread and chicken" },
+  { category: "Mexican", restaurant: "Chipotle", meal: "Chicken Salad Bowl (lettuce base) + Fajita Veggies + Fresh Tomato Salsa", notes: "Skip queso, guac, and rice — all salted in prep; ask if a no-salt option exists for rice/beans" },
+  { category: "Pizza", restaurant: "MOD Pizza / build-your-own", meal: "Thin Crust + Grilled Chicken + Fresh Veggies, light cheese, no cured meats", notes: "Skip pepperoni, bacon, and olives — cured or pickled toppings are the biggest sodium spike on pizza" },
+  { category: "Asian", restaurant: "Any Asian restaurant", meal: "Steamed (not stir-fried) Chicken or Tofu + Steamed Rice + Steamed Vegetables, sauce on the side", notes: "Ask for no soy sauce or MSG in the cooking; use any sauce sparingly or skip it" },
+  { category: "Breakfast", restaurant: "Any diner/breakfast spot", meal: "Eggs (plain, no added salt) + Fresh Fruit + Plain Oatmeal", notes: "Skip bacon, sausage, and instant oatmeal packets — all high in sodium" },
+  { category: "Grocery Store", restaurant: "Any grocery store", meal: "Plain Grilled/Baked Chicken Breast + Fresh or Frozen Vegetables (no sauce packet) + Fresh Fruit", notes: "Check labels — canned vegetables and pre-seasoned/marinated proteins are common hidden sodium sources" },
+  { category: "Other", restaurant: "Any rotisserie counter", meal: "Rotisserie Chicken, skin removed + Steamed Vegetables + Plain Rice or Potato", notes: "Rotisserie seasoning is concentrated in the skin and often high sodium — removing it helps meaningfully" },
+];
+
 function toggleFlexSection() {
   flexEnabled = document.getElementById('flex-enabled').checked;
   // Collapse is only meaningful once flex dieting is on — reset to expanded each time it's
@@ -3148,6 +3203,101 @@ function renderFlexMeals() {
   `).join('');
 }
 
+// ── LOW-SODIUM FLEX MEALS (separate system — see Section 6B) ──
+// Deliberately duplicated rather than generalized from the standard flex functions above, so
+// changes to one system can never accidentally affect the other.
+let lowSodiumFlexEnabled = false;
+let lowSodiumFlexMeals = [];
+let lowSodiumFlexSectionCollapsed = false;
+
+function toggleLowSodiumFlexSection() {
+  lowSodiumFlexEnabled = document.getElementById('ls-flex-enabled').checked;
+  lowSodiumFlexSectionCollapsed = false;
+  document.getElementById('ls-flex-section').style.display = lowSodiumFlexEnabled ? 'block' : 'none';
+  document.getElementById('ls-flex-collapse-btn').style.display = lowSodiumFlexEnabled ? 'block' : 'none';
+  document.getElementById('ls-flex-collapse-btn').textContent = '▲';
+  if (lowSodiumFlexEnabled && lowSodiumFlexMeals.length === 0) loadDefaultLowSodiumFlexMeals();
+}
+
+function toggleLowSodiumFlexCollapse() {
+  lowSodiumFlexSectionCollapsed = !lowSodiumFlexSectionCollapsed;
+  document.getElementById('ls-flex-section').style.display = lowSodiumFlexSectionCollapsed ? 'none' : 'block';
+  document.getElementById('ls-flex-collapse-btn').textContent = lowSodiumFlexSectionCollapsed ? '▼' : '▲';
+}
+
+function lowSodiumFlexNotesChanged() {
+  // No-op hook — the textarea's current value is read directly at save time in savePlan().
+  // Exists so the textarea always has a valid oninput target even if that changes later.
+}
+
+function loadDefaultLowSodiumFlexMeals() {
+  lowSodiumFlexMeals = LOW_SODIUM_FLEX_MEALS.map(m => ({ ...m }));
+  renderLowSodiumFlexMeals();
+}
+
+function addLowSodiumFlexMealRow() {
+  lowSodiumFlexMeals.push({ category: 'Fast Food', restaurant: '', meal: '', notes: '' });
+  renderLowSodiumFlexMeals();
+}
+
+function removeLowSodiumFlexMeal(i) {
+  lowSodiumFlexMeals.splice(i, 1);
+  renderLowSodiumFlexMeals();
+}
+
+let openLowSodiumFlexCategory = null;
+let lowSodiumFlexCategoryInitialized = false;
+
+function toggleLowSodiumFlexCategory(cat) {
+  openLowSodiumFlexCategory = (openLowSodiumFlexCategory === cat) ? null : cat;
+  renderLowSodiumFlexMeals();
+}
+
+function renderLowSodiumFlexMeals() {
+  const el = document.getElementById('ls-flex-meals-container');
+  if (!lowSodiumFlexMeals.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;">No low-sodium flex meals added. Use buttons below.</div>';
+    return;
+  }
+  const grouped = {};
+  lowSodiumFlexMeals.forEach((m, i) => {
+    const cat = m.category || 'Other';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push({ ...m, _idx: i });
+  });
+  const orderedCats = [...FLEX_CATEGORIES.filter(c => grouped[c]), ...Object.keys(grouped).filter(c => !FLEX_CATEGORIES.includes(c))];
+  if (!lowSodiumFlexCategoryInitialized) { openLowSodiumFlexCategory = orderedCats[0]; lowSodiumFlexCategoryInitialized = true; }
+
+  el.innerHTML = orderedCats.map(cat => `
+    <div style="background:var(--black);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;overflow:hidden;">
+      <div onclick="toggleLowSodiumFlexCategory('${cat}')" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;cursor:pointer;background:var(--dark);">
+        <span style="font-size:12px;font-weight:700;color:var(--white);">${cat} (${grouped[cat].length})</span>
+        <span style="color:var(--muted);font-size:12px;">${openLowSodiumFlexCategory===cat?'▲':'▼'}</span>
+      </div>
+      <div style="display:${openLowSodiumFlexCategory===cat?'block':'none'};padding:10px 12px;">
+        <div class="flex-meal-row" style="margin-bottom:4px;">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);">Category</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);">Restaurant</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);">Meal Option</div>
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--muted);">Notes</div>
+          <div></div>
+        </div>
+        ${grouped[cat].map(m => `
+          <div class="flex-meal-row">
+            <select onchange="lowSodiumFlexMeals[${m._idx}].category=this.value;renderLowSodiumFlexMeals();" style="padding:8px 6px;font-size:11px;background:var(--black);border:1px solid var(--border);border-radius:8px;color:var(--white);">
+              ${FLEX_CATEGORIES.map(c => `<option value="${c}" ${c===cat?'selected':''}>${c}</option>`).join('')}
+            </select>
+            <input type="text" value="${m.restaurant}" placeholder="e.g. Chick-fil-A" oninput="lowSodiumFlexMeals[${m._idx}].restaurant=this.value">
+            <input type="text" value="${m.meal}" placeholder="e.g. Grilled Chicken, no sauce" oninput="lowSodiumFlexMeals[${m._idx}].meal=this.value">
+            <input type="text" value="${m.notes}" placeholder="e.g. Skip the bun sauce" oninput="lowSodiumFlexMeals[${m._idx}].notes=this.value">
+            <button class="del-btn" onclick="removeLowSodiumFlexMeal(${m._idx})">✕</button>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+}
+
 // ── SAVE (updated to include flex meals) ──
 async function savePlan() {
   if (!selectedClient) { alert('Please select a client first.'); return; }
@@ -3195,6 +3345,9 @@ async function savePlan() {
         blood_type: document.getElementById('blood-type-select').value,
         flex_enabled: flexEnabled,
         flex_meals: flexEnabled ? flexMeals.filter(m => m.restaurant || m.meal) : [],
+        low_sodium_flex_enabled: lowSodiumFlexEnabled,
+        low_sodium_flex_notes: document.getElementById('ls-flex-notes').value.trim(),
+        low_sodium_flex_meals: lowSodiumFlexEnabled ? lowSodiumFlexMeals.filter(m => m.restaurant || m.meal) : [],
         peak_week: peakWeek.enabled ? {
           enabled: true,
           days: peakWeek.days,
