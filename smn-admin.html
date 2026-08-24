@@ -122,8 +122,15 @@ a{color:var(--gold);}
 </div>
 <div id="missed-today-list" style="margin-top:10px;"></div>
 </div>
-<input type="text" id="client-search-input" placeholder="🔍 Search clients by name…" oninput="filterClientList()" style="width:100%;padding:12px 14px;font-size:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;margin-bottom:14px;">
+<input type="text" id="client-search-input" placeholder="🔍 Search clients by name…" oninput="filterClientList()" style="width:100%;padding:12px 14px;font-size:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--white);outline:none;margin-bottom:10px;">
+<div id="archive-view-toggle" onclick="toggleArchivedView()" style="cursor:pointer;font-size:12px;color:var(--muted);margin-bottom:14px;text-decoration:underline;">🗄 View Archived Clients</div>
+<div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;padding:10px 0;border-top:1px solid var(--border);" onclick="toggleClientListCollapse()">
+<div style="font-size:13px;font-weight:800;color:var(--white);" id="client-list-summary">👥 All Clients</div>
+<span id="client-list-chev" style="color:var(--muted);font-size:12px;">▼</span>
+</div>
+<div id="clients-list-wrap" style="display:none;margin-top:10px;">
 <div id="clients-list"><div style="color:var(--muted);font-size:14px;padding:20px;">Loading clients…</div></div>
+</div>
 </div>
 
 <!-- EDIT CLIENT -->
@@ -296,7 +303,75 @@ a{color:var(--gold);}
 </div>
 
 <script>
-let db=null,allClients=[],selectedClientId=null;
+let db=null,allClients=[],selectedClientId=null,showArchivedView=false;
+
+let clientListCollapsed = true;
+
+function toggleClientListCollapse(){
+  clientListCollapsed = !clientListCollapsed;
+  document.getElementById('clients-list-wrap').style.display = clientListCollapsed ? 'none' : 'block';
+  document.getElementById('client-list-chev').textContent = clientListCollapsed ? '▼' : '▲';
+}
+
+function renderClientListHeaderLabel(count){
+  const label = document.getElementById('client-list-summary');
+  if (!label) return;
+  label.textContent = showArchivedView ? `🗄 Archived Clients (${count})` : `👥 All Clients (${count})`;
+}
+
+function getVisibleClients(){
+  return allClients.filter(c => !!c.archived === showArchivedView);
+}
+
+function renderArchiveToggleLabel(){
+  const btn=document.getElementById('archive-view-toggle');
+  if(!btn)return;
+  const archivedCount=allClients.filter(c=>c.archived).length;
+  btn.textContent=showArchivedView?'← Back to Active Clients':`🗄 View Archived Clients${archivedCount?` (${archivedCount})`:''}`;
+}
+
+function toggleArchivedView(){
+  showArchivedView=!showArchivedView;
+  document.getElementById('client-search-input').value='';
+  if(clientListCollapsed) toggleClientListCollapse();
+  renderClientList(getVisibleClients());
+  renderArchiveToggleLabel();
+}
+
+async function archiveClient(clientId,clientName){
+  if(!db)return alert('Firebase not connected.');
+  if(!confirm(`Archive ${clientName}? They'll be hidden from your active client list, but nothing is deleted — you can restore them anytime from "View Archived Clients."`))return;
+  try{
+    await db.collection('clients').doc(clientId).update({archived:true,archived_at:new Date().toISOString()});
+    const idx=allClients.findIndex(c=>c.id===clientId);
+    if(idx>=0)allClients[idx].archived=true;
+    if(selectedClientId===clientId){
+      selectedClientId=null;
+      switchAdminTab('clients',document.querySelectorAll('.admin-tab')[0]);
+    }
+    renderClientList(getVisibleClients());
+    renderArchiveToggleLabel();
+    const msg=document.createElement('div');
+    msg.textContent=`🗄 ${clientName} archived`;
+    msg.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #c9a84c;color:#c9a84c;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';
+    document.body.appendChild(msg);setTimeout(()=>msg.remove(),2500);
+  }catch(e){alert('Could not archive client.');}
+}
+
+async function unarchiveClient(clientId,clientName){
+  if(!db)return alert('Firebase not connected.');
+  try{
+    await db.collection('clients').doc(clientId).update({archived:false});
+    const idx=allClients.findIndex(c=>c.id===clientId);
+    if(idx>=0)allClients[idx].archived=false;
+    renderClientList(getVisibleClients());
+    renderArchiveToggleLabel();
+    const msg=document.createElement('div');
+    msg.textContent=`✓ ${clientName} restored to active clients`;
+    msg.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#181818;border:1px solid #4caf76;color:#4caf76;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;z-index:999;white-space:nowrap;';
+    document.body.appendChild(msg);setTimeout(()=>msg.remove(),2500);
+  }catch(e){alert('Could not restore client.');}
+}
 
 // Initialize Firebase once, immediately — must happen before any firebase.auth() calls below
 try{ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.firestore(); }
@@ -341,7 +416,7 @@ async function initAdmin(){
 
 async function loadClients(){
   if(!db){renderClientList([{id:'demo1',name:'Demo Client',tier:'lifestyle',email:'demo@example.com'},{id:'demo2',name:'Contest Athlete',tier:'contest_prep',email:'athlete@example.com'}]);return;}
-  try{const snap=await db.collection('clients').get();allClients=snap.docs.map(d=>({id:d.id,...d.data()}));renderClientList(allClients);checkTodayActivity();}
+  try{const snap=await db.collection('clients').get();allClients=snap.docs.map(d=>({id:d.id,...d.data()}));renderClientList(getVisibleClients());renderArchiveToggleLabel();checkTodayActivity();}
   catch(e){document.getElementById('clients-list').innerHTML='<div style="color:var(--red);">Could not load clients.</div>';}
 }
 
@@ -352,10 +427,12 @@ async function loadClients(){
 let missedTodayPanelOpen = false;
 async function checkTodayActivity(){
   if(!db || !allClients.length) return;
+  const activeClients=allClients.filter(c=>!c.archived);
+  if(!activeClients.length) return;
   const now=new Date();
   const todayISO=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   try{
-    const results=await Promise.all(allClients.map(async c=>{
+    const results=await Promise.all(activeClients.map(async c=>{
       try{
         const doc=await db.collection('clients').doc(c.id).collection('days').doc(todayISO).get();
         const d=doc.exists?doc.data():null;
@@ -398,13 +475,16 @@ function selectClientById(id){
 
 function filterClientList(){
   const q=(document.getElementById('client-search-input')?.value||'').trim().toLowerCase();
-  if(!q){renderClientList(allClients);return;}
-  const filtered=allClients.filter(c=>(c.name||'').toLowerCase().includes(q));
+  if(q && clientListCollapsed) toggleClientListCollapse();
+  const base=getVisibleClients();
+  if(!q){renderClientList(base);return;}
+  const filtered=base.filter(c=>(c.name||'').toLowerCase().includes(q));
   renderClientList(filtered);
 }
 function renderClientList(clients){
   const el=document.getElementById('clients-list');
-  if(!clients.length){el.innerHTML='<div style="color:var(--muted);font-size:14px;padding:20px;">No clients yet. Use + New Client to add one.</div>';return;}
+  renderClientListHeaderLabel(clients.length);
+  if(!clients.length){el.innerHTML=showArchivedView?'<div style="color:var(--muted);font-size:14px;padding:20px;">No archived clients.</div>':'<div style="color:var(--muted);font-size:14px;padding:20px;">No clients yet. Use + New Client to add one.</div>';return;}
   const tc={contest_prep:'tier-contest',lifestyle:'tier-lifestyle',inperson:'tier-inperson',tracker:'tier-tracker'};
   const tn={contest_prep:'Contest Prep',lifestyle:'Lifestyle',inperson:'In-Person',tracker:'Tracker'};
   el.innerHTML=clients.map(c=>`
@@ -417,11 +497,16 @@ function renderClientList(clients){
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
         <span class="tier-pill ${tc[c.tier]||'tier-tracker'}">${tn[c.tier]||c.tier}</span>
+        ${showArchivedView ? `
+        <button class="btn btn-sm" style="background:rgba(76,175,118,0.15);color:var(--green);border:1px solid rgba(76,175,118,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();unarchiveClient('${c.id}','${(c.name||'').replace(/'/g,"\\'")}')">↺ Restore</button>
+        ` : `
         <div style="display:flex;gap:6px;">
           <button class="btn btn-sm" style="background:rgba(76,175,118,0.15);color:var(--green);border:1px solid rgba(76,175,118,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();incrementCheckin('${c.id}','${c.name}')">✓ Check In</button>
           <button class="btn btn-sm" style="background:rgba(224,92,92,0.1);color:var(--red);border:1px solid rgba(224,92,92,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();resetCheckin('${c.id}','${c.name}')">↺ Reset</button>
         </div>
         <button class="btn btn-sm" style="background:rgba(201,168,76,0.1);color:var(--gold);border:1px solid rgba(201,168,76,0.3);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();goToProgress('${c.id}')">📈 Progress</button>
+        <button class="btn btn-sm" style="background:rgba(150,150,150,0.1);color:var(--muted);border:1px solid var(--border);font-size:11px;padding:5px 10px;" onclick="event.stopPropagation();archiveClient('${c.id}','${(c.name||'').replace(/'/g,"\\'")}')">🗄 Archive</button>
+        `}
       </div>
     </div>
   `).join('');
