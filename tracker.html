@@ -654,6 +654,19 @@ select option{background:var(--dark);}
 </div>
 </div>
 
+<!-- LOW-SODIUM FLEX MEALS SECTION (separate from Weekend Flex Meal above) -->
+<div id="plan-ls-flex-section" style="display:none;">
+<div style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;">
+<div onclick="togglePlanSection('lsflexmeal')" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer;">
+<div style="font-family:'Anton',sans-serif;font-size:12px;font-weight:400;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);">🧂 Low-Sodium Flex Meal</div>
+<span style="color:var(--muted);font-size:12px;" id="plan-section-chev-lsflexmeal">▼</span>
+</div>
+<div id="plan-section-body-lsflexmeal" style="display:none;padding:0 16px 16px;">
+<div id="plan-ls-flex-content"></div>
+</div>
+</div>
+</div>
+
 </div>
 </div><!-- /content -->
 
@@ -3845,6 +3858,7 @@ function renderPlanTab() {
   renderSupplements();
   renderApprovedFoods();
   renderFlexMeals();
+  renderLowSodiumFlexMeals();
   renderPeakWeek();
 }
 
@@ -4572,6 +4586,44 @@ function renderFlexMeals() {
       <div style="font-size:12px;color:var(--white);margin-bottom:4px;">✅ <strong>Replace</strong> your planned meal — don't add this on top of your nutrition plan</div>
       <div style="font-size:12px;color:var(--white);margin-bottom:4px;">🥤 Stick to water or zero-calorie drinks</div>
       <div style="font-size:12px;color:var(--white);">🍟 Keep modifications to a minimum so portions stay close to plan</div>
+    </div>
+    ${cats.map(cat => `
+      <div style="margin-bottom:14px;">
+        <div style="font-family:'Anton',sans-serif;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;">${cat}</div>
+        ${grouped[cat].map(m => `
+          <div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+            <div style="font-weight:700;color:var(--gold);font-size:13px;margin-bottom:2px;">${m.restaurant}</div>
+            <div style="color:var(--white);font-size:13px;line-height:1.5;">${m.meal}</div>
+            ${m.notes ? `<div style="color:var(--muted);font-size:11px;margin-top:4px;">${m.notes}</div>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `).join('')}
+    <div style="margin-top:12px;padding:10px 14px;background:rgba(201,168,76,0.06);border-radius:8px;font-size:11px;color:var(--muted);line-height:1.7;">
+      ⚠️ <strong style="color:var(--gold);">Reminder:</strong> This is a weekly treat, not a daily option. Stay disciplined the rest of the week and results will follow. 💪
+    </div>
+  `;
+}
+
+function renderLowSodiumFlexMeals() {
+  const profile = clientProfile || {};
+  const section = document.getElementById('plan-ls-flex-section');
+  const el = document.getElementById('plan-ls-flex-content');
+  if (!profile.low_sodium_flex_enabled || !profile.low_sodium_flex_meals?.length) { section.style.display = 'none'; return; }
+  section.style.display = 'block';
+  const grouped = {};
+  profile.low_sodium_flex_meals.forEach(m => {
+    const cat = m.category || 'Other';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(m);
+  });
+  const cats = Object.keys(grouped);
+  el.innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.04));border:1px solid var(--gold-dim);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;">
+      <div style="font-size:13px;font-weight:800;color:var(--gold);margin-bottom:8px;">🧂 Choose ONE option below to replace ONE meal on ONE day of the weekend</div>
+      <div style="font-size:12px;color:var(--white);margin-bottom:4px;">✅ <strong>Replace</strong> your planned meal — don't add this on top of your nutrition plan</div>
+      <div style="font-size:12px;color:var(--white);margin-bottom:4px;">🧂 These are lower-sodium swaps, not guaranteed exact totals — ask staff about no-salt-added prep where you can</div>
+      <div style="font-size:12px;color:var(--white);">🥤 Stick to water or zero-calorie drinks</div>
     </div>
     ${cats.map(cat => `
       <div style="margin-bottom:14px;">
