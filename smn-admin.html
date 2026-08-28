@@ -224,7 +224,10 @@ a{color:var(--gold);}
 <div id="tracker-link-section" style="display:none;margin-top:20px;">
 <div style="font-size:12px;color:var(--muted);margin-bottom:4px;">Share this link with client:</div>
 <div class="tracker-link-box" id="tracker-link-display"></div>
-<button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="copyTrackerLink()">Copy Link</button>
+<div style="display:flex;gap:8px;margin-top:8px;">
+<button class="btn btn-outline btn-sm" onclick="copyTrackerLink()">Copy Link</button>
+<button class="btn btn-outline btn-sm" onclick="openTrackerLink()">↗ Open Link</button>
+</div>
 </div>
 </div>
 
@@ -959,6 +962,7 @@ async function createNewClient(){
 }
 
 function copyTrackerLink(){const link=document.getElementById('tracker-link-display').textContent;navigator.clipboard.writeText(link).then(()=>alert('Link copied!'));}
+function openTrackerLink(){const link=document.getElementById('tracker-link-display').textContent;if(link)window.open(link,'_blank');}
 
 async function loadBlueprintMeals(){
   const el=document.getElementById('blueprint-meals-list');
