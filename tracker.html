@@ -1043,7 +1043,7 @@ applyStaticTranslations();
 document.getElementById('weigh-food-note').style.display=tier==='contest_prep'?'block':'none';
 const wfn=document.getElementById('weigh-food-note-inner');
 if(wfn) wfn.innerHTML=clientProfile?.language==='es'?'⚠️ <strong>Preparación de Competencia:</strong> Pesa todo. Sin estimaciones.':'⚠️ <strong>Contest Prep:</strong> Weigh everything. No estimates.';
-document.getElementById('contest-countdown').style.display=tier==='contest_prep'?'block':'none';
+document.getElementById('contest-countdown').style.display=((tier==='contest_prep'||tier==='inperson')&&clientProfile.show_date)?'block':'none';
 document.getElementById('session-countdown').style.display=tier==='inperson'?'block':'none';
 document.getElementById('checkin-streak').style.display='block';
 // Self-serve tracker-tier and demo clients can set their own macros; coached clients
@@ -1056,7 +1056,7 @@ document.getElementById('upsell-block').style.display='none';
 const zzt=document.getElementById('zigzag-toggle');if(zzt)zzt.style.display=(clientProfile.tracking_method==='zigzag' && !clientProfile.peak_week?.enabled)?'block':'none';
 if(clientProfile.tracking_method==='zigzag'){const hd=clientProfile.high_days_per_week||2;const ld=7-hd;const dc=document.getElementById('zigzag-day-count');if(dc)dc.textContent=`🔥 ${hd} High Day${hd!==1?'s':''} · ❄️ ${ld} Low Day${ld!==1?'s':''} per week`;}
 const sb=document.getElementById('setup-banner');if(sb)sb.style.display=(!CLIENT_ID||CLIENT_ID==='demo')?'block':'none';
-if(tier==='contest_prep'&&clientProfile.show_date){
+if((tier==='contest_prep'||tier==='inperson')&&clientProfile.show_date){
   const now=new Date();
   const showDate=new Date(clientProfile.show_date);
   const totalDays=Math.max(0,Math.ceil((showDate-now)/86400000));
@@ -1066,6 +1066,8 @@ if(tier==='contest_prep'&&clientProfile.show_date){
   const sub=document.getElementById('show-name-label');
   const showName=(clientProfile.show_name||'Goal')+(clientProfile.federation?' · '+clientProfile.federation:'');
   const dispTier=clientProfile.competition_type||'bodybuilding';
+  const titleEl=document.getElementById('countdown-card-title');
+  if(titleEl) titleEl.textContent=(dispTier==='lifestyle'||dispTier==='goal')?'Countdown':'Show Countdown';
   if(!dispTier){
     // No countdown — hide the card
     document.getElementById('contest-countdown').style.display='none';
