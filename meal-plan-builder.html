@@ -286,6 +286,7 @@ Enable Low-Sodium Flex Options for this client
 <div style="margin-top:10px;display:flex;gap:8px;">
 <button class="btn btn-outline btn-sm" onclick="addLowSodiumFlexMealRow()">+ Add Restaurant Option</button>
 <button class="btn btn-outline btn-sm" onclick="loadDefaultLowSodiumFlexMeals()">Load SMN Low-Sodium Defaults</button>
+<button class="btn btn-outline btn-sm" onclick="loadDefaultLowSodiumPescatarianFlexMeals()">🐟 Load SMN Low-Sodium Pescatarian Defaults</button>
 </div>
 </div>
 </div>
@@ -3239,6 +3240,20 @@ const LOW_SODIUM_FLEX_MEALS = [
   { category: "Other", restaurant: "Any rotisserie counter", meal: "Rotisserie Chicken, skin removed + Steamed Vegetables + Plain Rice or Potato", notes: "Rotisserie seasoning is concentrated in the skin and often high sodium — removing it helps meaningfully" },
 ];
 
+// Same directional, behavior-based approach as LOW_SODIUM_FLEX_MEALS above, but built around
+// seafood/eggs/dairy instead of chicken — for pescatarian clients with a sodium restriction.
+const LOW_SODIUM_PESCATARIAN_FLEX_MEALS = [
+  { category: "Seafood", restaurant: "Any seafood restaurant/grill", meal: "Grilled Salmon or Mahi-Mahi + Steamed Vegetables + Baked Potato, no added salt", notes: "Ask for no seasoning blend or salt on the grill — many kitchens season generously by default" },
+  { category: "Fast Food", restaurant: "Any fast food with a fish option", meal: "Grilled (not fried/breaded) Fish Sandwich, plain + Side Salad", notes: "Most fast-food fish options are breaded and fried, which adds sodium; ask if a grilled option exists" },
+  { category: "Mexican", restaurant: "Chipotle", meal: "Shrimp Bowl (lettuce base) + Fajita Veggies + Fresh Tomato Salsa, no queso or seasoned rice", notes: "Skip queso and seasoned rice — both are salted in prep; fresh salsa is the lower-sodium topping" },
+  { category: "Asian", restaurant: "Any sushi restaurant", meal: "Sashimi or Nigiri (6-8 pieces) + Edamame + Cucumber Salad, soy sauce on the side", notes: "Use soy sauce sparingly or skip it — it's the main sodium source in sushi; avoid tempura/fried rolls" },
+  { category: "Asian", restaurant: "Any Asian restaurant", meal: "Steamed Shrimp or Tofu + Steamed Rice + Steamed Vegetables, sauce on the side", notes: "Ask for no soy sauce or MSG in the cooking; use any sauce sparingly or skip it" },
+  { category: "Breakfast", restaurant: "Any diner/breakfast spot", meal: "Eggs (plain, no added salt) + Fresh Fruit + Plain Oatmeal", notes: "Skip bacon and instant oatmeal packets — both high in sodium; if adding smoked salmon, use a small portion since it's cured" },
+  { category: "Grocery Store", restaurant: "Any grocery store", meal: "Canned Tuna or Salmon (no-salt-added) + Fresh or Frozen Vegetables + Fresh Fruit", notes: "Look for 'no salt added' on the can — regular canned tuna/salmon can be a significant sodium source" },
+  { category: "Grocery Store", restaurant: "Any grocery store", meal: "Plain Grilled/Baked Tilapia or Cod + Fresh or Frozen Vegetables (no sauce packet) + Fresh Fruit", notes: "Check labels — pre-seasoned or marinated fish is a common hidden sodium source" },
+  { category: "Other", restaurant: "Any poke restaurant", meal: "Poke Bowl — raw fish, brown rice, cucumber, edamame, light sauce", notes: "Ask for sauce on the side or go light — poke sauces (ponzu, spicy mayo) are often salted" },
+];
+
 function toggleFlexSection() {
   flexEnabled = document.getElementById('flex-enabled').checked;
   // Collapse is only meaningful once flex dieting is on — reset to expanded each time it's
@@ -3360,6 +3375,11 @@ function lowSodiumFlexNotesChanged() {
 
 function loadDefaultLowSodiumFlexMeals() {
   lowSodiumFlexMeals = LOW_SODIUM_FLEX_MEALS.map(m => ({ ...m }));
+  renderLowSodiumFlexMeals();
+}
+
+function loadDefaultLowSodiumPescatarianFlexMeals() {
+  lowSodiumFlexMeals = LOW_SODIUM_PESCATARIAN_FLEX_MEALS.map(m => ({ ...m }));
   renderLowSodiumFlexMeals();
 }
 
