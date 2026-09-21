@@ -212,6 +212,7 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <div style="display:flex;align-items:flex-end;padding-bottom:2px;gap:10px;">
 <div style="font-size:12px;color:var(--muted);" id="blood-type-desc">Showing general Blueprint approved foods.</div>
 <button class="btn btn-outline btn-sm" onclick="loadVeganPreset()" style="white-space:nowrap;">🌱 Load Vegan Preset</button>
+<button class="btn btn-outline btn-sm" onclick="loadPescatarianPreset()" style="white-space:nowrap;">🐟 Load Pescatarian Preset</button>
 </div>
 </div>
 <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
@@ -1519,6 +1520,66 @@ function loadVeganPreset(){
     fats:VEGAN_FOODS.fats.map(f=>({...f}))
   };
   document.getElementById('blood-type-desc').textContent='Showing 100% plant-based Blueprint approved foods.';
+  renderApprovedFoods();
+}
+const PESCATARIAN_FOODS={
+  protein:[
+    {name:'Salmon (cooked)',macro:'25g P / 0g C / 13g F per 100g'},
+    {name:'Tuna (cooked)',macro:'29g P / 0g C / 1g F per 100g'},
+    {name:'Tilapia (cooked)',macro:'26g P / 0g C / 3g F per 100g'},
+    {name:'Shrimp (cooked)',macro:'24g P / 0g C / 0.3g F per 100g'},
+    {name:'Cod (cooked)',macro:'23g P / 0g C / 1g F per 100g'},
+    {name:'Scallops (cooked)',macro:'21g P / 3g C / 1g F per 100g'},
+    {name:'Sardines (canned)',macro:'25g P / 0g C / 11g F per 100g'},
+    {name:'Whole Egg (large)',macro:'13g P / 1g C / 10g F per 100g'},
+    {name:'Egg White',macro:'11g P / 1g C / 0g F per 100g'},
+    {name:'Greek Yogurt (nonfat)',macro:'10g P / 4g C / 0g F per 100g'},
+    {name:'Cottage Cheese (low-fat)',macro:'11g P / 3g C / 1g F per 100g'},
+    {name:'Whey Protein Isolate',macro:'80g P / 5g C / 1g F per 100g'},
+  ],
+  carbs:[
+    {name:'White Jasmine Rice (cooked)',macro:'2g P / 28g C / 0g F per 100g'},
+    {name:'Sweet Potato (cooked)',macro:'2g P / 20g C / 0g F per 100g'},
+    {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
+    {name:'Quinoa (cooked)',macro:'4g P / 21g C / 2g F per 100g'},
+    {name:'Ezekiel Bread',macro:'15g P / 44g C / 1.5g F per 100g'},
+    {name:'Whole Wheat Pasta (cooked)',macro:'5g P / 25g C / 1g F per 100g'},
+  ],
+  vegetables:[
+    {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
+    {name:'Asparagus',macro:'2g P / 4g C / 0g F per 100g'},
+    {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
+    {name:'Zucchini',macro:'1g P / 3g C / 0g F per 100g'},
+    {name:'Bell Peppers',macro:'1g P / 6g C / 0g F per 100g'},
+    {name:'Cauliflower',macro:'2g P / 5g C / 0g F per 100g'},
+    {name:'Green Beans',macro:'2g P / 7g C / 0g F per 100g'},
+    {name:'Brussels Sprouts',macro:'3g P / 9g C / 0g F per 100g'},
+  ],
+  fruits:[
+    {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
+    {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
+    {name:'Apple',macro:'0g P / 14g C / 0g F per 100g'},
+    {name:'Strawberries',macro:'1g P / 8g C / 0g F per 100g'},
+    {name:'Orange',macro:'1g P / 12g C / 0g F per 100g'},
+  ],
+  fats:[
+    {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
+    {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
+    {name:'Almonds',macro:'21g P / 22g C / 50g F per 100g'},
+    {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
+    {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
+    {name:'Peanut Butter (natural)',macro:'25g P / 20g C / 50g F per 100g'},
+  ]
+};
+function loadPescatarianPreset(){
+  approvedFoods={
+    protein:PESCATARIAN_FOODS.protein.map(f=>({...f})),
+    carbs:PESCATARIAN_FOODS.carbs.map(f=>({...f})),
+    vegetables:PESCATARIAN_FOODS.vegetables.map(f=>({...f})),
+    fruits:PESCATARIAN_FOODS.fruits.map(f=>({...f})),
+    fats:PESCATARIAN_FOODS.fats.map(f=>({...f}))
+  };
+  document.getElementById('blood-type-desc').textContent='Showing pescatarian Blueprint approved foods — seafood, eggs & dairy, no meat or poultry.';
   renderApprovedFoods();
 }
 function initApprovedFoods(bt){approvedFoods={protein:BT_FOODS[bt].protein.map(f=>({...f})),carbs:BT_FOODS[bt].carbs.map(f=>({...f})),vegetables:(BT_FOODS[bt].vegetables||[]).map(f=>({...f})),fruits:(BT_FOODS[bt].fruits||[]).map(f=>({...f})),fats:BT_FOODS[bt].fats.map(f=>({...f}))};renderApprovedFoods();}
