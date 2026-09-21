@@ -3382,10 +3382,16 @@ function lowSodiumFlexNotesChanged() {
   // Exists so the textarea always has a valid oninput target even if that changes later.
 }
 
-// Diet Type only decides which preset "Load SMN Defaults" pulls from — it doesn't restrict what
-// the coach can type into the list by hand. Switching it does not clear an already-built list.
+// Switching Diet Type immediately swaps in the matching preset. If the coach has already
+// hand-edited or added entries, confirm first so a stray dropdown click can't silently wipe work.
 function lowSodiumDietTypeChanged() {
+  const hasContent = lowSodiumFlexMeals.some(m => m.restaurant || m.meal);
+  if (hasContent && !confirm('Switch diet type and replace the current list with the matching defaults?')) {
+    document.getElementById('ls-diet-type').value = lowSodiumDietType; // revert the dropdown
+    return;
+  }
   lowSodiumDietType = document.getElementById('ls-diet-type').value;
+  loadDefaultLowSodiumFlexMealsForType();
 }
 
 function loadDefaultLowSodiumFlexMealsForType() {
