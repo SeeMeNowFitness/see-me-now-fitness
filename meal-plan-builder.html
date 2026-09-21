@@ -308,6 +308,7 @@ Enable Low-Sodium Flex Options for this client
       <option value="wellness">Wellness</option>
       <option value="powerlifting">Powerlifting</option>
       <option value="fullbody">Full Body 3x</option>
+      <option value="lower_delts_split">5-Day Split — Lower/Delts, Back/Biceps, Chest/Tri, Upper</option>
     </select>
   </div>
   <div class="field" style="margin-bottom:0;">
@@ -480,7 +481,7 @@ const SUPP_BENEFITS={
   'CoQ10':'Supports cellular energy production and heart health. Beneficial during intense training phases.',
 };
 const DEFAULT_SUPPLEMENTS=[{name:'Whey Protein',dose:'1 scoop (25g protein)',timing:'Post Workout',benefit:'Supports muscle repair and growth after training'},{name:'Creatine Monohydrate',dose:'5g',timing:'Daily — any time',benefit:'Increases strength, power output, and muscle volume'},{name:'Multivitamin',dose:'1 tablet',timing:'With breakfast',benefit:'Fills micronutrient gaps to support overall health'},{name:'Fish Oil',dose:'2 capsules',timing:'With meals',benefit:'Reduces inflammation, supports joints and heart health'},{name:'Vitamin D3',dose:'2000 IU',timing:'With breakfast',benefit:'Supports immune function, bone health, and testosterone'},{name:'Electrolytes',dose:'1 packet or scoop',timing:'Intra-Workout',benefit:'Replaces sodium, potassium, and other minerals lost through sweat — supports hydration, performance, and reduces cramping'}];
-const TIMING_OPTIONS=['Pre Workout','Intra-Workout','Post Workout','With Largest Meal','With Meal 1','With Meal 2','With Meal 3','With Meal 4','With Meal 5','With Meal 6','With breakfast','With meals','Before bed','Daily — any time','Morning','Evening'];
+const TIMING_OPTIONS=['Pre Workout','Intra-Workout','Post Workout','With Largest Meal','With Meal 1','With Meal 2','With Meal 3','With Meal 4','With Meal 5','With Meal 6','With breakfast','With meals','Before bed','Daily — any time','Morning','Evening','As Needed'];
 
 // ── BLOOD TYPE FOODS ──
 const BT_FOODS={
@@ -2072,6 +2073,72 @@ const WORKOUT_TEMPLATES = {
         { name: 'Tricep Pushdowns', sets: 3, reps: '12-15', rest: '45s', tip: 'Arm isolation to finish the session.' },
       ]},
       { day: 'Saturday', label: 'Rest Day', icon: '😴', focus: 'Active Recovery', exercises: [] },
+      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Full Recovery', exercises: [] },
+    ]
+  },
+  lower_delts_split: {
+    name: 'Your Blueprint Training Plan',
+    days: [
+      { day: 'Monday', label: 'Lower Body + Delts', icon: '🦵', focus: 'Legs · Glutes · Delts', warmup: [
+        { name: 'Leg Swings (front/back, side/side)', sets: 2, reps: '10 each leg', rest: '—', tip: 'Dynamic hip and hamstring prep before loading the legs.' },
+        { name: 'Bodyweight Squats', sets: 2, reps: '15', rest: '—', tip: 'Prime the squat/press pattern before adding load.' },
+        { name: 'Walking Lunges', sets: 2, reps: '10 each leg', rest: '—', tip: 'Dynamic warmup for quads, glutes, and hip stability.' },
+        { name: 'Glute Bridges', sets: 2, reps: '15', rest: '—', tip: 'Activate the glutes before hip thrusts and squats.' },
+        { name: 'Band Pull-Aparts', sets: 2, reps: '20', rest: '—', tip: 'Wakes up the rear delts before the lateral raise work.' },
+      ], exercises: [
+        { name: 'Leg Curl', sets: 3, reps: '12-15', rest: '60s', tip: 'Full range of motion, control both the curl and the release.' },
+        { name: 'Leg Press or Hack Squat', sets: 4, reps: '8-10', rest: '90s', tip: 'Coach\'s choice based on the day — go with whichever feels best.' },
+        { name: 'Bulgarian Split Squat', sets: 3, reps: '10-12 each', rest: '60s', tip: 'Adjust depth and load as tolerated.' },
+        { name: 'Leg Extension', sets: 3, reps: '15-20', rest: '45s', tip: 'Controlled tempo throughout — especially through the right quad.' },
+        { name: 'Hip Thrust / Glute Movement', sets: 3, reps: '12-15', rest: '60s', tip: 'Squeeze hard at the top of every rep.' },
+        { name: 'Calf Raises', sets: 4, reps: '15-20', rest: '30s', tip: 'Full stretch at the bottom, pause at the top.' },
+        { name: 'Cable / Machine Lateral Raise', sets: 3, reps: '15-20', rest: '45s', tip: 'Lead with the elbows, control the negative.' },
+        { name: 'Rear Delt Fly', sets: 3, reps: '15-20', rest: '45s', tip: 'Light weight, strict form — feel the squeeze.' },
+      ]},
+      { day: 'Tuesday', label: 'Back + Biceps', icon: '🏋️', focus: 'Back · Rear Delts · Biceps', warmup: [
+        { name: 'Band Pull-Aparts', sets: 2, reps: '20', rest: '—', tip: 'Keep arms straight, squeeze shoulder blades together.' },
+        { name: 'Scapular Pull-Ups / Scap Retractions', sets: 2, reps: '10', rest: '—', tip: 'Teaches the shoulder blade to move before loading the lats.' },
+        { name: 'Arm Circles', sets: 2, reps: '10 each direction', rest: '—', tip: 'Loosens the shoulder joint before rowing and pulldown work.' },
+        { name: 'Cat-Cow', sets: 2, reps: '10', rest: '—', tip: 'Mobilizes the spine before bent-over and supported rows.' },
+      ], exercises: [
+        { name: 'Chest-Supported Row', sets: 4, reps: '10-12', rest: '90s', tip: 'Chest stays pinned to the pad — squeeze the shoulder blades.' },
+        { name: 'Pulldown / Pull-Up Variation', sets: 3, reps: '10-12', rest: '60s', tip: 'Drive elbows down and back, control the negative.' },
+        { name: 'Single-Arm Cable Row', sets: 3, reps: '12-15 each', rest: '60s', tip: 'Full stretch forward, hard squeeze at the back.' },
+        { name: 'Supported Upper-Back Row', sets: 3, reps: '12-15', rest: '60s', tip: 'Machine or chest-supported variation — focus on upper back thickness.' },
+        { name: 'Rear Delt Fly', sets: 3, reps: '15-20', rest: '45s', tip: 'Keep this in every session — rear delts respond well to frequency.' },
+        { name: 'Cable Curl', sets: 3, reps: '12-15', rest: '45s', tip: 'No swinging — strict form for full bicep engagement.' },
+        { name: 'DB / Hammer Curl', sets: 3, reps: '12-15', rest: '45s', tip: 'Alternate grip for brachialis and forearm development.' },
+      ]},
+      { day: 'Wednesday', label: 'Rest / Steps / Cardio', icon: '😴', focus: 'Recovery · Steps · Cardio', exercises: [] },
+      { day: 'Thursday', label: 'Chest + Triceps', icon: '💪', focus: 'Chest · Triceps', warmup: [
+        { name: 'Arm Circles (small to large)', sets: 2, reps: '10 each direction', rest: '—', tip: 'Gradually opens up the shoulder joint before pressing.' },
+        { name: 'Band Pull-Aparts', sets: 2, reps: '20', rest: '—', tip: 'Balances out the pressing volume and preps shoulder health.' },
+        { name: 'Push-Up to Downward Dog', sets: 2, reps: '8', rest: '—', tip: 'Dynamic chest and shoulder stretch combined with activation.' },
+        { name: 'Shoulder Dislocates (band or PVC)', sets: 2, reps: '10', rest: '—', tip: 'Opens up shoulder mobility before heavy pressing work.' },
+      ], exercises: [
+        { name: 'Incline DB or Machine Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Upper chest focus — controlled tempo on the way down.' },
+        { name: 'Machine Chest Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Steady, controlled reps — squeeze at full extension.' },
+        { name: 'Cable Fly', sets: 3, reps: '12-15', rest: '60s', tip: 'Focus on the squeeze in the middle, not the weight.' },
+        { name: 'Lateral Raises', sets: 3, reps: '15-20', rest: '45s', tip: 'Lead with the elbows, avoid using momentum.' },
+        { name: 'Triceps Pressdown', sets: 3, reps: '12-15', rest: '45s', tip: 'Full lockout at the bottom every rep.' },
+        { name: 'Overhead Cable Extension', sets: 3, reps: '12-15', rest: '45s', tip: 'Keep elbows tight and close to the head.' },
+      ]},
+      { day: 'Friday', label: 'Upper', icon: '🔥', focus: 'Back · Chest · Shoulders · Arms · Abs', warmup: [
+        { name: 'Arm Circles', sets: 2, reps: '10 each direction', rest: '—', tip: 'Loosens the shoulder joint for both pressing and pulling.' },
+        { name: 'Band Pull-Aparts', sets: 2, reps: '20', rest: '—', tip: 'Preps the rear delts and upper back for rows and pulldowns.' },
+        { name: 'Scapular Pull-Ups', sets: 2, reps: '10', rest: '—', tip: 'Primes the shoulder blades before pulling movements.' },
+        { name: 'Push-Up to Downward Dog', sets: 2, reps: '8', rest: '—', tip: 'Dynamic full-upper-body stretch and activation.' },
+      ], exercises: [
+        { name: 'Pulldown', sets: 3, reps: '10-12', rest: '60s', tip: 'Drive elbows down and back, control the negative.' },
+        { name: 'Incline Machine/DB Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Controlled tempo, full range of motion.' },
+        { name: 'Cable Row', sets: 3, reps: '12-15', rest: '60s', tip: 'Squeeze the shoulder blades together at the back of each rep.' },
+        { name: 'Lateral Raise', sets: 3, reps: '15-20', rest: '45s', tip: 'Lead with the elbows, keep it strict.' },
+        { name: 'Rear Delt Fly', sets: 3, reps: '15-20', rest: '45s', tip: 'Light weight, full range of motion.' },
+        { name: 'Biceps Curl', sets: 3, reps: '12-15', rest: '45s', tip: 'Strict form, no swinging.' },
+        { name: 'Triceps Pressdown', sets: 3, reps: '12-15', rest: '45s', tip: 'Full lockout every rep.' },
+        { name: 'Abs', sets: 3, reps: '15-20', rest: '45s', tip: 'Coach\'s choice — rotate movements weekly.' },
+      ]},
+      { day: 'Saturday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
       { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Full Recovery', exercises: [] },
     ]
   },
