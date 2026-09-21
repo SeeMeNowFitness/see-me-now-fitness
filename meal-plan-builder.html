@@ -308,7 +308,7 @@ Enable Low-Sodium Flex Options for this client
       <option value="wellness">Wellness</option>
       <option value="powerlifting">Powerlifting</option>
       <option value="fullbody">Full Body 3x</option>
-      <option value="lower_delts_split">5-Day Split — Lower/Delts, Back/Biceps, Chest/Tri, Upper</option>
+      <option value="lower_delts_split">5 Day Split</option>
     </select>
   </div>
   <div class="field" style="margin-bottom:0;">
@@ -2077,7 +2077,7 @@ const WORKOUT_TEMPLATES = {
     ]
   },
   lower_delts_split: {
-    name: 'Your Blueprint Training Plan',
+    name: '5 Day Split',
     days: [
       { day: 'Monday', label: 'Lower Body + Delts', icon: '🦵', focus: 'Legs · Glutes · Delts', warmup: [
         { name: 'Leg Swings (front/back, side/side)', sets: 2, reps: '10 each leg', rest: '—', tip: 'Dynamic hip and hamstring prep before loading the legs.' },
@@ -2123,7 +2123,8 @@ const WORKOUT_TEMPLATES = {
         { name: 'Triceps Pressdown', sets: 3, reps: '12-15', rest: '45s', tip: 'Full lockout at the bottom every rep.' },
         { name: 'Overhead Cable Extension', sets: 3, reps: '12-15', rest: '45s', tip: 'Keep elbows tight and close to the head.' },
       ]},
-      { day: 'Friday', label: 'Upper', icon: '🔥', focus: 'Back · Chest · Shoulders · Arms · Abs', warmup: [
+      { day: 'Friday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
+      { day: 'Saturday', label: 'Upper', icon: '🔥', focus: 'Back · Chest · Shoulders · Arms · Abs', warmup: [
         { name: 'Arm Circles', sets: 2, reps: '10 each direction', rest: '—', tip: 'Loosens the shoulder joint for both pressing and pulling.' },
         { name: 'Band Pull-Aparts', sets: 2, reps: '20', rest: '—', tip: 'Preps the rear delts and upper back for rows and pulldowns.' },
         { name: 'Scapular Pull-Ups', sets: 2, reps: '10', rest: '—', tip: 'Primes the shoulder blades before pulling movements.' },
@@ -2138,7 +2139,6 @@ const WORKOUT_TEMPLATES = {
         { name: 'Triceps Pressdown', sets: 3, reps: '12-15', rest: '45s', tip: 'Full lockout every rep.' },
         { name: 'Abs', sets: 3, reps: '15-20', rest: '45s', tip: 'Coach\'s choice — rotate movements weekly.' },
       ]},
-      { day: 'Saturday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
       { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Full Recovery', exercises: [] },
     ]
   },
