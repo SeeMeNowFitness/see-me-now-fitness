@@ -186,12 +186,17 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 
 <!-- 4. Supplements -->
 <div class="section">
-<h3>4. Supplements</h3>
+<div style="display:flex;justify-content:space-between;align-items:center;">
+<h3 style="margin-bottom:0;">4. Supplements</h3>
+<span id="supp-section-chev" onclick="toggleSuppSection()" style="cursor:pointer;color:var(--muted);font-size:14px;padding:4px 8px;">▲</span>
+</div>
+<div id="supp-section-body" style="display:block;margin-top:12px;">
 <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Add supplements with timing and benefits. Shows in client's My Plan tab.</div>
 <div id="supplements-container"></div>
 <div style="margin-top:10px;display:flex;gap:8px;">
 <button class="btn btn-outline btn-sm" onclick="addSuppRow()">+ Add Supplement</button>
 <button class="btn btn-outline btn-sm" onclick="loadDefaultSupps()">Load Defaults</button>
+</div>
 </div>
 </div>
 
@@ -212,7 +217,6 @@ body{background:var(--black);color:var(--white);font-family:'Helvetica Neue',Ari
 <div style="display:flex;align-items:flex-end;padding-bottom:2px;gap:10px;">
 <div style="font-size:12px;color:var(--muted);" id="blood-type-desc">Showing general Blueprint approved foods.</div>
 <button class="btn btn-outline btn-sm" onclick="loadVeganPreset()" style="white-space:nowrap;">🌱 Load Vegan Preset</button>
-<button class="btn btn-outline btn-sm" onclick="loadPescatarianPreset()" style="white-space:nowrap;">🐟 Load Pescatarian Preset</button>
 </div>
 </div>
 <div style="display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;">
@@ -282,17 +286,10 @@ Enable Low-Sodium Flex Options for this client
 🥤 Stick to water or zero-calorie drinks.</span>
 </div>
 <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Add lower-sodium restaurant flex options below. These show separately in the client's My Plan tab, alongside their standard flex options if both are enabled.</div>
-<div class="field" style="max-width:280px;margin-bottom:10px;">
-<label>Diet Type</label>
-<select id="ls-diet-type" onchange="lowSodiumDietTypeChanged()">
-<option value="standard">Standard</option>
-<option value="pescatarian">🐟 Pescatarian</option>
-</select>
-</div>
 <div id="ls-flex-meals-container"></div>
 <div style="margin-top:10px;display:flex;gap:8px;">
 <button class="btn btn-outline btn-sm" onclick="addLowSodiumFlexMealRow()">+ Add Restaurant Option</button>
-<button class="btn btn-outline btn-sm" onclick="loadDefaultLowSodiumFlexMealsForType()">Load SMN Defaults</button>
+<button class="btn btn-outline btn-sm" onclick="loadDefaultLowSodiumFlexMeals()">Load SMN Low-Sodium Defaults</button>
 </div>
 </div>
 </div>
@@ -316,7 +313,6 @@ Enable Low-Sodium Flex Options for this client
       <option value="wellness">Wellness</option>
       <option value="powerlifting">Powerlifting</option>
       <option value="fullbody">Full Body 3x</option>
-      <option value="lower_delts_split">4 Day Split</option>
     </select>
   </div>
   <div class="field" style="margin-bottom:0;">
@@ -489,7 +485,7 @@ const SUPP_BENEFITS={
   'CoQ10':'Supports cellular energy production and heart health. Beneficial during intense training phases.',
 };
 const DEFAULT_SUPPLEMENTS=[{name:'Whey Protein',dose:'1 scoop (25g protein)',timing:'Post Workout',benefit:'Supports muscle repair and growth after training'},{name:'Creatine Monohydrate',dose:'5g',timing:'Daily — any time',benefit:'Increases strength, power output, and muscle volume'},{name:'Multivitamin',dose:'1 tablet',timing:'With breakfast',benefit:'Fills micronutrient gaps to support overall health'},{name:'Fish Oil',dose:'2 capsules',timing:'With meals',benefit:'Reduces inflammation, supports joints and heart health'},{name:'Vitamin D3',dose:'2000 IU',timing:'With breakfast',benefit:'Supports immune function, bone health, and testosterone'},{name:'Electrolytes',dose:'1 packet or scoop',timing:'Intra-Workout',benefit:'Replaces sodium, potassium, and other minerals lost through sweat — supports hydration, performance, and reduces cramping'}];
-const TIMING_OPTIONS=['Pre Workout','Intra-Workout','Post Workout','With Largest Meal','With Meal 1','With Meal 2','With Meal 3','With Meal 4','With Meal 5','With Meal 6','With breakfast','With meals','Before bed','Daily — any time','Morning','Evening','As Needed'];
+const TIMING_OPTIONS=['Pre Workout','Intra-Workout','Post Workout','With Largest Meal','With Meal 1','With Meal 2','With Meal 3','With Meal 4','With Meal 5','With Meal 6','With breakfast','With meals','Before bed','Daily — any time','Morning','Evening'];
 
 // ── BLOOD TYPE FOODS ──
 const BT_FOODS={
@@ -912,8 +908,6 @@ function onClientSelect(){
   if(selectedClient.flex_enabled){document.getElementById('flex-enabled').checked=true;flexEnabled=true;flexSectionCollapsed=true;document.getElementById('flex-section').style.display='none';document.getElementById('flex-collapse-btn').style.display='block';document.getElementById('flex-collapse-btn').textContent='▼';flexMeals=(selectedClient.flex_meals||[]).map(m=>({...m}));flexCategoryInitialized=false;openFlexCategory=null;renderFlexMeals();}
   else{document.getElementById('flex-enabled').checked=false;flexEnabled=false;flexSectionCollapsed=false;document.getElementById('flex-section').style.display='none';document.getElementById('flex-collapse-btn').style.display='none';flexMeals=[];flexCategoryInitialized=false;openFlexCategory=null;}
   // Load low-sodium flex meals (separate from standard flex meals above)
-  lowSodiumDietType=selectedClient.low_sodium_diet_type||'standard';
-  document.getElementById('ls-diet-type').value=lowSodiumDietType;
   if(selectedClient.low_sodium_flex_enabled){document.getElementById('ls-flex-enabled').checked=true;lowSodiumFlexEnabled=true;lowSodiumFlexSectionCollapsed=true;document.getElementById('ls-flex-section').style.display='none';document.getElementById('ls-flex-collapse-btn').style.display='block';document.getElementById('ls-flex-collapse-btn').textContent='▼';document.getElementById('ls-flex-notes').value=selectedClient.low_sodium_flex_notes||'';lowSodiumFlexMeals=(selectedClient.low_sodium_flex_meals||[]).map(m=>({...m}));lowSodiumFlexCategoryInitialized=false;openLowSodiumFlexCategory=null;renderLowSodiumFlexMeals();}
   else{document.getElementById('ls-flex-enabled').checked=false;lowSodiumFlexEnabled=false;lowSodiumFlexSectionCollapsed=false;document.getElementById('ls-flex-section').style.display='none';document.getElementById('ls-flex-collapse-btn').style.display='none';document.getElementById('ls-flex-notes').value='';lowSodiumFlexMeals=[];lowSodiumFlexCategoryInitialized=false;openLowSodiumFlexCategory=null;}
   // Load peak week
@@ -1227,7 +1221,7 @@ function updateBlueprintFoodCalcUnit(mi, fi) {
   const food = meals[mi].foods[fi];
   const servingG = parseFloat(food.servingG) || 1;
   // Get grams based on selected unit
-  const unitG = unit === 'piece' ? servingG : (BUILDER_UNITS[unit] || 1);
+  const unitG = builderUnitGrams(servingG, food.serving, unit);
   const grams = amt * unitG;
   // Base macros are per-serving, so divide by servingG to get per-gram, then multiply by grams
   const baseCals = parseFloat(food.baseCals || food._baseCals || food.cals) || 0;
@@ -1364,7 +1358,7 @@ function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving, se
   }
 
   // Calculate initial macros based on default amount
-  const unitMultiplier = defaultUnit === 'piece' ? servingG : (BUILDER_UNITS[defaultUnit] || 1);
+  const unitMultiplier = builderUnitGrams(servingG, serving, defaultUnit);
   const initialGrams = defaultAmt * unitMultiplier;
   const scale = servingG === 1 ? initialGrams : (initialGrams / servingG);
 
@@ -1391,6 +1385,24 @@ function addBlueprintFoodToMeal(mi, name, cals, protein, carbs, fat, serving, se
 }
 
 const BUILDER_UNITS = {g:1, oz:28.3495, cup:240, tbsp:15, tsp:5, ml:1};
+const BUILDER_VOLUME_ML = {tsp:5, tbsp:15, cup:240, ml:1};
+// Grams in ONE of the selected unit for a Blueprint Food. For foods whose serving is defined in a
+// volume unit (e.g. Olive Oil "1 tbsp" = 13.5g), use that weight to derive the food's own density,
+// so 1 tbsp really equals the serving instead of the generic 15g guess.
+function builderUnitGrams(servingG, serving, unit){
+  servingG = parseFloat(servingG) || 1;
+  if (unit === 'piece') return servingG;
+  if (BUILDER_VOLUME_ML[unit] && servingG !== 1) {
+    const m = String(serving || '').match(/^\s*(\d+(?:\.\d+)?(?:\s*\/\s*\d+)?)?\s*(tsp|tbsp|cup|ml)\b/i);
+    if (m) {
+      let qty = 1;
+      if (m[1]) qty = m[1].includes('/') ? (parseFloat(m[1].split('/')[0]) / parseFloat(m[1].split('/')[1])) : parseFloat(m[1]);
+      if (!qty || !isFinite(qty)) qty = 1;
+      return BUILDER_VOLUME_ML[unit] * servingG / (qty * BUILDER_VOLUME_ML[m[2].toLowerCase()]);
+    }
+  }
+  return BUILDER_UNITS[unit] || 1;
+}
 
 function addFoodToMeal(mi,name,cals,protein,carbs,fat){
   meals[mi].foods.push({
@@ -1529,66 +1541,6 @@ function loadVeganPreset(){
     fats:VEGAN_FOODS.fats.map(f=>({...f}))
   };
   document.getElementById('blood-type-desc').textContent='Showing 100% plant-based Blueprint approved foods.';
-  renderApprovedFoods();
-}
-const PESCATARIAN_FOODS={
-  protein:[
-    {name:'Salmon (cooked)',macro:'25g P / 0g C / 13g F per 100g'},
-    {name:'Tuna (cooked)',macro:'29g P / 0g C / 1g F per 100g'},
-    {name:'Tilapia (cooked)',macro:'26g P / 0g C / 3g F per 100g'},
-    {name:'Shrimp (cooked)',macro:'24g P / 0g C / 0.3g F per 100g'},
-    {name:'Cod (cooked)',macro:'23g P / 0g C / 1g F per 100g'},
-    {name:'Scallops (cooked)',macro:'21g P / 3g C / 1g F per 100g'},
-    {name:'Sardines (canned)',macro:'25g P / 0g C / 11g F per 100g'},
-    {name:'Whole Egg (large)',macro:'13g P / 1g C / 10g F per 100g'},
-    {name:'Egg White',macro:'11g P / 1g C / 0g F per 100g'},
-    {name:'Greek Yogurt (nonfat)',macro:'10g P / 4g C / 0g F per 100g'},
-    {name:'Cottage Cheese (low-fat)',macro:'11g P / 3g C / 1g F per 100g'},
-    {name:'Whey Protein Isolate',macro:'80g P / 5g C / 1g F per 100g'},
-  ],
-  carbs:[
-    {name:'White Jasmine Rice (cooked)',macro:'2g P / 28g C / 0g F per 100g'},
-    {name:'Sweet Potato (cooked)',macro:'2g P / 20g C / 0g F per 100g'},
-    {name:'Oats (dry)',macro:'17g P / 66g C / 7g F per 100g'},
-    {name:'Quinoa (cooked)',macro:'4g P / 21g C / 2g F per 100g'},
-    {name:'Ezekiel Bread',macro:'15g P / 44g C / 1.5g F per 100g'},
-    {name:'Whole Wheat Pasta (cooked)',macro:'5g P / 25g C / 1g F per 100g'},
-  ],
-  vegetables:[
-    {name:'Broccoli',macro:'3g P / 7g C / 0g F per 100g'},
-    {name:'Asparagus',macro:'2g P / 4g C / 0g F per 100g'},
-    {name:'Spinach',macro:'3g P / 4g C / 0g F per 100g'},
-    {name:'Zucchini',macro:'1g P / 3g C / 0g F per 100g'},
-    {name:'Bell Peppers',macro:'1g P / 6g C / 0g F per 100g'},
-    {name:'Cauliflower',macro:'2g P / 5g C / 0g F per 100g'},
-    {name:'Green Beans',macro:'2g P / 7g C / 0g F per 100g'},
-    {name:'Brussels Sprouts',macro:'3g P / 9g C / 0g F per 100g'},
-  ],
-  fruits:[
-    {name:'Banana',macro:'1g P / 23g C / 0g F per 100g'},
-    {name:'Blueberries',macro:'1g P / 14g C / 0g F per 100g'},
-    {name:'Apple',macro:'0g P / 14g C / 0g F per 100g'},
-    {name:'Strawberries',macro:'1g P / 8g C / 0g F per 100g'},
-    {name:'Orange',macro:'1g P / 12g C / 0g F per 100g'},
-  ],
-  fats:[
-    {name:'Avocado',macro:'2g P / 9g C / 15g F per 100g'},
-    {name:'Olive Oil',macro:'0g P / 0g C / 100g F per 100g'},
-    {name:'Almonds',macro:'21g P / 22g C / 50g F per 100g'},
-    {name:'Walnuts',macro:'15g P / 14g C / 65g F per 100g'},
-    {name:'Chia Seeds',macro:'17g P / 42g C / 31g F per 100g'},
-    {name:'Peanut Butter (natural)',macro:'25g P / 20g C / 50g F per 100g'},
-  ]
-};
-function loadPescatarianPreset(){
-  approvedFoods={
-    protein:PESCATARIAN_FOODS.protein.map(f=>({...f})),
-    carbs:PESCATARIAN_FOODS.carbs.map(f=>({...f})),
-    vegetables:PESCATARIAN_FOODS.vegetables.map(f=>({...f})),
-    fruits:PESCATARIAN_FOODS.fruits.map(f=>({...f})),
-    fats:PESCATARIAN_FOODS.fats.map(f=>({...f}))
-  };
-  document.getElementById('blood-type-desc').textContent='Showing pescatarian Blueprint approved foods — seafood, eggs & dairy, no meat or poultry.';
   renderApprovedFoods();
 }
 function initApprovedFoods(bt){approvedFoods={protein:BT_FOODS[bt].protein.map(f=>({...f})),carbs:BT_FOODS[bt].carbs.map(f=>({...f})),vegetables:(BT_FOODS[bt].vegetables||[]).map(f=>({...f})),fruits:(BT_FOODS[bt].fruits||[]).map(f=>({...f})),fats:BT_FOODS[bt].fats.map(f=>({...f}))};renderApprovedFoods();}
@@ -2146,72 +2098,6 @@ const WORKOUT_TEMPLATES = {
       { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Full Recovery', exercises: [] },
     ]
   },
-  lower_delts_split: {
-    name: '4 Day Split',
-    days: [
-      { day: 'Monday', label: 'Lower Body + Delts', icon: '🦵', focus: 'Legs · Glutes · Delts', warmup: [
-        { name: 'Leg Swings (front/back, side/side)', sets: 2, reps: '10 each leg', rest: '—', tip: 'Dynamic hip and hamstring prep before loading the legs.' },
-        { name: 'Bodyweight Squats', sets: 2, reps: '15', rest: '—', tip: 'Prime the squat/press pattern before adding load.' },
-        { name: 'Walking Lunges', sets: 2, reps: '10 each leg', rest: '—', tip: 'Dynamic warmup for quads, glutes, and hip stability.' },
-        { name: 'Glute Bridges', sets: 2, reps: '15', rest: '—', tip: 'Activate the glutes before hip thrusts and squats.' },
-        { name: 'Band Pull-Aparts', sets: 2, reps: '20', rest: '—', tip: 'Wakes up the rear delts before the lateral raise work.' },
-      ], exercises: [
-        { name: 'Leg Curl', sets: 3, reps: '12-15', rest: '60s', tip: 'Full range of motion, control both the curl and the release.' },
-        { name: 'Leg Press or Hack Squat', sets: 4, reps: '8-10', rest: '90s', tip: 'Coach\'s choice based on the day — go with whichever feels best.' },
-        { name: 'Bulgarian Split Squat', sets: 3, reps: '10-12 each', rest: '60s', tip: 'Adjust depth and load as tolerated.' },
-        { name: 'Leg Extension', sets: 3, reps: '15-20', rest: '45s', tip: 'Controlled tempo throughout — especially through the right quad.' },
-        { name: 'Hip Thrust / Glute Movement', sets: 3, reps: '12-15', rest: '60s', tip: 'Squeeze hard at the top of every rep.' },
-        { name: 'Calf Raises', sets: 4, reps: '15-20', rest: '30s', tip: 'Full stretch at the bottom, pause at the top.' },
-        { name: 'Cable / Machine Lateral Raise', sets: 3, reps: '15-20', rest: '45s', tip: 'Lead with the elbows, control the negative.' },
-        { name: 'Rear Delt Fly', sets: 3, reps: '15-20', rest: '45s', tip: 'Light weight, strict form — feel the squeeze.' },
-      ]},
-      { day: 'Tuesday', label: 'Back + Biceps', icon: '🏋️', focus: 'Back · Rear Delts · Biceps', warmup: [
-        { name: 'Band Pull-Aparts', sets: 2, reps: '20', rest: '—', tip: 'Keep arms straight, squeeze shoulder blades together.' },
-        { name: 'Scapular Pull-Ups / Scap Retractions', sets: 2, reps: '10', rest: '—', tip: 'Teaches the shoulder blade to move before loading the lats.' },
-        { name: 'Arm Circles', sets: 2, reps: '10 each direction', rest: '—', tip: 'Loosens the shoulder joint before rowing and pulldown work.' },
-        { name: 'Cat-Cow', sets: 2, reps: '10', rest: '—', tip: 'Mobilizes the spine before bent-over and supported rows.' },
-      ], exercises: [
-        { name: 'Chest-Supported Row', sets: 4, reps: '10-12', rest: '90s', tip: 'Chest stays pinned to the pad — squeeze the shoulder blades.' },
-        { name: 'Pulldown / Pull-Up Variation', sets: 3, reps: '10-12', rest: '60s', tip: 'Drive elbows down and back, control the negative.' },
-        { name: 'Single-Arm Cable Row', sets: 3, reps: '12-15 each', rest: '60s', tip: 'Full stretch forward, hard squeeze at the back.' },
-        { name: 'Supported Upper-Back Row', sets: 3, reps: '12-15', rest: '60s', tip: 'Machine or chest-supported variation — focus on upper back thickness.' },
-        { name: 'Rear Delt Fly', sets: 3, reps: '15-20', rest: '45s', tip: 'Keep this in every session — rear delts respond well to frequency.' },
-        { name: 'Cable Curl', sets: 3, reps: '12-15', rest: '45s', tip: 'No swinging — strict form for full bicep engagement.' },
-        { name: 'DB / Hammer Curl', sets: 3, reps: '12-15', rest: '45s', tip: 'Alternate grip for brachialis and forearm development.' },
-      ]},
-      { day: 'Wednesday', label: 'Rest / Steps / Cardio', icon: '😴', focus: 'Recovery · Steps · Cardio', exercises: [] },
-      { day: 'Thursday', label: 'Chest + Triceps', icon: '💪', focus: 'Chest · Triceps', warmup: [
-        { name: 'Arm Circles (small to large)', sets: 2, reps: '10 each direction', rest: '—', tip: 'Gradually opens up the shoulder joint before pressing.' },
-        { name: 'Band Pull-Aparts', sets: 2, reps: '20', rest: '—', tip: 'Balances out the pressing volume and preps shoulder health.' },
-        { name: 'Push-Up to Downward Dog', sets: 2, reps: '8', rest: '—', tip: 'Dynamic chest and shoulder stretch combined with activation.' },
-        { name: 'Shoulder Dislocates (band or PVC)', sets: 2, reps: '10', rest: '—', tip: 'Opens up shoulder mobility before heavy pressing work.' },
-      ], exercises: [
-        { name: 'Incline DB or Machine Press', sets: 4, reps: '8-10', rest: '90s', tip: 'Upper chest focus — controlled tempo on the way down.' },
-        { name: 'Machine Chest Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Steady, controlled reps — squeeze at full extension.' },
-        { name: 'Cable Fly', sets: 3, reps: '12-15', rest: '60s', tip: 'Focus on the squeeze in the middle, not the weight.' },
-        { name: 'Lateral Raises', sets: 3, reps: '15-20', rest: '45s', tip: 'Lead with the elbows, avoid using momentum.' },
-        { name: 'Triceps Pressdown', sets: 3, reps: '12-15', rest: '45s', tip: 'Full lockout at the bottom every rep.' },
-        { name: 'Overhead Cable Extension', sets: 3, reps: '12-15', rest: '45s', tip: 'Keep elbows tight and close to the head.' },
-      ]},
-      { day: 'Friday', label: 'Rest Day', icon: '😴', focus: 'Recovery', exercises: [] },
-      { day: 'Saturday', label: 'Upper', icon: '🔥', focus: 'Back · Chest · Shoulders · Arms · Abs', warmup: [
-        { name: 'Arm Circles', sets: 2, reps: '10 each direction', rest: '—', tip: 'Loosens the shoulder joint for both pressing and pulling.' },
-        { name: 'Band Pull-Aparts', sets: 2, reps: '20', rest: '—', tip: 'Preps the rear delts and upper back for rows and pulldowns.' },
-        { name: 'Scapular Pull-Ups', sets: 2, reps: '10', rest: '—', tip: 'Primes the shoulder blades before pulling movements.' },
-        { name: 'Push-Up to Downward Dog', sets: 2, reps: '8', rest: '—', tip: 'Dynamic full-upper-body stretch and activation.' },
-      ], exercises: [
-        { name: 'Pulldown', sets: 3, reps: '10-12', rest: '60s', tip: 'Drive elbows down and back, control the negative.' },
-        { name: 'Incline Machine/DB Press', sets: 3, reps: '10-12', rest: '60s', tip: 'Controlled tempo, full range of motion.' },
-        { name: 'Cable Row', sets: 3, reps: '12-15', rest: '60s', tip: 'Squeeze the shoulder blades together at the back of each rep.' },
-        { name: 'Lateral Raise', sets: 3, reps: '15-20', rest: '45s', tip: 'Lead with the elbows, keep it strict.' },
-        { name: 'Rear Delt Fly', sets: 3, reps: '15-20', rest: '45s', tip: 'Light weight, full range of motion.' },
-        { name: 'Biceps Curl', sets: 3, reps: '12-15', rest: '45s', tip: 'Strict form, no swinging.' },
-        { name: 'Triceps Pressdown', sets: 3, reps: '12-15', rest: '45s', tip: 'Full lockout every rep.' },
-        { name: 'Abs', sets: 3, reps: '15-20', rest: '45s', tip: 'Coach\'s choice — rotate movements weekly.' },
-      ]},
-      { day: 'Sunday', label: 'Rest Day', icon: '😴', focus: 'Full Recovery', exercises: [] },
-    ]
-  },
 };
 
 // ── MULTI-WEEK WORKOUT PROGRAMMING ──
@@ -2574,6 +2460,14 @@ const DEFAULT_SUPP_DATABASE = [
   { name:'CoQ10', benefit:'Supports cellular energy production and heart health. Beneficial during intense training phases.' },
 ];
 
+function toggleSuppSection() {
+  const body = document.getElementById('supp-section-body');
+  const chev = document.getElementById('supp-section-chev');
+  const open = body.style.display !== 'none';
+  body.style.display = open ? 'none' : 'block';
+  chev.textContent = open ? '▼' : '▲';
+}
+
 function toggleSuppDatabase() {
   const el = document.getElementById('supp-database-section');
   el.style.display = el.style.display === 'none' ? 'block' : 'none';
@@ -2701,7 +2595,7 @@ const DEFAULT_BLUEPRINT_FOODS = [
   { name:'Peanut Butter Natural (by weight)', serving:'1g', servingG:1, cals:5.9, protein:0.25, carbs:0.2, fat:0.5, category:'fat' },
   // Olive Oil — tsp and tbsp
   { name:'Ezekiel 4:9 Bread (slice)', serving:'1 slice', servingG:34, cals:80, protein:5, carbs:15, fat:0.5, category:'carb' },
-  { name:'Olive Oil (tablespoon)', serving:'1 tbsp', servingG:13.5, cals:119, protein:0, carbs:0, fat:14, category:'fat' },
+  { name:'Olive Oil (tablespoon)', serving:'1 tbsp', servingG:13.5, cals:119, protein:0, carbs:0, fat:13.5, category:'fat' },
 ];
 
 const BF_CATEGORIES = { protein:'💪 Protein', carb:'🌾 Carb', fat:'🥑 Fat' };
@@ -3020,7 +2914,7 @@ function addPeakBlueprintFood(di,mi,name,cals,protein,carbs,fat,serving,servingG
   else if(serving.includes('cup')){defaultUnit='cup';}
   else if(serving.includes('ml')){defaultUnit='ml';}
   else if(/egg|banana|medium|scoop|piece|slice|bar|packet/.test(serving)){defaultUnit='piece';}
-  const unitMultiplier=defaultUnit==='piece'?servingG:(BUILDER_UNITS[defaultUnit]||1);
+  const unitMultiplier=builderUnitGrams(servingG,serving,defaultUnit);
   const initialGrams=defaultAmt*unitMultiplier;
   const scale=servingG===1?initialGrams:(initialGrams/servingG);
   peakWeek.days[di].meals[mi].foods.push({
@@ -3044,7 +2938,7 @@ function updatePeakFoodCalc(di, mi, fi) {
   food.unit = unit;
   if (food.blueprint) {
     const servingG = parseFloat(food.servingG) || 1;
-    const unitG = unit === 'piece' ? servingG : (BUILDER_UNITS[unit] || 1);
+    const unitG = builderUnitGrams(servingG, food.serving, unit);
     const grams = amt * unitG;
     const baseCals = parseFloat(food.baseCals) || 0, baseP = parseFloat(food.baseProtein) || 0, baseC = parseFloat(food.baseCarbs) || 0, baseF = parseFloat(food.baseFat) || 0;
     food.cals = Math.round((baseCals / servingG) * grams * 10) / 10;
@@ -3248,20 +3142,6 @@ const LOW_SODIUM_FLEX_MEALS = [
   { category: "Other", restaurant: "Any rotisserie counter", meal: "Rotisserie Chicken, skin removed + Steamed Vegetables + Plain Rice or Potato", notes: "Rotisserie seasoning is concentrated in the skin and often high sodium — removing it helps meaningfully" },
 ];
 
-// Same directional, behavior-based approach as LOW_SODIUM_FLEX_MEALS above, but built around
-// seafood/eggs/dairy instead of chicken — for pescatarian clients with a sodium restriction.
-const LOW_SODIUM_PESCATARIAN_FLEX_MEALS = [
-  { category: "Seafood", restaurant: "Any seafood restaurant/grill", meal: "Grilled Salmon or Mahi-Mahi + Steamed Vegetables + Baked Potato, no added salt", notes: "Ask for no seasoning blend or salt on the grill — many kitchens season generously by default" },
-  { category: "Fast Food", restaurant: "Any fast food with a fish option", meal: "Grilled (not fried/breaded) Fish Sandwich, plain + Side Salad", notes: "Most fast-food fish options are breaded and fried, which adds sodium; ask if a grilled option exists" },
-  { category: "Mexican", restaurant: "Chipotle", meal: "Shrimp Bowl (lettuce base) + Fajita Veggies + Fresh Tomato Salsa, no queso or seasoned rice", notes: "Skip queso and seasoned rice — both are salted in prep; fresh salsa is the lower-sodium topping" },
-  { category: "Asian", restaurant: "Any sushi restaurant", meal: "Sashimi or Nigiri (6-8 pieces) + Edamame + Cucumber Salad, soy sauce on the side", notes: "Use soy sauce sparingly or skip it — it's the main sodium source in sushi; avoid tempura/fried rolls" },
-  { category: "Asian", restaurant: "Any Asian restaurant", meal: "Steamed Shrimp or Tofu + Steamed Rice + Steamed Vegetables, sauce on the side", notes: "Ask for no soy sauce or MSG in the cooking; use any sauce sparingly or skip it" },
-  { category: "Breakfast", restaurant: "Any diner/breakfast spot", meal: "Eggs (plain, no added salt) + Fresh Fruit + Plain Oatmeal", notes: "Skip bacon and instant oatmeal packets — both high in sodium; if adding smoked salmon, use a small portion since it's cured" },
-  { category: "Grocery Store", restaurant: "Any grocery store", meal: "Canned Tuna or Salmon (no-salt-added) + Fresh or Frozen Vegetables + Fresh Fruit", notes: "Look for 'no salt added' on the can — regular canned tuna/salmon can be a significant sodium source" },
-  { category: "Grocery Store", restaurant: "Any grocery store", meal: "Plain Grilled/Baked Tilapia or Cod + Fresh or Frozen Vegetables (no sauce packet) + Fresh Fruit", notes: "Check labels — pre-seasoned or marinated fish is a common hidden sodium source" },
-  { category: "Other", restaurant: "Any poke restaurant", meal: "Poke Bowl — raw fish, brown rice, cucumber, edamame, light sauce", notes: "Ask for sauce on the side or go light — poke sauces (ponzu, spicy mayo) are often salted" },
-];
-
 function toggleFlexSection() {
   flexEnabled = document.getElementById('flex-enabled').checked;
   // Collapse is only meaningful once flex dieting is on — reset to expanded each time it's
@@ -3360,7 +3240,6 @@ function renderFlexMeals() {
 let lowSodiumFlexEnabled = false;
 let lowSodiumFlexMeals = [];
 let lowSodiumFlexSectionCollapsed = false;
-let lowSodiumDietType = 'standard';
 
 function toggleLowSodiumFlexSection() {
   lowSodiumFlexEnabled = document.getElementById('ls-flex-enabled').checked;
@@ -3368,7 +3247,7 @@ function toggleLowSodiumFlexSection() {
   document.getElementById('ls-flex-section').style.display = lowSodiumFlexEnabled ? 'block' : 'none';
   document.getElementById('ls-flex-collapse-btn').style.display = lowSodiumFlexEnabled ? 'block' : 'none';
   document.getElementById('ls-flex-collapse-btn').textContent = '▲';
-  if (lowSodiumFlexEnabled && lowSodiumFlexMeals.length === 0) loadDefaultLowSodiumFlexMealsForType();
+  if (lowSodiumFlexEnabled && lowSodiumFlexMeals.length === 0) loadDefaultLowSodiumFlexMeals();
 }
 
 function toggleLowSodiumFlexCollapse() {
@@ -3382,21 +3261,8 @@ function lowSodiumFlexNotesChanged() {
   // Exists so the textarea always has a valid oninput target even if that changes later.
 }
 
-// Switching Diet Type immediately swaps in the matching preset. If the coach has already
-// hand-edited or added entries, confirm first so a stray dropdown click can't silently wipe work.
-function lowSodiumDietTypeChanged() {
-  const hasContent = lowSodiumFlexMeals.some(m => m.restaurant || m.meal);
-  if (hasContent && !confirm('Switch diet type and replace the current list with the matching defaults?')) {
-    document.getElementById('ls-diet-type').value = lowSodiumDietType; // revert the dropdown
-    return;
-  }
-  lowSodiumDietType = document.getElementById('ls-diet-type').value;
-  loadDefaultLowSodiumFlexMealsForType();
-}
-
-function loadDefaultLowSodiumFlexMealsForType() {
-  const source = lowSodiumDietType === 'pescatarian' ? LOW_SODIUM_PESCATARIAN_FLEX_MEALS : LOW_SODIUM_FLEX_MEALS;
-  lowSodiumFlexMeals = source.map(m => ({ ...m }));
+function loadDefaultLowSodiumFlexMeals() {
+  lowSodiumFlexMeals = LOW_SODIUM_FLEX_MEALS.map(m => ({ ...m }));
   renderLowSodiumFlexMeals();
 }
 
@@ -3511,7 +3377,6 @@ async function savePlan() {
         flex_enabled: flexEnabled,
         flex_meals: flexEnabled ? flexMeals.filter(m => m.restaurant || m.meal) : [],
         low_sodium_flex_enabled: lowSodiumFlexEnabled,
-        low_sodium_diet_type: lowSodiumDietType,
         low_sodium_flex_notes: document.getElementById('ls-flex-notes').value.trim(),
         low_sodium_flex_meals: lowSodiumFlexEnabled ? lowSodiumFlexMeals.filter(m => m.restaurant || m.meal) : [],
         peak_week: peakWeek.enabled ? {
